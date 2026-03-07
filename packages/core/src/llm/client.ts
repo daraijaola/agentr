@@ -1,11 +1,7 @@
 import { complete, getModel } from '@mariozechner/pi-ai'
 import type { Model, Api, Context, AssistantMessage, Tool } from '@mariozechner/pi-ai'
 
-// LLM client  adapted from Teleton (MIT)
-// Simplified for AGENTR: Anthropic primary, OpenAI + Groq as fallbacks
-// Stripped: Cocoon, local, moonshot, claude-code OAuth (not needed for MVP)
-
-export type LLMProvider = 'anthropic' | 'openai' | 'groq'
+export type LLMProvider = 'anthropic' | 'openai' | 'moonshot'
 
 export interface LLMConfig {
   provider: LLMProvider
@@ -32,7 +28,7 @@ export interface ChatResponse {
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   anthropic: 'claude-sonnet-4-5',
   openai:    'gpt-4o',
-  groq:      'llama-3.3-70b-versatile',
+  moonshot:  'kimi-k2',
 }
 
 const modelCache = new Map<string, Model<Api>>()
@@ -40,11 +36,9 @@ const modelCache = new Map<string, Model<Api>>()
 function getProviderModel(provider: LLMProvider, modelId: string): Model<Api> {
   const key = `${provider}:${modelId}`
   if (modelCache.has(key)) return modelCache.get(key)!
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const model = getModel(provider as any, modelId as any)
   if (!model) throw new Error(`Model not found: ${provider}/${modelId}`)
-
   modelCache.set(key, model)
   return model
 }
@@ -89,13 +83,10 @@ export class LLMClient {
     }
   }
 
-  // Simple one-shot completion  no tool use, no context
   async complete(prompt: string, systemPrompt?: string): Promise<string> {
     const result = await this.chat({
       systemPrompt,
-      context: {
-        messages: [{ role: 'user', content: prompt }],
-      },
+      context: { messages: [{ role: 'user', content: prompt }] },
     })
     return result.text
   }

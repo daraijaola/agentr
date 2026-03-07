@@ -1,12 +1,9 @@
 import type { AgentConfig } from '@agentr/core'
 import { AgentRuntime, WalletService, bridgeManager, registerMVPTools } from '@agentr/core'
+import type { LLMProvider } from '@agentr/core'
 import { DockerProvisioner } from './docker.js'
 import { Database } from './database.js'
 import path from 'path'
-import { createHash } from 'crypto'
-
-// AgentFactory — provisions and manages agent instances per tenant
-// Orchestrates: wallet generation, Docker container, DB records, tool registration
 
 export class AgentFactory {
   private provisioner = new DockerProvisioner()
@@ -19,13 +16,26 @@ export class AgentFactory {
     console.log('[AgentFactory] Initialized')
   }
 
-  // Called after OTP verified — full agent provisioning
+  private getLLMConfig() {
+    const provider = (process.env['LLM_PROVIDER'] ?? 'moonshot') as LLMProvider
+    const apiKeyMap: Record<LLMProvider, string> = {
+      anthropic: process.env['ANTHROPIC_API_KEY'] ?? '',
+      openai:    process.env['OPENAI_API_KEY'] ?? '',
+      moonshot:  process.env['MOONSHOT_API_KEY'] ?? '',
+    }
+    return {
+      provider,
+      apiKey: apiKeyMap[provider],
+      model: process.env['LLM_MODEL'] ?? undefined,
+    }
+  }
+
   async provision(tenantId: string, phone: string): Promise<AgentRuntime> {
     console.log(`[AgentFactory] Provisioning agent for tenant: ${tenantId}`)
 
     // 1. Generate TON wallet
     const { address, mnemonic } = await this.wallet.generateWallet()
-    const mnemonicEnc = this.encryptMnemonic(mnemonic)
+    const mnemonicEnc = Buffer.from(mnemonic.join(' ')).toString('base64')
     console.log(`[AgentFactory] Wallet: ${address}`)
 
     // 2. Get Telegram user info
@@ -56,26 +66,20 @@ export class AgentFactory {
     await this.db.updateTenantStatus(dbTenantId, 'active')
     await this.db.createAgentInstance(dbTenantId)
 
-    // 6. Build agent context
+    // 6. Build agent config
     const config: AgentConfig = {
       tenantId: dbTenantId,
       userId,
       telegramPhone: phone,
-      llmProvider: 'anthropic',
+      llmProvider: this.getLLMConfig().provider,
       walletAddress: address,
     }
 
     // 7. Start agent runtime
-    const runtime = new AgentRuntime(config, {
-      provider: 'anthropic',
-      apiKey: process.env['ANTHROPIC_API_KEY'] ?? '',
-      model: 'claude-sonnet-4-5',
-    })
+    const runtime = new AgentRuntime(config, this.getLLMConfig())
 
     // 8. Register MVP tools
     if (tgClient) {
-      // TODO: wire SQLite DB per tenant in Phase 2
-      // For now pass a minimal stub — tools that need DB will gracefully handle it
       await registerMVPTools(runtime.tools, {
         client: tgClient,
         db: null as never,
@@ -84,18 +88,14 @@ export class AgentFactory {
       })
     }
 
-    // 9. Start runtime
     await runtime.start()
     this.runtimes.set(dbTenantId, runtime)
-
-    // 10. Update agent status
     await this.db.updateAgentStatus(dbTenantId, 'running')
 
     console.log(`[AgentFactory] Agent live for tenant: ${dbTenantId}`)
     return runtime
   }
 
-  // Resume agents on API restart
   async resumeAll(): Promise<void> {
     const activeTenants = await this.db.query<{
       id: string
@@ -114,31 +114,23 @@ export class AgentFactory {
       try {
         const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
         const me = tgClient.getMe()
-
         const config: AgentConfig = {
           tenantId: tenant.id,
           userId: tenant.id,
           telegramPhone: tenant.phone,
-          llmProvider: 'anthropic',
+          llmProvider: this.getLLMConfig().provider,
           walletAddress: tenant.wallet_address,
         }
-
-        const runtime = new AgentRuntime(config, {
-          provider: 'anthropic',
-          apiKey: process.env['ANTHROPIC_API_KEY'] ?? '',
-          model: 'claude-sonnet-4-5',
-        })
-
+        const runtime = new AgentRuntime(config, this.getLLMConfig())
         await registerMVPTools(runtime.tools, {
           client: tgClient,
           db: null as never,
           chatId: me?.id.toString() ?? '',
           tenantId: tenant.id,
         })
-
         await runtime.start()
         this.runtimes.set(tenant.id, runtime)
-        console.log(`[AgentFactory] Resumed agent: ${tenant.id}`)
+        console.log(`[AgentFactory] Resumed: ${tenant.id}`)
       } catch (err) {
         console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
         await this.db.updateAgentStatus(tenant.id, 'error', String(err))
@@ -163,16 +155,7 @@ export class AgentFactory {
     console.log(`[AgentFactory] Deprovisioned: ${tenantId}`)
   }
 
-  private encryptMnemonic(mnemonic: string[]): string {
-    // TODO: proper AES-256 encryption in Phase 2
-    // For MVP: base64 encode (NOT production safe — replace before launch)
-    return Buffer.from(mnemonic.join(' ')).toString('base64')
-  }
-
-  getDb(): Database {
-    return this.db
-  }
+  getDb(): Database { return this.db }
 }
 
-// Singleton
 export const agentFactory = new AgentFactory()
