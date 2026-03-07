@@ -1,26 +1,165 @@
-// PostgreSQL  platform-wide multi-tenant database
-// Tables: users, tenants, agent_instances, wallets, billing_events
+import pg from 'pg'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const { Pool } = pg
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+let pool: pg.Pool | null = null
+
+export function getPool(): pg.Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env['DATABASE_URL'],
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    })
+
+    pool.on('error', (err) => {
+      console.error('[Database] Unexpected pool error:', err)
+    })
+  }
+  return pool
+}
 
 export class Database {
-  async init(): Promise<void> {
-    // TODO: pg pool init, run migrations
-    console.log('[Database] Connecting to PostgreSQL...')
+  private pool: pg.Pool
+
+  constructor() {
+    this.pool = getPool()
   }
 
+  async init(): Promise<void> {
+    console.log('[Database] Connecting to PostgreSQL...')
+    const client = await this.pool.connect()
+    try {
+      // Run migrations
+      const sql = readFileSync(
+        join(__dirname, 'migrations/001_initial.sql'),
+        'utf-8'
+      )
+      await client.query(sql)
+      console.log('[Database] Migrations complete')
+    } finally {
+      client.release()
+    }
+  }
+
+  //  Users
+  async upsertUser(data: {
+    telegramId: bigint
+    username?: string
+    firstName?: string
+  }): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO users (telegram_id, username, first_name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (telegram_id) DO UPDATE
+       SET username = $2, first_name = $3, updated_at = NOW()
+       RETURNING id`,
+      [data.telegramId, data.username, data.firstName]
+    )
+    return result.rows[0].id as string
+  }
+
+  //  Tenants
   async createTenant(data: {
-    id: string
     userId: string
     phone: string
     walletAddress: string
-    plan: string
-  }): Promise<void> {
-    // TODO: INSERT into tenants table
-    console.log(`[Database] Creating tenant: ${data.id}`)
+    walletMnemonicEnc: string
+    plan?: string
+  }): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO tenants (user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'starter']
+    )
+    return result.rows[0].id as string
   }
 
-  async getTenant(id: string): Promise<unknown> {
-    // TODO: SELECT from tenants table
-    console.log(`[Database] Getting tenant: ${id}`)
-    return null
+  async getTenantByPhone(phone: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM tenants WHERE phone = $1`,
+      [phone]
+    )
+    return result.rows[0] ?? null
+  }
+
+  async getTenant(id: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM tenants WHERE id = $1`,
+      [id]
+    )
+    return result.rows[0] ?? null
+  }
+
+  async updateTenantStatus(
+    id: string,
+    status: 'pending' | 'active' | 'suspended' | 'cancelled',
+    containerId?: string
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE tenants SET status = $1, container_id = COALESCE($2, container_id), updated_at = NOW()
+       WHERE id = $3`,
+      [status, containerId ?? null, id]
+    )
+  }
+
+  //  Agent instances
+  async createAgentInstance(tenantId: string): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO agent_instances (tenant_id, status)
+       VALUES ($1, 'provisioning')
+       RETURNING id`,
+      [tenantId]
+    )
+    return result.rows[0].id as string
+  }
+
+  async updateAgentStatus(
+    tenantId: string,
+    status: 'provisioning' | 'running' | 'stopped' | 'error',
+    errorMessage?: string
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE agent_instances
+       SET status = $1, error_message = $2, last_active_at = NOW(), updated_at = NOW()
+       WHERE tenant_id = $3`,
+      [status, errorMessage ?? null, tenantId]
+    )
+  }
+
+  //  Billing
+  async recordBillingEvent(data: {
+    tenantId: string
+    eventType: string
+    amountTon?: number
+    txHash?: string
+    plan?: string
+    validUntil?: Date
+  }): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO billing_events (tenant_id, event_type, amount_ton, tx_hash, plan, valid_until)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (tx_hash) DO NOTHING`,
+      [
+        data.tenantId,
+        data.eventType,
+        data.amountTon ?? null,
+        data.txHash ?? null,
+        data.plan ?? null,
+        data.validUntil ?? null,
+      ]
+    )
+  }
+
+  async query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
+    const result = await this.pool.query(sql, params)
+    return result.rows as T[]
   }
 }
