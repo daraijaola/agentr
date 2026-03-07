@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { bridgeManager } from '@agentr/core'
 import { randomUUID } from 'crypto'
+import { agentFactory } from '@agentr/factory'
 
 export const authRoutes = new Hono()
 
@@ -23,7 +24,7 @@ authRoutes.post(
   }
 )
 
-// Step 2  OTP submitted, verify and activate session
+// Step 2  OTP verified, auto-provision agent (mock payment)
 authRoutes.post(
   '/verify-otp',
   zValidator('json', z.object({
@@ -33,14 +34,23 @@ authRoutes.post(
     code: z.string().length(5),
   })),
   async (c) => {
-    const { tenantId, phoneCodeHash, code } = c.req.valid('json')
+    const { tenantId, phone, phoneCodeHash, code } = c.req.valid('json')
 
     try {
       const ok = await bridgeManager.verifyOtp(tenantId, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
-      return c.json({ success: true, tenantId, message: 'Agent session active' })
+
+      // MOCK PAYMENT  auto-provision immediately
+      // TODO: replace with real TON payment check in Phase 2
+      await agentFactory.provision(tenantId, phone)
+
+      return c.json({
+        success: true,
+        tenantId,
+        message: 'Agent provisioned and live',
+        mock_payment: true,
+      })
     } catch (err) {
-      // 2FA required
       if (String(err).includes('2FA_REQUIRED')) {
         return c.json({ success: false, error: '2FA_REQUIRED', tenantId }, 202)
       }
@@ -54,15 +64,25 @@ authRoutes.post(
   '/verify-2fa',
   zValidator('json', z.object({
     tenantId: z.string(),
+    phone: z.string(),
     password: z.string().min(1),
   })),
   async (c) => {
-    const { tenantId, password } = c.req.valid('json')
+    const { tenantId, phone, password } = c.req.valid('json')
 
     try {
       const ok = await bridgeManager.verify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
-      return c.json({ success: true, tenantId, message: 'Agent session active' })
+
+      // MOCK PAYMENT  auto-provision immediately
+      await agentFactory.provision(tenantId, phone)
+
+      return c.json({
+        success: true,
+        tenantId,
+        message: 'Agent provisioned and live',
+        mock_payment: true,
+      })
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500)
     }
