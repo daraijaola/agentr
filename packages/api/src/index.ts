@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
 import { healthRoutes } from './routes/health.js'
+import { agentFactory } from '@agentr/factory'
 
 const app = new Hono()
 
@@ -19,6 +20,11 @@ app.onError((err, c) => {
 })
 
 const port = Number(process.env['API_PORT'] ?? 3000)
+
+// Init factory + resume active agents on startup
+agentFactory.init().then(() => {
+  agentFactory.resumeAll().catch(console.error)
+})
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`[AGENTR API] Running on http://localhost:${port}`)
