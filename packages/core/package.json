@@ -13,6 +13,7 @@
   "dependencies": {
     "telegram": "github:TONresistor/gramjs#34b6b63",
     "@mariozechner/pi-ai": "latest",
+    "@sinclair/typebox": "^0.34.48",
     "@ton/ton": "^15.0.0",
     "@ton/core": "^0.62.0",
     "@ton/crypto": "^3.3.0",

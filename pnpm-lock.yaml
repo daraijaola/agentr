@@ -63,6 +63,9 @@ importers:
       '@mariozechner/pi-ai':
         specifier: latest
         version: 0.56.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)
+      '@sinclair/typebox':
+        specifier: ^0.34.48
+        version: 0.34.48
       '@ston-fi/sdk':
         specifier: latest
         version: 2.7.0(@ston-fi/api@0.31.0)(@ton/ton@15.4.0(@ton/core@0.62.1(@ton/crypto@3.3.0))(@ton/crypto@3.3.0))
