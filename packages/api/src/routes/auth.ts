@@ -7,14 +7,12 @@ import { agentFactory } from '@agentr/factory'
 
 export const authRoutes = new Hono()
 
-// Step 1  phone submitted, send OTP via Telegram MTProto
 authRoutes.post(
   '/request-otp',
   zValidator('json', z.object({ phone: z.string().min(10) })),
   async (c) => {
     const { phone } = c.req.valid('json')
     const tenantId = randomUUID()
-
     try {
       const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)
       return c.json({ success: true, tenantId, phoneCodeHash, phone })
@@ -24,7 +22,6 @@ authRoutes.post(
   }
 )
 
-// Step 2  OTP verified, auto-provision agent (mock payment)
 authRoutes.post(
   '/verify-otp',
   zValidator('json', z.object({
@@ -35,31 +32,21 @@ authRoutes.post(
   })),
   async (c) => {
     const { tenantId, phone, phoneCodeHash, code } = c.req.valid('json')
-
     try {
       const ok = await bridgeManager.verifyOtp(tenantId, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
-
-      // MOCK PAYMENT  auto-provision immediately
-      // TODO: replace with real TON payment check in Phase 2
       await agentFactory.provision(tenantId, phone)
-
-      return c.json({
-        success: true,
-        tenantId,
-        message: 'Agent provisioned and live',
-        mock_payment: true,
-      })
+      return c.json({ success: true, tenantId, message: 'Agent provisioned and live', mock_payment: true })
     } catch (err) {
       if (String(err).includes('2FA_REQUIRED')) {
         return c.json({ success: false, error: '2FA_REQUIRED', tenantId }, 202)
       }
+      console.error('[verify-otp ERROR]', err)
       return c.json({ success: false, error: String(err) }, 500)
     }
   }
 )
 
-// Step 2b  2FA password if needed
 authRoutes.post(
   '/verify-2fa',
   zValidator('json', z.object({
@@ -69,21 +56,13 @@ authRoutes.post(
   })),
   async (c) => {
     const { tenantId, phone, password } = c.req.valid('json')
-
     try {
       const ok = await bridgeManager.verify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
-
-      // MOCK PAYMENT  auto-provision immediately
       await agentFactory.provision(tenantId, phone)
-
-      return c.json({
-        success: true,
-        tenantId,
-        message: 'Agent provisioned and live',
-        mock_payment: true,
-      })
+      return c.json({ success: true, tenantId, message: 'Agent provisioned and live', mock_payment: true })
     } catch (err) {
+      console.error('[verify-2fa ERROR]', err)
       return c.json({ success: false, error: String(err) }, 500)
     }
   }
