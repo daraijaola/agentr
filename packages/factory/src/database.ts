@@ -66,6 +66,16 @@ export class Database {
   }
 
   //  Tenants
+  async upsertTenant(data: { id: string; userId: string; phone: string; walletAddress: string; walletMnemonicEnc: string; plan?: string }): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO tenants (id, user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE
+       SET user_id = $2, phone = $3, wallet_address = $4, wallet_mnemonic_enc = $5, updated_at = NOW()`,
+      [data.id, data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'starter']
+    )
+  }
+
   async createTenant(data: {
     userId: string
     phone: string

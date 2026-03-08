@@ -2,7 +2,7 @@ export interface AgentConfig {
   tenantId: string
   userId: string
   telegramPhone: string
-  llmProvider: 'anthropic' | 'openai' | 'groq'
+  llmProvider: 'anthropic' | 'openai' | 'moonshot'
   walletAddress?: string
 }
 

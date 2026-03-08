@@ -16,7 +16,7 @@ export const tonGetAddressExecutor: ToolExecutor<{}> = async (
   _context
 ): Promise<ToolResult> => {
   try {
-    const address = getWalletAddress();
+    const address = (context as Record<string, unknown>)["walletAddress"] as string | undefined;
 
     if (!address) {
       return {

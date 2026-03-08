@@ -1,7 +1,6 @@
 import type { AgentConfig } from '@agentr/core'
 import { AgentRuntime, WalletService, bridgeManager, registerMVPTools } from '@agentr/core'
 import type { LLMProvider } from '@agentr/core'
-import { attachMessageListener } from './listener.js'
 import { DockerProvisioner } from './docker.js'
 import { Database } from './database.js'
 import path from 'path'
@@ -88,12 +87,10 @@ export class AgentFactory {
         db: null as never,
         chatId: me?.id.toString() ?? '',
         tenantId: dbTenantId,
-        walletAddress: address,
-        walletAddress: address,
       })
     }
 
-    if (tgClient) attachMessageListener(dbTenantId, tgClient, runtime)
+    // runtime.start() — not needed
     this.runtimes.set(dbTenantId, runtime)
     await this.db.updateAgentStatus(dbTenantId, 'running')
 
@@ -106,9 +103,8 @@ export class AgentFactory {
       id: string
       phone: string
       wallet_address: string
-      wallet_mnemonic_enc: string
     }>(
-      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc
+      `SELECT t.id, t.phone, t.wallet_address
        FROM tenants t
        JOIN agent_instances ai ON ai.tenant_id = t.id
        WHERE t.status = 'active' AND ai.status = 'running'`
@@ -133,8 +129,6 @@ export class AgentFactory {
           db: null as never,
           chatId: me?.id.toString() ?? '',
           tenantId: tenant.id,
-          walletAddress: tenant.wallet_address,
-          walletAddress: tenant.wallet_address,
         })
         // runtime.start() — not needed
         this.runtimes.set(tenant.id, runtime)

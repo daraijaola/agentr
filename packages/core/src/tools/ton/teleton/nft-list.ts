@@ -59,7 +59,7 @@ export const nftListExecutor: ToolExecutor<NftListParams> = async (
   _context
 ): Promise<ToolResult> => {
   try {
-    const address = params.address || getWalletAddress();
+    const address = params.address || ((context as Record<string, unknown>)["walletAddress"] as string | undefined);
     if (!address) {
       return {
         success: false,
