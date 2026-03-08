@@ -88,7 +88,7 @@ export class AgentFactory {
       })
     }
 
-    await runtime.start()
+    // runtime.start() — not needed
     this.runtimes.set(dbTenantId, runtime)
     await this.db.updateAgentStatus(dbTenantId, 'running')
 
@@ -128,7 +128,7 @@ export class AgentFactory {
           chatId: me?.id.toString() ?? '',
           tenantId: tenant.id,
         })
-        await runtime.start()
+        // runtime.start() — not needed
         this.runtimes.set(tenant.id, runtime)
         console.log(`[AgentFactory] Resumed: ${tenant.id}`)
       } catch (err) {
