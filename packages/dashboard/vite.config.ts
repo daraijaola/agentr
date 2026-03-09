@@ -11,4 +11,7 @@ export default defineConfig({
       '/health': 'http://localhost:3001',
     },
   },
+  define: {
+    __API_URL__: JSON.stringify(process.env.VITE_API_URL || ''),
+  },
 })

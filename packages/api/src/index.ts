@@ -5,10 +5,12 @@ import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
 import { healthRoutes } from './routes/health.js'
 import { agentFactory } from '@agentr/factory'
+import { cors } from 'hono/cors'
 
 const app = new Hono()
 
 app.use('*', logger())
+app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }))
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)

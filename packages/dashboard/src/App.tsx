@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 type Screen = 'phone' | 'otp' | 'twofa' | 'provisioning' | 'live'
 interface AgentState { tenantId: string; phoneCodeHash: string; phone: string; username?: string; firstName?: string; tools?: number }
+const API = typeof __API_URL__ !== 'undefined' ? __API_URL__ : ''
 async function post(path: string, body: object) {
-  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const res = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   return res.json()
 }
 export default function App() {
@@ -28,7 +29,7 @@ export default function App() {
     for (let a = 0; a < 20; a++) {
       await new Promise(r => setTimeout(r, 1500))
       try {
-        const data = await (await fetch(`/agent/status/${tenantId}`)).json()
+        const data = await (await fetch(`${API}/agent/status/${tenantId}`)).json()
         if (data.status === 'online') {
           const saved = { tenantId, phone: agent?.phone ?? phone, username: data.telegram?.username, firstName: data.telegram?.firstName, tools: data.tools, phoneCodeHash: '' }
           setAgent(saved); localStorage.setItem('agentr_tenant', JSON.stringify(saved)); setScreen('live'); return

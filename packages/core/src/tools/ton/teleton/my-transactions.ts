@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-import { loadWallet, getCachedTonClient } from "../../../ton/wallet-service.js";
+import { getCachedTonClient } from "../../../ton/wallet-service.js";
 import { Address } from "@ton/core";
 import { formatTransactions } from "../../../ton/format-transactions.js";
 import { getErrorMessage } from "../../../utils/errors.js";
@@ -35,15 +35,15 @@ export const tonMyTransactionsExecutor: ToolExecutor<MyTransactionsParams> = asy
   try {
     const { limit = 10 } = params;
 
-    const walletData = loadWallet();
-    if (!walletData) {
+    const walletAddress = (_context as Record<string, unknown>)["walletAddress"] as string;
+    if (!walletAddress) {
       return {
         success: false,
         error: "Wallet not initialized. Contact admin to generate wallet.",
       };
     }
 
-    const addressObj = Address.parse(walletData.address);
+    const addressObj = Address.parse(walletAddress);
 
     const client = await getCachedTonClient();
 

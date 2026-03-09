@@ -2,8 +2,11 @@ import { LLMClient } from '../llm/client.js'
 import type { LLMConfig, ChatMessage } from '../llm/client.js'
 import { ToolRegistry } from './tool-registry.js'
 import type { AgentConfig } from '../types/index.js'
+import { loadWorkspace } from '../soul/loader.js'
+
 const MAX_ITER = 10
 const MAX_SIZE = 8000
+
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
 export interface AgentResponse { content: string; toolCalls?: Array<{ name: string; input: Record<string, unknown> }> }
 
@@ -15,10 +18,41 @@ export class AgentRuntime {
   private llm: LLMClient
   readonly tools: ToolRegistry
   private conversations = new Map<string, ChatMessage[]>()
-  constructor(private config: AgentConfig, llmConfig: LLMConfig) { this.llm = new LLMClient(llmConfig); this.tools = new ToolRegistry() }
-  private hist(chatId: string): ChatMessage[] { if (!this.conversations.has(chatId)) this.conversations.set(chatId, []); return this.conversations.get(chatId)! }
-  private trunc(s: string): string { return s.length <= MAX_SIZE ? s : s.slice(0, MAX_SIZE) + '\n...[truncated]' }
-  private sys(): string { return [`You are an AI agent running on the Telegram account @${this.config.telegramPhone}.`, `You have access to tools to take real actions on Telegram and TON blockchain.`, `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`, `IMPORTANT: When a user messages you directly, they ARE the owner of this account. You are their assistant.`, `When sending messages, use the username or phone number directly as chatId (e.g. '@username' or '+2348012345678').`, `To send a message to someone, use telegram_send_message with their @username as chatId.`, `Never ask for a chatId — resolve it from the username the user gives you.`, `Always be helpful, concise, and action-oriented. Respond in plain English.`, `If a tool fails, explain briefly and try an alternative.`].join('\n') }
+
+  constructor(private config: AgentConfig, llmConfig: LLMConfig) {
+    this.llm = new LLMClient(llmConfig)
+    this.tools = new ToolRegistry()
+  }
+
+  private hist(chatId: string): ChatMessage[] {
+    if (!this.conversations.has(chatId)) this.conversations.set(chatId, [])
+    return this.conversations.get(chatId)!
+  }
+
+  private trunc(s: string): string {
+    return s.length <= MAX_SIZE ? s : s.slice(0, MAX_SIZE) + '\n...[truncated]'
+  }
+
+  private async sys(): Promise<string> {
+    let workspace = ''
+    try { workspace = await loadWorkspace(this.config.tenantId) } catch { /* not ready */ }
+
+    const base = [
+      `You are an AI agent running on the Telegram account @${this.config.telegramPhone}.`,
+      `You have access to tools to take real actions on Telegram and TON blockchain.`,
+      `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
+      `IMPORTANT: When a user messages you directly, they ARE the owner of this account. You are their assistant.`,
+      `When sending messages, use the username or phone number directly as chatId.`,
+      `To send a message to someone, use telegram_send_message with their @username as chatId.`,
+      `Never ask for a chatId — resolve it from the username the user gives you.`,
+      `Always be helpful, concise, and action-oriented. Respond in plain English.`,
+      `If a tool fails, explain briefly and try an alternative.`,
+      `You have a memory_write tool — use it to save important facts, contacts, or decisions to MEMORY.md.`,
+    ].join('\n')
+
+    return workspace ? `${workspace}\n\n---\n\n${base}` : base
+  }
+
   async processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
@@ -26,10 +60,11 @@ export class AgentRuntime {
     const tools = this.tools.list().map(t => ({ name: t.name, description: t.description, inputSchema: t.parameters }))
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
+    const systemPrompt = await this.sys()
     try {
       while (iters < MAX_ITER) {
         iters++
-        const res = await this.llm.chat({ systemPrompt: this.sys(), messages, tools: tools.length > 0 ? tools : undefined })
+        const res = await this.llm.chat({ systemPrompt, messages, tools: tools.length > 0 ? tools : undefined })
         messages = stripReasoning(res.messages)
         if (res.toolCalls.length === 0) { finalResponse = res.text; break }
         for (const tc of res.toolCalls) {
@@ -51,6 +86,7 @@ export class AgentRuntime {
     this.conversations.set(chatId, messages.slice(-40))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
   }
+
   async stop(): Promise<void> { this.conversations.clear() }
   resetConversation(chatId: string): void { this.conversations.delete(chatId) }
   getConversationLength(chatId: string): number { return this.hist(chatId).length }

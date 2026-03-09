@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-import { loadWallet } from "../../../ton/wallet-service.js";
+// loadWallet removed — import { loadWallet } from "../../../ton/wallet-service.js";
 import { tonapiFetch } from "../../../constants/api-endpoints.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -37,8 +37,8 @@ export const jettonBalancesExecutor: ToolExecutor<JettonBalancesParams> = async 
   _context
 ): Promise<ToolResult> => {
   try {
-    const walletData = loadWallet();
-    if (!walletData) {
+    const walletAddress = (_context as Record<string, unknown>)["walletAddress"] as string;
+    if (!walletAddress) {
       return {
         success: false,
         error: "Wallet not initialized. Contact admin to generate wallet.",
@@ -46,7 +46,7 @@ export const jettonBalancesExecutor: ToolExecutor<JettonBalancesParams> = async 
     }
 
     // Fetch jetton balances from TonAPI
-    const response = await tonapiFetch(`/accounts/${walletData.address}/jettons`);
+    const response = await tonapiFetch(`/accounts/${walletAddress}/jettons`);
 
     if (!response.ok) {
       return {
