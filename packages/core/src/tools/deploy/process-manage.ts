@@ -3,7 +3,7 @@ import { execSync, spawnSync } from "child_process"
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs"
 import path from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
-import { getWorkspaceRoot } from "../../workspace/index.js"
+import { getWorkspaceRoot } from "../../../workspace/index.js"
 const SESSIONS_ROOT = "/root/agentr/sessions"
 const LEGACY_WORKSPACE_ROOT = "/tmp/agentr-workspace"
 
