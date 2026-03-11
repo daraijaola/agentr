@@ -23,6 +23,7 @@ export class AgentFactory {
       anthropic: process.env['ANTHROPIC_API_KEY'] ?? '',
       openai:    process.env['OPENAI_API_KEY'] ?? '',
       moonshot:  process.env['MOONSHOT_API_KEY'] ?? '',
+      'openai-codex': process.env['OPENAI_CODEX_ACCESS_TOKEN'] ?? '',
     }
     return {
       provider,
@@ -89,7 +90,6 @@ export class AgentFactory {
         chatId: me?.id.toString() ?? '',
         tenantId: dbTenantId,
         walletAddress: address,
-        walletAddress: address,
       })
     }
 
@@ -133,7 +133,6 @@ export class AgentFactory {
           db: null as never,
           chatId: me?.id.toString() ?? '',
           tenantId: tenant.id,
-          walletAddress: tenant.wallet_address,
           walletAddress: tenant.wallet_address,
         })
         // runtime.start() — not needed

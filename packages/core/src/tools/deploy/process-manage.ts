@@ -1,10 +1,62 @@
 import { Type } from "@sinclair/typebox"
 import { execSync, spawnSync } from "child_process"
-import { existsSync, readFileSync } from "fs"
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs"
 import path from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
 const SESSIONS_ROOT = "/root/agentr/workspaces"
+const LEGACY_WORKSPACE_ROOT = "/tmp/agentr-workspace"
+
+type ProcessRegistry = Record<string, { file: string; interpreter: "node" | "python3" | "bash"; env: Record<string, string> }>
+
+function registryPathForTenant(tenantId: string): string {
+  return path.join(SESSIONS_ROOT, tenantId, ".agentr-processes.json")
+}
+
+function readRegistry(tenantId: string): ProcessRegistry {
+  try {
+    const p = registryPathForTenant(tenantId)
+    if (!existsSync(p)) return {}
+    const raw = readFileSync(p, "utf8")
+    return JSON.parse(raw) as ProcessRegistry
+  } catch {
+    return {}
+  }
+}
+
+function writeRegistry(tenantId: string, registry: ProcessRegistry): void {
+  const dir = path.join(SESSIONS_ROOT, tenantId)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(registryPathForTenant(tenantId), JSON.stringify(registry, null, 2), "utf8")
+}
+
+function resolveTenantScriptPath(tenantId: string, file: string): { workspaceDir: string; filePath: string } {
+  const normalized = file.trim().replace(/^\/+/, "")
+
+  const candidates = [
+    {
+      workspaceDir: path.join(SESSIONS_ROOT, tenantId),
+      filePath: path.join(path.join(SESSIONS_ROOT, tenantId), normalized),
+    },
+    {
+      workspaceDir: path.join(SESSIONS_ROOT, tenantId),
+      filePath: path.join(path.join(SESSIONS_ROOT, tenantId), path.basename(normalized)),
+    },
+    {
+      workspaceDir: path.join(LEGACY_WORKSPACE_ROOT, tenantId),
+      filePath: path.join(path.join(LEGACY_WORKSPACE_ROOT, tenantId), normalized),
+    },
+    {
+      workspaceDir: LEGACY_WORKSPACE_ROOT,
+      filePath: path.join(LEGACY_WORKSPACE_ROOT, normalized),
+    },
+  ]
+
+  const found = candidates.find((c) => existsSync(c.filePath))
+  if (found) return found
+
+  return candidates[0]
+}
 
 function tenantProcessName(tenantId: string, name: string): string {
   // Namespaced so tenants cant touch each other
@@ -43,8 +95,7 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
   if (!tenantId) return { success: false, error: "No tenantId in context" }
 
   const { name, file, env = {}, interpreter } = params
-  const workspaceDir = path.join(SESSIONS_ROOT, tenantId)
-  const filePath = path.join(workspaceDir, path.basename(file))
+  const { workspaceDir, filePath } = resolveTenantScriptPath(tenantId, file)
 
   if (!existsSync(filePath)) {
     return { success: false, error: `File not found in workspace: ${file}. Use workspace_write to create it first.` }
@@ -77,15 +128,24 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
     const status = execSync(`pm2 show ${pmName} 2>&1`, { encoding: "utf8" })
     const isOnline = status.includes("online")
 
+    const registry = readRegistry(tenantId)
+    registry[name] = { file, interpreter: interp, env }
+    writeRegistry(tenantId, registry)
+
+    if (!isOnline) {
+      return {
+        success: false,
+        error: `Process "${name}" failed to stay online after start. Use process_logs to debug.`,
+      }
+    }
+
     return {
       success: true,
       data: {
         name: pmName,
         file: filePath,
-        status: isOnline ? "online" : "check logs",
-        message: isOnline
-          ? `Process "${name}" is live. Use process_logs to check output.`
-          : `Process started but may have crashed. Use process_logs to debug.`,
+        status: "online",
+        message: `Process "${name}" is live. Use process_logs to check output.`,
       },
     }
   } catch (err) {
@@ -140,7 +200,33 @@ export const processRestartExecutor: ToolExecutor<ProcessRestartParams> = async 
     await new Promise(r => setTimeout(r, 1000))
     return { success: true, data: { message: `Process "${params.name}" restarted.` } }
   } catch (err) {
-    return { success: false, error: `Could not restart: ${String(err)}` }
+    const registry = readRegistry(tenantId)
+    const saved = registry[params.name]
+    if (!saved) {
+      return { success: false, error: `Could not restart: ${String(err)}` }
+    }
+
+    const restarted = await processStartExecutor(
+      {
+        name: params.name,
+        file: saved.file,
+        interpreter: saved.interpreter,
+        env: saved.env,
+      },
+      _context,
+    )
+
+    if (!restarted.success) {
+      return { success: false, error: `Restart fallback failed: ${String(restarted.error ?? 'unknown')}` }
+    }
+
+    return {
+      success: true,
+      data: {
+        ...restarted.data,
+        message: `Process "${params.name}" was missing and has been started from saved config.`,
+      },
+    }
   }
 }
 

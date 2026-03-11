@@ -50,17 +50,20 @@ export class AgentRuntime {
       `3) After every tool call, verify the returned result indicates success before responding.`,
       `4) If a tool fails, retry with a different valid approach before giving up.`,
       `5) Do not ask for chatId. Resolve from provided username/phone and call the tool.`,
-      `6) Ask confirmation only for TON transfer/payment actions.`,
+      `6) Ask confirmation only for TON transfer/payment actions. For non-funds tasks, execute without asking permission.`,
+      `7) For bot creation, if username is missing, generate a valid unique username ending with "bot" and proceed.`,
       ``,
       `EXECUTION FLOW:`,
       `Step 1: Call the relevant tool immediately.`,
       `Step 2: Check tool result for success or failure.`,
       `Step 3: If success, respond with concrete proof from tool output.`,
       `Step 4: If failure, retry or return exact blocking error from tool output.`,
+      `Step 5: Never output a generic completion message; include what tool ran and result evidence.`,
       ``,
       `FORBIDDEN OUTPUTS:`,
       `- "I'll do that now" without a tool call`,
       `- "Would you like me to..." when action is possible`,
+      `- Asking user to repeat trigger phrases like "say fix it" or "say restart it" for non-funds actions`,
       `- Any completion claim without tool evidence`,
       ``,
       `Use memory_write to store durable facts in MEMORY.md when relevant.`,
@@ -108,7 +111,11 @@ export class AgentRuntime {
       finalResponse = `Sorry, I ran into an error: ${String(e)}. Please try again.`
     }
 
-    if (!finalResponse) finalResponse = 'I completed the requested actions.'
+    if (!finalResponse) {
+      finalResponse = allTC.length > 0
+        ? 'Actions were attempted via tools, but I do not have a verified final summary to report. Please ask me to check logs/status now.'
+        : 'I do not have enough information to execute yet. Provide the target task details and I will run the tools immediately.'
+    }
     this.conversations.set(chatId, messages.slice(-40))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
   }
