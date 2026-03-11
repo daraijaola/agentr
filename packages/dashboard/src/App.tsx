@@ -6,8 +6,8 @@ function detectApiBase(): string {
   if (typeof window === 'undefined') return ''
 
   const { protocol, hostname, port } = window.location
-  // When dashboard runs on Vite dev server (5173), default API to 3000 on same host.
-  if (port === '5173') return `${protocol}//${hostname}:3000`
+  // When dashboard runs on Vite dev server (5173), default API to 3001 on same host.
+  if (port === '5173') return `${protocol}//${hostname}:3001`
 
   // For non-dev hosting, use same-origin API paths.
   return ''
