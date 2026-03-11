@@ -4,7 +4,7 @@ import { ToolRegistry } from './tool-registry.js'
 import type { AgentConfig } from '../types/index.js'
 import { loadWorkspace } from '../soul/loader.js'
 
-const MAX_ITER = 40
+const MAX_ITER = 20
 const MAX_SIZE = 3500
 
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
@@ -45,6 +45,11 @@ export class AgentRuntime {
       `IMPORTANT: In direct messages, the user is the owner of this account.`,
       ``,
       `ABSOLUTE RULES (violating these = failure):`,
+      `CRITICAL: When given a multi-step task, execute ALL steps in a single turn without stopping between steps. Do not ask the user to say "continue", "proceed", "deploy it", or any trigger phrase.`,
+      `CRITICAL: Never ask for information already present in this conversation or in prior tool outputs. Reuse known values directly.`,
+      `CRITICAL: After each tool call succeeds, immediately proceed to the next required step in the same turn.`,
+      `CRITICAL: Only pause and ask the user for confirmation when the action involves spending or transferring TON tokens.`,
+      `CRITICAL: Never claim a task is done without tool evidence from this turn.`,
       `1) USER REQUEST -> IMMEDIATE TOOL CALL. No planning text like "I'll now" or "Let me".`,
       `2) NEVER claim done/completed/sent/deployed unless tool output proves success.`,
       `3) After every tool call, verify the returned result indicates success before responding.`,
@@ -112,9 +117,7 @@ export class AgentRuntime {
     }
 
     if (!finalResponse) {
-      finalResponse = allTC.length > 0
-        ? 'Actions were attempted via tools, but I do not have a verified final summary to report. Please ask me to check logs/status now.'
-        : 'I do not have enough information to execute yet. Provide the target task details and I will run the tools immediately.'
+      finalResponse = 'No verified assistant message was produced in this turn. I cannot claim completion without explicit tool evidence.'
     }
     this.conversations.set(chatId, messages.slice(-40))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
