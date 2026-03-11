@@ -55,7 +55,8 @@ export const workspaceWriteExecutor: ToolExecutor<WorkspaceWriteParams> = async 
     const { path, content, encoding = "utf-8", append = false, createDirs = true } = params;
 
     // Validate the path (no extension enforcement - fix from audit)
-    const validated = validateWritePath(path);
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
+    const validated = validateWritePath(path, tenantId);
 
     // Create parent directories if needed
     const parentDir = dirname(validated.absolutePath);

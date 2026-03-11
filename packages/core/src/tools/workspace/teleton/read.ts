@@ -43,7 +43,8 @@ export const workspaceReadExecutor: ToolExecutor<WorkspaceReadParams> = async (
     const { path, encoding = "utf-8", maxSize = 1024 * 1024 } = params;
 
     // Validate the path
-    const validated = validateReadPath(path);
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
+    const validated = validateReadPath(path, tenantId);
 
     // Check file size
     const stats = lstatSync(validated.absolutePath);

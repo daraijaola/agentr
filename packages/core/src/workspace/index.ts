@@ -1,16 +1,22 @@
 import path from 'path'
+import { existsSync, lstatSync } from 'fs'
 
+const SESSIONS_ROOT = '/root/agentr/workspaces'
 export const WORKSPACE_ROOT = '/tmp/agentr-workspace'
 
 export const WORKSPACE_PATHS = {
   root: WORKSPACE_ROOT,
-  files: path.join(WORKSPACE_ROOT, 'files'),
-  temp: path.join(WORKSPACE_ROOT, 'temp'),
+  files: WORKSPACE_ROOT + '/files',
+  temp: WORKSPACE_ROOT + '/temp',
 }
 
 export const MAX_FILE_SIZES = {
-  text: 1024 * 1024,
-  binary: 10 * 1024 * 1024,
+  read: 1024 * 1024,
+  write: 512 * 1024,
+}
+
+export function getWorkspaceRoot(tenantId: string): string {
+  return path.join(SESSIONS_ROOT, tenantId)
 }
 
 export class WorkspaceSecurityError extends Error {
@@ -20,38 +26,43 @@ export class WorkspaceSecurityError extends Error {
   }
 }
 
-export function validatePath(filePath: string): string {
-  const resolved = path.resolve(WORKSPACE_ROOT, filePath)
-  if (!resolved.startsWith(WORKSPACE_ROOT)) {
-    throw new WorkspaceSecurityError(`Path traversal denied: ${filePath}`)
-  }
+export interface ValidatedPath {
+  absolutePath: string
+  relativePath: string
+  exists: boolean
+}
+
+function resolveRoot(tenantId?: string): string {
+  return tenantId ? getWorkspaceRoot(tenantId) : WORKSPACE_ROOT
+}
+
+export function validatePath(filePath: string, tenantId?: string): string {
+  const root = resolveRoot(tenantId)
+  const resolved = path.resolve(root, filePath)
+  if (!resolved.startsWith(root)) throw new WorkspaceSecurityError('Path traversal denied: ' + filePath)
   return resolved
 }
 
-export function validateReadPath(filePath: string): string {
-  return validatePath(filePath)
+export function validateWritePath(filePath: string, tenantId?: string): ValidatedPath {
+  const root = resolveRoot(tenantId)
+  const resolved = path.resolve(root, filePath)
+  if (!resolved.startsWith(root)) throw new WorkspaceSecurityError('Path traversal denied: ' + filePath)
+  return { absolutePath: resolved, relativePath: path.relative(root, resolved), exists: existsSync(resolved) }
 }
 
-export function validateWritePath(filePath: string): string {
-  return validatePath(filePath)
+export function validateReadPath(filePath: string, tenantId?: string): ValidatedPath {
+  return validateWritePath(filePath, tenantId)
 }
 
-export class WorkspaceManager {
-  private files = new Map<string, { name: string; content: string; createdAt: Date; updatedAt: Date }>()
+export function validateDeletePath(filePath: string, tenantId?: string): ValidatedPath {
+  return validateWritePath(filePath, tenantId)
+}
 
-  write(name: string, content: string): void {
-    const now = new Date()
-    this.files.set(name, { name, content, createdAt: this.files.get(name)?.createdAt ?? now, updatedAt: now })
-  }
-  read(name: string): string | null { return this.files.get(name)?.content ?? null }
-  list() { return Array.from(this.files.values()) }
-  delete(name: string): boolean { return this.files.delete(name) }
-  info(name: string) { return this.files.get(name) ?? null }
-  rename(oldName: string, newName: string): boolean {
-    const file = this.files.get(oldName)
-    if (!file) return false
-    this.files.set(newName, { ...file, name: newName })
-    this.files.delete(oldName)
-    return true
-  }
+export function validateDirectory(dirPath: string, tenantId?: string): ValidatedPath {
+  const root = resolveRoot(tenantId)
+  const resolved = path.resolve(root, dirPath)
+  if (!resolved.startsWith(root)) throw new WorkspaceSecurityError('Path traversal denied: ' + dirPath)
+  const exists = existsSync(resolved)
+  if (exists && !lstatSync(resolved).isDirectory()) throw new WorkspaceSecurityError('Not a directory: ' + dirPath)
+  return { absolutePath: resolved, relativePath: path.relative(root, resolved), exists }
 }

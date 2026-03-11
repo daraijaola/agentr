@@ -1,7 +1,7 @@
 import fs from "fs/promises"
 import path from "path"
 
-const WORKSPACE_ROOT = "/root/agentr/sessions"
+const WORKSPACE_ROOT = "/root/agentr/workspaces"
 
 const WORKSPACE_FILES = [
   "SOUL.md",
@@ -13,7 +13,7 @@ const WORKSPACE_FILES = [
 ] as const
 
 export async function loadWorkspace(tenantId: string): Promise<string> {
-  const workspacePath = path.join(WORKSPACE_ROOT, tenantId, "workspace")
+  const workspacePath = path.join(WORKSPACE_ROOT, tenantId)
   const sections: string[] = []
 
   for (const file of WORKSPACE_FILES) {
@@ -33,7 +33,7 @@ export async function loadWorkspace(tenantId: string): Promise<string> {
 }
 
 export function getWorkspacePath(tenantId: string): string {
-  return path.join(WORKSPACE_ROOT, tenantId, "workspace")
+  return path.join(WORKSPACE_ROOT, tenantId)
 }
 
 export function getSafeFilePath(tenantId: string, filename: string): string {

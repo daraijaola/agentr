@@ -29,5 +29,29 @@ export async function registerMVPTools(
   const { tools: botTools } = await import('./bot/teleton/index.js')
   adaptTeletonTools(botTools, ctx).forEach((t) => registry.register(t))
 
+  // -- Workspace: file operations (per-tenant sandboxed)
+  const { tools: wsTools } = await import('./workspace/teleton/index.js')
+  adaptTeletonTools(wsTools, ctx).forEach((t) => registry.register(t))
+
+  // -- Deploy: code_execute + process management
+  const { tools: deployTools } = await import('./deploy/index.js')
+  deployTools.forEach((entry) => {
+    registry.register({
+      name: entry.tool.name,
+      description: entry.tool.description,
+      parameters: entry.tool.parameters as Record<string, unknown>,
+      execute: async (params: Record<string, unknown>) => {
+        try {
+          return await (entry.executor as Function)(params, {
+            tenantId: ctx.tenantId,
+            walletAddress: ctx.walletAddress,
+          })
+        } catch (err) {
+          return { success: false, error: String(err) }
+        }
+      },
+    })
+  })
+
   console.log(`[ToolLoader] Registered ${registry.list().length} tools for tenant: ${ctx.tenantId}`)
 }

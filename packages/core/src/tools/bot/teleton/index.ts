@@ -1,9 +1,6 @@
-/**
- * Bot tools — inline mode integration for plugins.
- */
-
-import type { ToolEntry } from "../types.js";
-import { botInlineSendTool, botInlineSendExecutor } from "./inline-send.js";
+import type { ToolEntry } from "../types.js"
+import { botInlineSendTool, botInlineSendExecutor } from "./inline-send.js"
+import { createTelegramBotTool, createTelegramBotExecutor } from "./create-bot.js"
 
 export const tools: ToolEntry[] = [
   {
@@ -11,4 +8,9 @@ export const tools: ToolEntry[] = [
     executor: botInlineSendExecutor,
     scope: "always",
   },
-];
+  {
+    tool: createTelegramBotTool,
+    executor: createTelegramBotExecutor as never,
+    scope: "dm-only",
+  },
+]

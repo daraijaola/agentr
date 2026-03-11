@@ -49,7 +49,7 @@ interface FileInfo {
   modified?: string;
 }
 
-function listDir(dirPath: string, recursive: boolean, filter: string): FileInfo[] {
+function listDir(dirPath: string, recursive: boolean, filter: string, rootPath?: string): FileInfo[] {
   const results: FileInfo[] = [];
 
   try {
@@ -64,7 +64,7 @@ function listDir(dirPath: string, recursive: boolean, filter: string): FileInfo[
       if (filter === "files" && isDir) continue;
       if (filter === "directories" && !isDir) continue;
 
-      const relativePath = fullPath.replace(WORKSPACE_ROOT + "/", "");
+      const relativePath = fullPath.replace((rootPath ?? WORKSPACE_ROOT) + "/", "");
 
       results.push({
         name: entry,
@@ -76,7 +76,7 @@ function listDir(dirPath: string, recursive: boolean, filter: string): FileInfo[
 
       // Recursive listing
       if (recursive && isDir) {
-        results.push(...listDir(fullPath, recursive, filter));
+        results.push(...listDir(fullPath, recursive, filter, rootPath));
       }
     }
   } catch {
@@ -94,7 +94,8 @@ export const workspaceListExecutor: ToolExecutor<WorkspaceListParams> = async (
     const { path = "", recursive = false, filter = "all" } = params;
 
     // Validate the path
-    const validated = validateDirectory(path || WORKSPACE_ROOT);
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
+    const validated = validateDirectory(path || "", tenantId);
 
     if (!validated.exists) {
       return {
@@ -107,7 +108,8 @@ export const workspaceListExecutor: ToolExecutor<WorkspaceListParams> = async (
       };
     }
 
-    const files = listDir(validated.absolutePath, recursive, filter);
+    const workspaceRoot = validated.absolutePath
+    const files = listDir(workspaceRoot, recursive, filter, workspaceRoot);
 
     return {
       success: true,
@@ -115,7 +117,7 @@ export const workspaceListExecutor: ToolExecutor<WorkspaceListParams> = async (
         path: validated.relativePath || "/",
         files,
         count: files.length,
-        workspaceRoot: WORKSPACE_ROOT,
+        workspaceRoot: validated.absolutePath,
       },
     };
   } catch (error) {
