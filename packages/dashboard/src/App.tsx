@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react'
 type Screen = 'phone' | 'otp' | 'twofa' | 'provisioning' | 'live'
 interface AgentState { tenantId: string; phoneCodeHash: string; phone: string; username?: string; firstName?: string; tools?: number }
-const API = typeof __API_URL__ !== 'undefined' ? __API_URL__ : ''
+function detectApiBase(): string {
+  if (typeof __API_URL__ !== 'undefined' && __API_URL__) return __API_URL__
+  if (typeof window === 'undefined') return ''
+
+  const { protocol, hostname, port } = window.location
+  // When dashboard runs on Vite dev server (5173), default API to 3001 on same host.
+  if (port === '5173') return `${protocol}//${hostname}:3001`
+
+  // For non-dev hosting, use same-origin API paths.
+  return ''
+}
+
+const API = detectApiBase()
 async function post(path: string, body: object) {
   const res = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   return res.json()

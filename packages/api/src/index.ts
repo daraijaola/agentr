@@ -21,7 +21,7 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500)
 })
 
-const port = Number(process.env['API_PORT'] ?? 3000)
+const port = Number(process.env['API_PORT'] ?? 3001)
 
 // Init factory + resume active agents on startup
 agentFactory.init().then(() => {

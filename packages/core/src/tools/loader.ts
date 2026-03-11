@@ -1,10 +1,9 @@
 import { adaptTeletonTools } from './adapter.js'
 import type { AdapterContext } from './adapter.js'
 import type { ToolRegistry } from '../agent/tool-registry.js'
+import { memoryWriteTool } from './memory-write.js'
 
-// MVP tool set — Teleton MIT tools adapted for AGENTR
-// Add more tool categories as we progress through phases
-
+// MVP tool set: Teleton tools adapted for AGENTR
 export async function registerMVPTools(
   registry: ToolRegistry,
   ctx: AdapterContext
@@ -51,6 +50,18 @@ export async function registerMVPTools(
         }
       },
     })
+  })
+
+  // -- Durable memory writes to MEMORY.md
+  registry.register({
+    name: memoryWriteTool.name,
+    description: memoryWriteTool.description,
+    parameters: memoryWriteTool.parameters,
+    execute: async (params: Record<string, unknown>) => {
+      return memoryWriteTool.execute(params as { content: string; mode: 'append' | 'overwrite' }, {
+        tenantId: ctx.tenantId,
+      })
+    },
   })
 
   console.log(`[ToolLoader] Registered ${registry.list().length} tools for tenant: ${ctx.tenantId}`)
