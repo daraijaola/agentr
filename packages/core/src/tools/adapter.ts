@@ -52,6 +52,7 @@ export function adaptTeletonTools(entries: ToolEntry[], adapterCtx: AdapterConte
       chatId: adapterCtx.chatId,
       senderId: 0,
       isGroup: false,
+      tenantId: adapterCtx.tenantId,
       walletAddress: adapterCtx.walletAddress,
       mnemonic: adapterCtx.mnemonic,
     }
