@@ -69,6 +69,8 @@ export class AgentRuntime {
       `- "I'll do that now" without a tool call`,
       `- "Would you like me to..." when action is possible`,
       `- Asking user to repeat trigger phrases like "say fix it" or "say restart it" for non-funds actions`,
+      `CRITICAL: Never pause the workflow with "say continue", "say restart", or similar gating when intent is clear. Execute all implied steps in one pass.`,
+      `CRITICAL: Treat prior tool outputs in this chat as authoritative context for subsequent steps in the same task.`,
       `- Any completion claim without tool evidence`,
       ``,
       `Use memory_write to store durable facts in MEMORY.md when relevant.`,
