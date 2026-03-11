@@ -3,6 +3,7 @@ import { execSync, spawnSync } from "child_process"
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs"
 import path from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
+import { getWorkspaceRoot } from "../../../workspace/index.js"
 
 const SESSIONS_ROOT = "/root/agentr/workspaces"
 const LEGACY_WORKSPACE_ROOT = "/tmp/agentr-workspace"
@@ -95,10 +96,17 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
   if (!tenantId) return { success: false, error: "No tenantId in context" }
 
   const { name, file, env = {}, interpreter } = params
-  const { workspaceDir, filePath } = resolveTenantScriptPath(tenantId, file)
-
+  const workspaceDir = getWorkspaceRoot(tenantId)
+  const rawFile = String(file ?? "").trim()
+  const absoluteWorkspacePrefix = path.resolve(workspaceDir) + path.sep
+  const filePath = path.isAbsolute(rawFile)
+    ? path.resolve(rawFile)
+    : path.resolve(workspaceDir, rawFile)
+  if (!(filePath === path.resolve(workspaceDir) || filePath.startsWith(absoluteWorkspacePrefix))) {
+    return { success: false, error: `Invalid workspace path: ${file}` }
+  }
   if (!existsSync(filePath)) {
-    return { success: false, error: `File not found in workspace: ${file}. Use workspace_write to create it first.` }
+    return { success: false, error: `File not found in workspace: ${file}. Expected under ${workspaceDir}. Use workspace_write first.` }
   }
 
   const pmName = tenantProcessName(tenantId, name)
