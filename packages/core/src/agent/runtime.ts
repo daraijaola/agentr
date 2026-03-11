@@ -93,11 +93,16 @@ export class AgentRuntime {
       while (iters < MAX_ITER) {
         iters++
         const res = await this.llm.chat({ systemPrompt, messages, tools: tools.length > 0 ? tools : undefined })
-        messages = stripReasoning(res.messages)
+        const nextMessages = stripReasoning(res.messages)
+        messages = stripReasoning([...messages, ...nextMessages])
 
-        if (res.toolCalls.length === 0) {
+        if (res.toolCalls.length === 0 && res.text.trim().length > 0) {
           finalResponse = res.text
           break
+        }
+
+        if (res.toolCalls.length === 0) {
+          continue
         }
 
         for (const tc of res.toolCalls) {
