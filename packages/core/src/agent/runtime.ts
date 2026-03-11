@@ -38,19 +38,36 @@ export class AgentRuntime {
     try { workspace = await loadWorkspace(this.config.tenantId) } catch { /* not ready */ }
 
     const base = [
-      `You are an AI agent running on the Telegram account @${this.config.telegramPhone}.`,
-      `You have access to tools to take real actions on Telegram and TON blockchain.`,
+      `⚠️ CRITICAL BEHAVIORAL OVERRIDE ⚠️`,
+      `You are an EXECUTION ENGINE running on Telegram account @${this.config.telegramPhone}.`,
+      `You have tools to take real actions on Telegram and TON blockchain.`,
       `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
-      `IMPORTANT: When a user messages you directly, they ARE the owner of this account. You are their assistant.`,
-      `When sending messages, use the username or phone number directly as chatId.`,
-      `To send a message to someone, use telegram_send_message with their @username as chatId.`,
-      `Never ask for a chatId — resolve it from the username the user gives you.`,
-      `CRITICAL: When asked to DO something, you MUST call the appropriate tool immediately. Do NOT describe what you will do — just do it by calling the tool.`,
-      `CRITICAL: Never say "I'll now do X" or "deploying now" without actually calling the tool in the same response. Action = tool call, not words.`,
-      `CRITICAL: If you have all the information needed, call the tool NOW. Do not ask for confirmation unless money/TON is involved.`,
-      `Always be helpful, concise, and action-oriented. Respond in plain English.`,
-      `If a tool fails, explain briefly and try an alternative.`,
-      `You have a memory_write tool — use it to save important facts, contacts, or decisions to MEMORY.md.`,
+      `IMPORTANT: In direct messages, the user is the owner of this account.`,
+      ``,
+      `ABSOLUTE RULES (violating these = failure):`,
+      `1) USER REQUEST -> IMMEDIATE TOOL CALL. No planning text like "I'll now" or "Let me".`,
+      `2) NEVER claim done/completed/sent/deployed unless tool output proves success.`,
+      `3) After every tool call, verify the returned result indicates success before responding.`,
+      `4) If a tool fails, retry with a different valid approach before giving up.`,
+      `5) Do not ask for chatId. Resolve from provided username/phone and call the tool.`,
+      `6) Ask confirmation only for TON transfer/payment actions. For non-funds tasks, execute without asking permission.`,
+      `7) For bot creation, if username is missing, generate a valid unique username ending with "bot" and proceed.`,
+      ``,
+      `EXECUTION FLOW:`,
+      `Step 1: Call the relevant tool immediately.`,
+      `Step 2: Check tool result for success or failure.`,
+      `Step 3: If success, respond with concrete proof from tool output.`,
+      `Step 4: If failure, retry or return exact blocking error from tool output.`,
+      `Step 5: Never output a generic completion message; include what tool ran and result evidence.`,
+      ``,
+      `FORBIDDEN OUTPUTS:`,
+      `- "I'll do that now" without a tool call`,
+      `- "Would you like me to..." when action is possible`,
+      `- Asking user to repeat trigger phrases like "say fix it" or "say restart it" for non-funds actions`,
+      `- Any completion claim without tool evidence`,
+      ``,
+      `Use memory_write to store durable facts in MEMORY.md when relevant.`,
+      `Respond concise and factual after execution.`,
     ].join('\n')
 
     return workspace ? `${workspace}\n\n---\n\n${base}` : base
@@ -64,20 +81,28 @@ export class AgentRuntime {
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
     const systemPrompt = await this.sys()
+
     try {
       while (iters < MAX_ITER) {
         iters++
         const res = await this.llm.chat({ systemPrompt, messages, tools: tools.length > 0 ? tools : undefined })
         messages = stripReasoning(res.messages)
-        if (res.toolCalls.length === 0) { finalResponse = res.text; break }
+
+        if (res.toolCalls.length === 0) {
+          finalResponse = res.text
+          break
+        }
+
         for (const tc of res.toolCalls) {
           allTC.push({ name: tc.name, input: tc.input })
           let txt: string
           try {
             const result = await this.tools.execute(tc.name, tc.input)
-            txt = result.success ? this.trunc(JSON.stringify(result.data ?? 'done')) : `Tool attempted but failed: ${result.error}. Continue helping the user.`
+            txt = result.success
+              ? this.trunc(JSON.stringify({ success: true, data: result.data ?? 'done' }))
+              : this.trunc(JSON.stringify({ success: false, error: result.error ?? 'unknown_error' }))
           } catch (e) {
-            txt = `Tool ${tc.name} could not be executed: ${String(e)}. Continue helping the user with what you know.`
+            txt = this.trunc(JSON.stringify({ success: false, error: `Tool ${tc.name} execution error: ${String(e)}` }))
           }
           messages = stripReasoning([...messages, { role: 'tool', content: txt, tool_call_id: tc.id, name: tc.name }])
         }
@@ -85,120 +110,12 @@ export class AgentRuntime {
     } catch (e) {
       finalResponse = `Sorry, I ran into an error: ${String(e)}. Please try again.`
     }
-    if (!finalResponse) finalResponse = 'I completed the requested actions.'
-    this.conversations.set(chatId, messages.slice(-40))
-    return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
-  }
 
-  async stop(): Promise<void> { this.conversations.clear() }
-  resetConversation(chatId: string): void { this.conversations.delete(chatId) }
-  getConversationLength(chatId: string): number { return this.hist(chatId).length }
-}const systemMessages = [
-  `You are an autonomous AI agent. You EXECUTE, you don't ask permission.`,
-  ``,
-  `IRON RULES:`,
-  `1. USER SAYS → YOU DO IT. Call the tool IMMEDIATELY. No "I'll now..." - just DO.`,
-  `2. NEVER say "done/completed/finished" without tool call results proving it.`,
-  `3. After EVERY tool call: CHECK the result. If failed, retry differently.`,
-  `4. Interpret vague requests: "make a bot" = create Telegram bot + write code + deploy fully.`,
-  `5. Money/TON: confirm once. Everything else: ZERO confirmation, just execute.`,
-  ``,
-  `FORBIDDEN:`,
-  `- "I'll now do X" ❌ Just do it`,
-  `- "Let me help..." ❌ Just help`,  
-  `- "Would you like..." ❌ NO. Do it`,
-  `- Responses over 100 words without tool calls`,
-  ``,
-  `EXECUTION: Call tool → verify result → respond with proof OR retry. Always.`,
-]
-import { LLMClient } from '../llm/client.js'
-import type { LLMConfig, ChatMessage } from '../llm/client.js'
-import { ToolRegistry } from './tool-registry.js'
-import type { AgentConfig } from '../types/index.js'
-import { loadWorkspace } from '../soul/loader.js'
-
-const MAX_ITER = 40
-const MAX_SIZE = 3500
-
-export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
-export interface AgentResponse { content: string; toolCalls?: Array<{ name: string; input: Record<string, unknown> }> }
-
-function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
-  return msgs.map(m => { const { reasoning_content, ...rest } = m as Record<string, unknown>; void reasoning_content; return rest as ChatMessage })
-}
-
-export class AgentRuntime {
-  private llm: LLMClient
-  readonly tools: ToolRegistry
-  private conversations = new Map<string, ChatMessage[]>()
-
-  constructor(private config: AgentConfig, llmConfig: LLMConfig) {
-    this.llm = new LLMClient(llmConfig)
-    this.tools = new ToolRegistry()
-  }
-
-  private hist(chatId: string): ChatMessage[] {
-    if (!this.conversations.has(chatId)) this.conversations.set(chatId, [])
-    return this.conversations.get(chatId)!
-  }
-
-  private trunc(s: string): string {
-    return s.length <= MAX_SIZE ? s : s.slice(0, MAX_SIZE) + '\n...[truncated]'
-  }
-
-  private async sys(): Promise<string> {
-    let workspace = ''
-    try { workspace = await loadWorkspace(this.config.tenantId) } catch { /* not ready */ }
-
-    const base = [
-      `You are an AI agent running on the Telegram account @${this.config.telegramPhone}.`,
-      `You have access to tools to take real actions on Telegram and TON blockchain.`,
-      `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
-      `IMPORTANT: When a user messages you directly, they ARE the owner of this account. You are their assistant.`,
-      `When sending messages, use the username or phone number directly as chatId.`,
-      `To send a message to someone, use telegram_send_message with their @username as chatId.`,
-      `Never ask for a chatId — resolve it from the username the user gives you.`,
-      `CRITICAL: When asked to DO something, you MUST call the appropriate tool immediately. Do NOT describe what you will do — just do it by calling the tool.`,
-      `CRITICAL: Never say "I'll now do X" or "deploying now" without actually calling the tool in the same response. Action = tool call, not words.`,
-      `CRITICAL: If you have all the information needed, call the tool NOW. Do not ask for confirmation unless money/TON is involved.`,
-      `Always be helpful, concise, and action-oriented. Respond in plain English.`,
-      `If a tool fails, explain briefly and try an alternative.`,
-      `You have a memory_write tool — use it to save important facts, contacts, or decisions to MEMORY.md.`,
-    ].join('\n')
-
-    return workspace ? `${workspace}\n\n---\n\n${base}` : base
-  }
-
-  async processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
-    const { chatId, userMessage, userName } = opts
-    const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
-    let messages: ChatMessage[] = [...stripReasoning(this.hist(chatId)), { role: 'user', content: envelope }]
-    const tools = this.tools.list().map(t => ({ name: t.name, description: t.description, inputSchema: t.parameters }))
-    let iters = 0, finalResponse = ''
-    const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
-    const systemPrompt = await this.sys()
-    try {
-      while (iters < MAX_ITER) {
-        iters++
-        const res = await this.llm.chat({ systemPrompt, messages, tools: tools.length > 0 ? tools : undefined })
-        messages = stripReasoning(res.messages)
-        if (res.toolCalls.length === 0) { finalResponse = res.text; break }
-        for (const tc of res.toolCalls) {
-          allTC.push({ name: tc.name, input: tc.input })
-          let txt: string
-          try {
-            const result = await this.tools.execute(tc.name, tc.input)
-            txt = result.success ? this.trunc(JSON.stringify(result.data ?? 'done')) : `Tool attempted but failed: ${result.error}. Continue helping the user.`
-          } catch (e) {
-            txt = `Tool ${tc.name} could not be executed: ${String(e)}. Continue helping the user with what you know.`
-          }
-          messages = stripReasoning([...messages, { role: 'tool', content: txt, tool_call_id: tc.id, name: tc.name }])
-        }
-      }
-    } catch (e) {
-      finalResponse = `Sorry, I ran into an error: ${String(e)}. Please try again.`
+    if (!finalResponse) {
+      finalResponse = allTC.length > 0
+        ? 'Actions were attempted via tools, but I do not have a verified final summary to report. Please ask me to check logs/status now.'
+        : 'I do not have enough information to execute yet. Provide the target task details and I will run the tools immediately.'
     }
-    if (!finalResponse) finalResponse = 'I completed the requested actions.'
     this.conversations.set(chatId, messages.slice(-40))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
   }
