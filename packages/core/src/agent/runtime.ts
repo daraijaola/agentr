@@ -64,6 +64,8 @@ export class AgentRuntime {
       `- "I'll do that now" without a tool call`,
       `- "Would you like me to..." when action is possible`,
       `- Asking user to repeat trigger phrases like "say fix it" or "say restart it" for non-funds actions`,
+      `CRITICAL: Never pause the workflow with "say continue", "say restart", or similar gating when intent is clear. Execute all implied steps in one pass.`,
+      `CRITICAL: Treat prior tool outputs in this chat as authoritative context for subsequent steps in the same task.`,
       `- Any completion claim without tool evidence`,
       ``,
       `Use memory_write to store durable facts in MEMORY.md when relevant.`,
@@ -112,9 +114,7 @@ export class AgentRuntime {
     }
 
     if (!finalResponse) {
-      finalResponse = allTC.length > 0
-        ? 'Actions were attempted via tools, but I do not have a verified final summary to report. Please ask me to check logs/status now.'
-        : 'I do not have enough information to execute yet. Provide the target task details and I will run the tools immediately.'
+      finalResponse = 'No verified assistant message was produced in this turn. I cannot claim completion without explicit tool evidence.'
     }
     this.conversations.set(chatId, messages.slice(-40))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
