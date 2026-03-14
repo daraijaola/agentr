@@ -117,6 +117,8 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
     else if (file.endsWith(".py")) interp = "python3"
     else interp = "bash"
   }
+  // Always normalize "python" -> "python3"
+  if (interp === "python") interp = "python3"
 
   // Build env string for PM2
   // Write env vars to a shell wrapper script
