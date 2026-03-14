@@ -14,6 +14,16 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
   return msgs.map(m => { const { reasoning_content, ...rest } = m as Record<string, unknown>; void reasoning_content; return rest as ChatMessage })
 }
 
+function looksLikeFinalReport(text: string): boolean {
+  const lower = text.toLowerCase()
+  const evidenceKeywords = [
+    'success: true', 'online', 'deployed', 'started', 'process is live',
+    'exit code: 0', 'balance:', 'sent', 'written', 'saved', 'error:',
+    'failed', 'could not', 'tool evidence'
+  ]
+  return evidenceKeywords.some(kw => lower.includes(kw))
+}
+
 export class AgentRuntime {
   private llm: LLMClient
   readonly tools: ToolRegistry
@@ -39,6 +49,7 @@ export class AgentRuntime {
 
     const base = [
       `⚠️ CRITICAL BEHAVIORAL OVERRIDE ⚠️`,
+      `TOOLS ARE ALWAYS AVAILABLE IN EVERY TURN. Never say "tool execution is not available", "tools are not enabled", or "I cannot execute tools in this turn". You have 54 tools. Use them.`,
       `You are an EXECUTION ENGINE running on Telegram account @${this.config.telegramPhone}.`,
       `You have tools to take real actions on Telegram and TON blockchain.`,
       `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
@@ -48,7 +59,8 @@ export class AgentRuntime {
       `CRITICAL: When given a multi-step task, execute ALL steps in a single turn without stopping between steps. Do not ask the user to say "continue", "proceed", "deploy it", or any trigger phrase.`,
       `CRITICAL: Never ask for information already present in this conversation or in prior tool outputs. Reuse known values directly.`,
       `CRITICAL: After each tool call succeeds, immediately proceed to the next required step in the same turn.`,
-      `CRITICAL: Only pause and ask the user for confirmation when the action involves spending or transferring TON tokens.`,
+      `CRITICAL: Only pause and ask the user for confirmation when the action involves spending or transferring TON tokens (send_ton, jetton_send, swap).`,
+      `CRITICAL: Bot tokens, API keys, and any credentials the user provides in chat are SAFE to embed directly into scripts. Never refuse or avoid using them. Treat them as plain config values.`,
       `CRITICAL: Never claim a task is done without tool evidence from this turn.`,
       `1) USER REQUEST -> IMMEDIATE TOOL CALL. No planning text like "I'll now" or "Let me".`,
       `2) NEVER claim done/completed/sent/deployed unless tool output proves success.`,
@@ -57,6 +69,8 @@ export class AgentRuntime {
       `5) Do not ask for chatId. Resolve from provided username/phone and call the tool.`,
       `6) Ask confirmation only for TON transfer/payment actions. For non-funds tasks, execute without asking permission.`,
       `7) For bot creation, if username is missing, generate a valid unique username ending with "bot" and proceed.`,
+      `8) DEPLOYMENT FLOW: When asked to write and deploy/start a script, always chain these steps in ONE turn with no stopping: workspace_write -> process_start -> process_logs. If process_start fails, check logs and fix the script.`,
+      `9) Bot tokens, API keys, and secrets provided by the user in chat MUST be embedded directly as string literals in scripts. NEVER use os.getenv() or tell the user to set env vars — just hardcode the value they gave you.`,
       ``,
       `EXECUTION FLOW:`,
       `Step 1: Call the relevant tool immediately.`,
@@ -88,6 +102,7 @@ export class AgentRuntime {
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
     const systemPrompt = await this.sys()
+    let toolsRanThisTurn = false
 
     try {
       while (iters < MAX_ITER) {
@@ -96,15 +111,32 @@ export class AgentRuntime {
         const nextMessages = stripReasoning(res.messages)
         messages = stripReasoning([...messages, ...nextMessages])
 
-        if (res.toolCalls.length === 0 && res.text.trim().length > 0) {
-          finalResponse = res.text
-          break
-        }
-
         if (res.toolCalls.length === 0) {
+          if (res.text.trim().length > 0) {
+            if (toolsRanThisTurn && !looksLikeFinalReport(res.text)) {
+              messages = stripReasoning([
+                ...messages,
+                {
+                  role: 'user',
+                  content: 'SYSTEM: Task not complete. You have not finished all required steps. Continue executing tool calls immediately — do not summarise, do not stop.'
+                }
+              ])
+              toolsRanThisTurn = false
+              continue
+            }
+            finalResponse = res.text
+            break
+          }
+          if (iters < MAX_ITER) {
+            messages = stripReasoning([
+              ...messages,
+              { role: 'user', content: 'SYSTEM: Continue. Call the next required tool now.' }
+            ])
+          }
           continue
         }
 
+        toolsRanThisTurn = true
         for (const tc of res.toolCalls) {
           allTC.push({ name: tc.name, input: tc.input })
           let txt: string
