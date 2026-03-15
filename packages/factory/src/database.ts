@@ -168,6 +168,89 @@ export class Database {
     )
   }
 
+  async startFreeTrial(tenantId: string): Promise<void> {
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await this.pool.query(
+      `UPDATE tenants SET trial_expires_at = $1, is_trial_used = true, plan = 'starter', status = 'active' WHERE id = $2`,
+      [expires, tenantId]
+    )
+  }
+
+  async getTrialStatus(tenantId: string): Promise<{ expired: boolean; expiresAt: Date | null; phone: string }> {
+    const rows = await this.pool.query(
+      `SELECT trial_expires_at, is_trial_used, phone FROM tenants WHERE id = $1`,
+      [tenantId]
+    )
+    const row = rows.rows[0]
+    if (!row) return { expired: true, expiresAt: null, phone: '' }
+    const expired = row.trial_expires_at ? new Date(row.trial_expires_at) < new Date() : false
+    return { expired, expiresAt: row.trial_expires_at, phone: row.phone }
+  }
+
+  async blockPhone(phone: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE tenants SET status = 'suspended' WHERE phone = $1`,
+      [phone]
+    )
+  }
+
+  async isPhoneBlocked(phone: string): Promise<boolean> {
+    const rows = await this.pool.query(
+      `SELECT status, is_trial_used FROM tenants WHERE phone = $1 ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    )
+    const row = rows.rows[0]
+    if (!row) return false
+    return row.status === 'suspended' && row.is_trial_used === true
+  }
+
+
+  async getCredits(tenantId: string): Promise<number> {
+    const rows = await this.pool.query(
+      'SELECT credits FROM tenants WHERE id = $1',
+      [tenantId]
+    )
+    return rows.rows[0]?.credits ?? 0
+  }
+
+  async deductCredits(tenantId: string, amount: number, description: string, model?: string): Promise<{ success: boolean; remaining: number }> {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      const res = await client.query(
+        'UPDATE tenants SET credits = credits - $1 WHERE id = $2 AND credits >= $1 RETURNING credits',
+        [amount, tenantId]
+      )
+      if (res.rows.length === 0) {
+        await client.query('ROLLBACK')
+        const cur = await client.query('SELECT credits FROM tenants WHERE id = $1', [tenantId])
+        return { success: false, remaining: cur.rows[0]?.credits ?? 0 }
+      }
+      await client.query(
+        'INSERT INTO credit_transactions (tenant_id, amount, type, description, model) VALUES ($1, $2, $3, $4, $5)',
+        [tenantId, -amount, 'usage', description, model ?? null]
+      )
+      await client.query('COMMIT')
+      return { success: true, remaining: res.rows[0].credits }
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
+    }
+  }
+
+  async addCredits(tenantId: string, amount: number, description: string): Promise<number> {
+    const res = await this.pool.query(
+      'UPDATE tenants SET credits = credits + $1 WHERE id = $2 RETURNING credits',
+      [amount, tenantId]
+    )
+    await this.pool.query(
+      'INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, $2, $3, $4)',
+      [tenantId, amount, 'topup', description]
+    )
+    return res.rows[0]?.credits ?? 0
+  }
   async query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
     const result = await this.pool.query(sql, params)
     return result.rows as T[]

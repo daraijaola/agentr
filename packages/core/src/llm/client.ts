@@ -14,7 +14,7 @@ const URLS: Record<string, string> = {
 const DEFAULTS: Record<string, string> = {
   anthropic: 'claude-sonnet-4-5',
   openai: 'gpt-4o',
-  moonshot: 'moonshot-v1-8k',
+  moonshot: 'moonshot-v1-128k',
   'openai-codex': 'gpt-5.3-codex'
 }
 
