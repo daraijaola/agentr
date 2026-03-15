@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AGENTR Admin</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap");
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#FAF9F5;--bg2:#F4F3EE;--surface:#fff;
+    --border:#E5E5E0;--border2:#D4D0C8;
+    --blue:#0098EA;--blue-bg:#EDF7FE;
+    --text:#1A1916;--text2:#6B6760;--text3:#A8A49C;
+    --ok:#16a34a;--ok-bg:#f0fdf4;--ok-bdr:#bbf7d0;
+    --err:#dc2626;--err-bg:#fef2f2;
+    --warn:#b45309;--warn-bg:#fffbeb;--warn-bdr:#fcd34d;
+    --black:#141413;--r:8px;
+    --serif:"DM Serif Display",Georgia,serif;
+    --f:"Inter",system-ui,sans-serif;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f);-webkit-font-smoothing:antialiased}
+  
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 48px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-size:17px;font-weight:600;letter-spacing:-.3px}
+  .logo em{font-style:normal;color:var(--blue)}
+  .admin-badge{font-size:11px;font-weight:500;background:var(--warn-bg);border:1px solid var(--warn-bdr);color:var(--warn);padding:4px 12px;border-radius:100px}
+  
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px;box-shadow:0 2px 8px rgba(26,25,22,.04),0 12px 32px rgba(26,25,22,.06)}
+  .login-title{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:-.5px;margin-bottom:6px}
+  .login-sub{font-size:14px;color:var(--text2);margin-bottom:28px}
+  label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+  input[type=password]{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--f);font-size:15px;padding:11px 14px;outline:none;margin-bottom:14px;transition:border-color .15s,box-shadow .15s}
+  input[type=password]:focus{border-color:var(--blue);background:var(--surface);box-shadow:0 0 0 3px rgba(0,152,234,.1)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;font-family:var(--f);font-size:14px;font-weight:500;padding:11px 22px;border-radius:var(--r);border:none;cursor:pointer;transition:all .15s}
+  .btn-black{background:var(--black);color:#fff;width:100%}
+  .btn-black:hover{background:#2a2a28}
+  .btn-ok{background:var(--ok);color:#fff;font-size:12px;padding:6px 14px}
+  .btn-ok:hover{opacity:.85}
+  .btn-err{background:var(--err);color:#fff;font-size:12px;padding:6px 14px}
+  .btn-err:hover{opacity:.85}
+  .btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2);font-size:12px;padding:6px 14px}
+  .btn-outline:hover{background:var(--bg2)}
+  .err{background:var(--err-bg);border:1px solid #fecaca;border-radius:var(--r);padding:11px 14px;font-size:13px;color:var(--err);margin-top:10px}
+
+  .main{max-width:1100px;margin:0 auto;padding:48px 24px}
+  .tabs{display:flex;gap:4px;margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:0}
+  .tab{font-size:14px;font-weight:500;padding:10px 20px;cursor:pointer;border:none;background:none;font-family:var(--f);color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+  .section-title{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:20px}
+  
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:12px}
+  .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+  .card-title{font-size:16px;font-weight:600;margin-bottom:4px}
+  .card-meta{font-size:12px;color:var(--text3)}
+  .card-body{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+  .card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px}
+  .badge-blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(0,152,234,.2)}
+  .badge-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-bdr)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-bdr)}
+  .badge-err{background:var(--err-bg);color:var(--err);border:1px solid #fecaca}
+  .tag{display:inline-block;font-size:11px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:2px 8px;border-radius:100px}
+  
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+  .field-item{display:flex;flex-direction:column;gap:3px}
+  .field-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)}
+  .field-value{font-size:13px;color:var(--text)}
+  .field-value a{color:var(--blue);text-decoration:none}
+  .field-value a:hover{text-decoration:underline}
+  
+  .notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--f);font-size:13px;padding:10px 14px;outline:none;resize:vertical;min-height:60px;margin-bottom:8px}
+  .notes-input:focus{border-color:var(--blue);background:var(--surface)}
+  
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .stat-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:6px}
+  .stat-value{font-size:28px;font-weight:600;letter-spacing:-.5px}
+  .stat-sub{font-size:12px;color:var(--text3);margin-top:2px}
+  
+  .empty{text-align:center;padding:48px;color:var(--text2);font-size:14px}
+  .empty-title{font-family:var(--serif);font-size:20px;margin-bottom:6px;color:var(--text)}
+  
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+  .toast.show{opacity:1}
+  
+  @media(max-width:600px){
+    .topbar{padding:16px 20px}
+    .main{padding:24px 16px}
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .field-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo" style="margin-bottom:24px">AGENT<em>R</em></div>
+      <div class="login-title">Admin portal</div>
+      <div class="login-sub">Enter your admin password to continue.</div>
+      <label>Password</label>
+      <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+      <button class="btn btn-black" onclick="login()">Sign in</button>
+      <div id="login-err" style="display:none" class="err">Incorrect password.</div>
+    </div>
+  </div>
+</div>
+
+<div id="admin-screen" style="display:none">
+  <div class="topbar">
+    <div class="logo">AGENT<em>R</em></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="admin-badge">Admin Portal</span>
+      <button class="btn btn-outline" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+  
+  <div class="main">
+    <div id="stats-row" class="stats-grid"></div>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('pending')">Pending submissions</button>
+      <button class="tab" onclick="showTab('live')">Live agents</button>
+      <button class="tab" onclick="showTab('devs')">Developers</button>
+    </div>
+    
+    <div id="tab-pending"></div>
+    <div id="tab-live" style="display:none"></div>
+    <div id="tab-devs" style="display:none"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin.replace(':5173', ':3001')
+let pw = ''
+
+function login() {
+  pw = document.getElementById('pw-input').value
+  document.getElementById('login-err').style.display = 'none'
+  fetch(API + '/agent/admin/submissions?password=' + encodeURIComponent(pw))
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        document.getElementById('login-err').style.display = 'block'
+        return
+      }
+      document.getElementById('login-screen').style.display = 'none'
+      document.getElementById('admin-screen').style.display = 'block'
+      render(d)
+    })
+    .catch(() => { document.getElementById('login-err').style.display = 'block' })
+}
+
+function logout() {
+  pw = ''
+  document.getElementById('login-screen').style.display = 'block'
+  document.getElementById('admin-screen').style.display = 'none'
+  document.getElementById('pw-input').value = ''
+}
+
+function refresh() {
+  fetch(API + '/agent/admin/submissions?password=' + encodeURIComponent(pw))
+    .then(r => r.json())
+    .then(d => render(d))
+}
+
+function showTab(name) {
+  ['pending','live','devs'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none'
+  })
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['pending','live','devs'][i] === name)
+  })
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  setTimeout(() => el.classList.remove('show'), 2500)
+}
+
+async function approve(agentId, notes) {
+  const res = await fetch(API + '/agent/admin/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw, agentId, action: 'approve', reviewer_notes: notes })
+  })
+  const d = await res.json()
+  if (d.success) { toast('Agent approved and live'); refresh() }
+  else toast('Error: ' + d.error)
+}
+
+async function reject(agentId) {
+  if (!confirm('Remove this submission permanently?')) return
+  const res = await fetch(API + '/agent/admin/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw, agentId, action: 'reject' })
+  })
+  const d = await res.json()
+  if (d.success) { toast('Submission rejected'); refresh() }
+  else toast('Error: ' + d.error)
+}
+
+async function approveDev(devId) {
+  const res = await fetch(API + '/agent/admin/approve-dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw, devId, action: 'approve' })
+  })
+  const d = await res.json()
+  if (d.success) { toast('Developer approved'); refresh() }
+}
+
+async function rejectDev(devId) {
+  const res = await fetch(API + '/agent/admin/approve-dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw, devId, action: 'reject' })
+  })
+  const d = await res.json()
+  if (d.success) { toast('Developer rejected'); refresh() }
+}
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - new Date(ts)) / 1000)
+  if (diff < 60) return diff + 's ago'
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago'
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago'
+  return Math.floor(diff/86400) + 'd ago'
+}
+
+function render(data) {
+  const pending = data.pending || []
+  const live = data.live || []
+  const devs = data.devs || []
+  
+  // Stats
+  document.getElementById('stats-row').innerHTML = [
+    { label: 'Pending review', value: pending.length, sub: 'agent submissions', color: pending.length > 0 ? 'var(--warn)' : 'var(--text)' },
+    { label: 'Live agents', value: live.length, sub: 'in marketplace', color: 'var(--ok)' },
+    { label: 'Total developers', value: devs.length, sub: 'registered', color: 'var(--text)' },
+    { label: 'Approved devs', value: devs.filter(d => d.approved).length, sub: 'active', color: 'var(--blue)' },
+  ].map(s => `
+    <div class="stat-card">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value" style="color:${s.color}">${s.value}</div>
+      <div class="stat-sub">${s.sub}</div>
+    </div>
+  `).join('')
+
+  // Pending submissions
+  document.getElementById('tab-pending').innerHTML = pending.length === 0
+    ? '<div class="empty"><div class="empty-title">No pending submissions</div>All caught up.</div>'
+    : pending.map(a => `
+      <div class="card" id="card-${a.id}">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${a.name}</div>
+            <div class="card-meta">Submitted ${timeAgo(a.created_at)} &nbsp;·&nbsp; <span class="tag">${a.category}</span></div>
+          </div>
+          <span class="badge badge-warn">Pending review</span>
+        </div>
+        <div class="card-body">${a.description}</div>
+        <div class="field-row">
+          <div class="field-item">
+            <span class="field-label">Developer</span>
+            <span class="field-value">${a.dev_name || '—'} &nbsp; ${a.dev_email ? '<a href="mailto:'+a.dev_email+'">'+a.dev_email+'</a>' : ''}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">Telegram</span>
+            <span class="field-value">${a.dev_telegram || '—'}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">GitHub repo</span>
+            <span class="field-value">${a.github_url ? '<a href="'+a.github_url+'" target="_blank">'+a.github_url+'</a>' : '—'}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">Test account</span>
+            <span class="field-value">${a.test_account || '—'}</span>
+          </div>
+        </div>
+        ${a.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px">${a.notes}</div>` : ''}
+        <textarea class="notes-input" id="notes-${a.id}" placeholder="Reviewer notes (optional — shown to developer on approval)"></textarea>
+        <div class="card-actions">
+          <button class="btn btn-ok" onclick="approve('${a.id}', document.getElementById('notes-${a.id}').value)">Approve & publish</button>
+          <button class="btn btn-err" onclick="reject('${a.id}')">Reject</button>
+        </div>
+      </div>
+    `).join('')
+
+  // Live agents
+  document.getElementById('tab-live').innerHTML = live.length === 0
+    ? '<div class="empty"><div class="empty-title">No live agents yet</div>Approve a submission to get started.</div>'
+    : live.map(a => `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${a.name}</div>
+            <div class="card-meta"><span class="tag">${a.category}</span> &nbsp;·&nbsp; by ${a.dev_name || 'AGENTR'}</div>
+          </div>
+          <span class="badge badge-ok">Live</span>
+        </div>
+        <div class="field-row">
+          <div class="field-item">
+            <span class="field-label">Installs</span>
+            <span class="field-value" style="font-size:18px;font-weight:600;color:var(--blue)">${(a.installs||0).toLocaleString()}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">Rating</span>
+            <span class="field-value" style="font-size:18px;font-weight:600">${a.rating || '—'} ★</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-err" onclick="reject('${a.id}')">Remove from marketplace</button>
+        </div>
+      </div>
+    `).join('')
+
+  // Developers
+  document.getElementById('tab-devs').innerHTML = devs.length === 0
+    ? '<div class="empty"><div class="empty-title">No developers yet</div></div>'
+    : devs.map(d => `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${d.name}</div>
+            <div class="card-meta"><a href="mailto:${d.email}">${d.email}</a> &nbsp;·&nbsp; ${d.telegram_username || '—'} &nbsp;·&nbsp; <span class="tag">${d.category || 'General'}</span></div>
+          </div>
+          <span class="badge badge-blue">${d.category || 'Developer'}</span>
+        </div>
+        <div class="field-row">
+          <div class="field-item">
+            <span class="field-label">Registered</span>
+            <span class="field-value">${timeAgo(d.created_at)}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">Earnings</span>
+            <span class="field-value" style="color:var(--blue);font-weight:600">${(d.earnings_credits||0).toLocaleString()} credits</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">TON Wallet</span>
+            <span class="field-value" style="font-size:12px;word-break:break-all">${d.wallet_address || '—'}</span>
+          </div>
+          <div class="field-item">
+            <span class="field-label">Status</span>
+            <span class="field-value">${d.status}</span>
+          </div>
+        </div>
+
+      </div>
+    `).join('')
+}
+</script>
+</body>
+</html>

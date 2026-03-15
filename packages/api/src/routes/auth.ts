@@ -12,7 +12,12 @@ authRoutes.post(
   zValidator('json', z.object({ phone: z.string().min(10) })),
   async (c) => {
     const { phone } = c.req.valid('json')
-    const tenantId = randomUUID()
+    // Reuse existing active tenant for same phone
+    const existingRows = await agentFactory.getDb().query<any>(
+      'SELECT id FROM tenants WHERE phone = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
+      [phone, 'active']
+    )
+    const tenantId = (existingRows as any[]).length > 0 ? (existingRows as any[])[0].id : randomUUID()
     try {
       const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)
       return c.json({ success: true, tenantId, phoneCodeHash, phone })

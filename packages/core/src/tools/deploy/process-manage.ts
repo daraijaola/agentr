@@ -74,7 +74,7 @@ interface ProcessStartParams {
 
 export const processStartTool: Tool = {
   name: "process_start",
-  description: "Deploy and start a script as a persistent background process using PM2. The process survives restarts. Use this to deploy Telegram bots, servers, or any long-running script from your workspace.",
+  description: "Deploy and start a script as a persistent background process using PM2. The process survives restarts. Use this to deploy Telegram bots, servers, or any long-running script from your workspace. IMPORTANT: Always install dependencies via code_execute (bash: pip3 install ... or npm install ...) BEFORE calling this tool, or the process will crash.",
   parameters: Type.Object({
     name: Type.String({ description: "Short name for this process (e.g. mybot, server)" }),
     file: Type.String({ description: "Filename in your workspace to run (e.g. bot.js)" }),
