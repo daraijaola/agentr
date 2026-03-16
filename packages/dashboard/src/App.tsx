@@ -1356,14 +1356,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       flex-direction: column;
       overflow-y: auto;
     }
-    .sb-lbl {
-      font-size: 10px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text3);
-      padding: 14px 20px 6px;
-    }
+    .sb-lbl { display: none; }
     .sb-item {
       display: flex;
       align-items: center;
@@ -1566,6 +1559,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       display: grid;
       grid-template-columns: 200px 1fr;
       height: calc(100vh - 56px);
+      overflow: hidden;
     }
     .mobile-files-toggle {
       display: none;
@@ -2113,7 +2107,10 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       .live {
         display: flex;
         flex-direction: column;
-        padding-bottom: 64px; /* Space for bottom nav */
+        padding-bottom: 0;
+      }
+      .live .main:not(:has(.workspace-container)) {
+        padding-bottom: 64px;
       }
 
       /* Topbar mobile */
@@ -2127,20 +2124,14 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         padding-bottom: 8px;
       }
       .live-topbar-r {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: flex-end;
-        gap: 6px;
+        gap: 4px;
       }
-      .live-topbar-r .wallet-nav,
-      .live-topbar-r .tg-btn,
-      .live-topbar-r .disc-btn {
-        font-size: 11px;
-        padding: 5px 10px;
-      }
-      .status-badge {
-        font-size: 11px;
-        padding: 3px 8px;
-      }
+      .live-topbar-r .tg-btn { display: none; }
+      .live-topbar-r .disc-btn { display: none; }
+      .live-topbar-r > div[style*="credits"] { display: none; }
+      .status-badge { font-size: 10px; padding: 2px 6px; }
       .sidebar-toggle {
         display: block;
       }
@@ -2148,19 +2139,22 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       /* Sidebar - hidden by default on mobile, slide in when open */
       .sidebar {
         position: fixed;
-        top: 56px;
-        left: 0;
-        width: 220px;
-        height: calc(100vh - 56px - 64px);
-        z-index: 95;
+        top: 0; left: 0;
+        width: 75%; max-width: 300px;
+        height: 100vh;
+        z-index: 200;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
+        padding-top: 20px;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.12);
       }
-      .sidebar.mobile-open {
-        transform: translateX(0);
-      }
+      .sidebar.mobile-open { transform: translateX(0); }
       .sidebar-overlay {
         display: block;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 199;
       }
 
       /* Main content - full width */
@@ -2219,6 +2213,19 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       .workspace-container {
         grid-template-columns: 1fr;
         position: relative;
+        height: calc(100dvh - 56px - 64px);
+        display: flex;
+        flex-direction: column;
+      }
+      .ws-editor {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .ws-textarea {
+        flex: 1;
+        min-height: 150px;
       }
       .mobile-files-toggle {
         display: flex;
@@ -2228,7 +2235,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         top: 56px;
         left: 0;
         width: 260px;
-        height: calc(100vh - 56px - 64px);
+        height: calc(100dvh - 56px - 64px);
         z-index: 85;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
@@ -2357,57 +2364,6 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       }
     }
 
-    @media (max-width: 768px) {
-      .nav { padding: 14px 20px; }
-      .nav-r .nav-link, .nav-r > a { display: none; }
-      .mobile-menu-btn { display: block !important; }
-      .mobile-nav-menu.open { display: flex !important; }
-      .mobile-nav-overlay.open { display: block !important; }
-
-      .hero { grid-template-columns: 1fr; padding: 48px 20px 40px; gap: 40px; }
-      .hero-right { display: none; }
-      .hero-h1 { font-size: clamp(34px, 9vw, 48px); }
-      .hero-actions { flex-direction: column; align-items: stretch; }
-      .hero-actions .btn, .hero-actions a { width: 100%; justify-content: center; }
-
-      .ai-section { padding: 32px 20px; }
-      .ai-logos { gap: 16px; }
-      .how-inner { grid-template-columns: 1fr; }
-      .how-col { padding: 32px 20px; border-right: none; border-bottom: 1px solid var(--border); }
-      .how-col:last-child { border-bottom: none; }
-      .coming-section { padding: 48px 20px; }
-      .coming-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-      .footer { padding: 16px 20px; flex-direction: column; gap: 6px; text-align: center; }
-      .auth-card { padding: 28px 20px; }
-
-      .pricing-inner { padding: 0 16px !important; }
-      .plans-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
-
-      .live { grid-template-columns: 1fr !important; grid-template-rows: 56px 1fr !important; }
-      .sidebar {
-        position: fixed !important;
-        top: 56px; left: -220px; width: 220px;
-        height: calc(100vh - 56px);
-        z-index: 100;
-        transition: left 0.25s ease;
-        box-shadow: 4px 0 16px rgba(0,0,0,0.1);
-      }
-      .sidebar.open { left: 0 !important; }
-      .sidebar-overlay.open { display: block !important; }
-      .sidebar-toggle { display: flex !important; align-items: center; }
-      .live-topbar { padding: 0 16px; }
-      .live-topbar-r { gap: 6px; }
-      .tg-btn { font-size: 11px; padding: 6px 10px; }
-      .disc-btn { display: none; }
-      .main-body { padding: 24px 16px !important; }
-      .workspace-container { grid-template-columns: 1fr !important; }
-      .ws-files { display: none !important; }
-      .ws-files.mobile-open { display: block !important; position: fixed; z-index: 50; width: 240px; top: 56px; bottom: 0; box-shadow: 4px 0 16px rgba(0,0,0,0.1); }
-      .mobile-files-toggle { display: flex !important; }
-      .provider-grid { grid-template-columns: 1fr !important; }
-      .live-topbar-r .status-badge { font-size: 11px; padding: 3px 8px; }
-    }
-
     @media (max-width: 480px) {
       .coming-grid { grid-template-columns: 1fr; }
       .live-greeting { font-size: 22px !important; }
@@ -2444,6 +2400,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             {id === 'activity' && (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            )}
+            {id === 'marketplace' && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
             )}
             {id === 'bots' && (
@@ -2705,7 +2667,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
       {screen === 'pricing' && (
         <div className="pricing-page">
-          <div className="pricing-inner" style={{maxWidth:1200,margin:"0 auto",padding:"0 12px",width:"100%"}}>
+          <div className="pricing-inner" >
             <div style={{marginBottom:24}}><button className="back-btn" onClick={() => setScreen('otp')}>← Back</button></div>
             <div className="pricing-head">
               <div className="pricing-title">Choose your plan</div>
@@ -2721,7 +2683,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               )}
               <div className="pricing-sub">Start free for 24 hours, upgrade when ready. Your agent stays hosted even when credits run out.</div>
             </div>
-            <div className="plans-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,width:"100%"}}>
+            <div className="plans-grid" >
               {[
                 {id:'free',name:'Free Trial',price:'Free',period:'1 day',highlight:false,cta:'Start free',note:'ChatGPT Codex only. No credit card.',features:['24hr access','ChatGPT Codex model','Basic agent capabilities']},
                 {id:'starter',name:'Starter',price:'$15',period:'mo',highlight:false,cta:'Subscribe',note:'',features:['7,500 credits/mo','All models','Bots & mini apps','TON payments','Cocoon hosting']},
@@ -2778,7 +2740,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         <div className="live">
           <div className="live-topbar">
             <div style={{display:'flex',alignItems:'center'}}>
-              <button className="sidebar-toggle" onClick={() => setSidebarOpen(s => !s)} onClick={() => setSidebarOpen(s => !s)} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+              <button className="sidebar-toggle" onClick={() => setSidebarOpen(s => !s)} style={{display:"flex",alignItems:"center",background:"none",border:"none",fontSize:20,cursor:"pointer",padding:"8px",color:"var(--text)",marginRight:8}}>☰</button>
               <div className="logo">AGENT<em>R</em></div>
             </div>
             <div className="live-topbar-r">
@@ -2801,10 +2763,10 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
           </div>
 
           {/* Sidebar overlay for mobile */}
-          {sidebarOpen && <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} onClick={() => setSidebarOpen(false)} />}
+          {sidebarOpen && <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />}
 
           <div className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
-            <div className="sb-lbl">Agent</div>
+
             {sidebarItems.map(([id,label,avail]) => (
               <div key={id} className={`sb-item${liveTab===id?' active':''}${!avail?' locked':''}`} onClick={()=>{avail&&setLiveTab(id);setSidebarOpen(false);}}>
                 <span>{label}</span>
@@ -2875,7 +2837,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                     {t:'Mini Apps',d:'Build and deploy Telegram Mini Apps'},
                     {t:'TON Sites',d:'Deploy decentralized websites'},
                     {t:'Sub-agents',d:'Spawn specialized child agents'},
-                    {t:'Marketplace',d:'Publish and monetize agents'},
+                    
                   ].map(x=> (
                     <div key={x.t} className="live-coming-card">
                       <div className="lcc-title">{x.t}</div>
