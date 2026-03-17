@@ -64,5 +64,9 @@ export async function registerMVPTools(
     },
   })
 
+  // -- DNS: .ton domain tools
+  const { tools: dnsTools } = await import('./dns/teleton/index.js')
+  adaptTeletonTools(dnsTools, ctx).forEach((t) => registry.register(t))
+
   console.log(`[ToolLoader] Registered ${registry.list().length} tools for tenant: ${ctx.tenantId}`)
 }

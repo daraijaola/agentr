@@ -19,6 +19,13 @@ authRoutes.post(
     )
     const tenantId = (existingRows as any[]).length > 0 ? (existingRows as any[])[0].id : randomUUID()
     try {
+      // Clear stale session file if it exists - forces fresh auth
+      try {
+        const { unlinkSync, existsSync } = await import('fs')
+        const { join } = await import('path')
+        const sf = join('/root/agentr/sessions', tenantId + '.session')
+        if (existsSync(sf)) { unlinkSync(sf); console.log('[Auth] Cleared stale session for', tenantId) }
+      } catch {}
       const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)
       return c.json({ success: true, tenantId, phoneCodeHash, phone })
     } catch (err) {

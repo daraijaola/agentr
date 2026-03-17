@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { TonConnectUIProvider, TonConnectButton, useTonConnectUI, useTonAddress, useTonWallet } from '@tonconnect/ui-react'
 
-type Screen = 'landing' | 'phone' | 'otp' | 'twofa' | 'provisioning' | 'live' | 'pricing'
+type Screen = 'landing' | 'phone' | 'otp' | 'twofa' | 'provisioning' | 'live' | 'pricing' | 'setup'
 type LiveTab = 'overview' | 'workspace' | 'bots' | 'activity' | 'credits' | 'miniapps' | 'tonsites' | 'subagents' | 'marketplace'
 
 interface AgentState {
@@ -510,7 +510,7 @@ function MarketplaceTab({ tenantId }: { tenantId: string }) {
 }
 
 
-function CreditsTab({ tenantId }: { tenantId: string }) {
+function CreditsTab({ tenantId, tonWallet, tonConnectUI }: { tenantId: string; tonWallet: any; tonConnectUI: any }) {
   const [data, setData] = React.useState<{credits:number;totalUsed:number;totalAdded:number;transactions:{amount:number;type:string;description:string;model:string;created_at:string}[]}>({credits:0,totalUsed:0,totalAdded:0,transactions:[]})
   const [loading, setLoading] = React.useState(true)
   const API = detectApiBase()
@@ -585,15 +585,45 @@ function CreditsTab({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
-      {/* Top up button */}
-      <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <div style={{fontSize:14,fontWeight:500,marginBottom:4}}>Need more credits?</div>
-          <div style={{fontSize:13,color:'var(--text2)'}}>Top up anytime. Credits never expire.</div>
+      {/* Top up section */}
+      <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px'}}>
+        <div style={{fontSize:14,fontWeight:500,marginBottom:4}}>Top up credits</div>
+        <div style={{fontSize:13,color:'var(--text2)',marginBottom:16}}>Pay with TON. Credits are added instantly after payment confirms.</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:12}}>
+          {[
+            {usd:5,  credits:5500,  ton:'3.8'},
+            {usd:10, credits:12000, ton:'7.5'},
+            {usd:25, credits:32000, ton:'18.8'},
+          ].map(pack => (
+            <button key={pack.usd}
+              onClick={async () => {
+                if (!tonWallet) { tonConnectUI.openModal(); return }
+                const nanoton = Math.ceil(parseFloat(pack.ton) * 1_000_000_000)
+                try {
+                  await tonConnectUI.sendTransaction({
+                    validUntil: Math.floor(Date.now() / 1000) + 300,
+                    messages: [{ address: 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M', amount: String(nanoton) }]
+                  })
+                  alert('Payment sent! ' + pack.credits.toLocaleString() + ' credits will be added within a few minutes.')
+                } catch (e: any) {
+                  if (String(e).includes('reject') || String(e).includes('cancel')) return
+                  tonConnectUI.openModal()
+                }
+              }}
+              style={{fontFamily:'var(--f)',padding:'14px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--bg)',cursor:'pointer',textAlign:'center' as const,transition:'border-color .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--blue)')}
+              onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--border)')}>
+              <div style={{fontSize:18,fontWeight:600,color:'var(--blue)',marginBottom:2}}>${pack.usd}</div>
+              <div style={{fontSize:13,fontWeight:500}}>{pack.credits.toLocaleString()} credits</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{pack.ton} TON</div>
+            </button>
+          ))}
         </div>
-        <button style={{fontFamily:'var(--f)',fontSize:13,fontWeight:500,background:'var(--blue)',color:'#fff',border:'none',padding:'10px 20px',borderRadius:8,cursor:'not-allowed',opacity:.6}}>
-          Top up — coming soon
-        </button>
+        {!tonWallet && (
+          <div style={{fontSize:12,color:'var(--text3)',textAlign:'center' as const}}>
+            Connect your TON wallet in the top bar to pay
+          </div>
+        )}
       </div>
 
       {/* Transaction history */}
@@ -753,6 +783,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const [twofa, setTwofa] = useState('')
   const [provStep, setProvStep] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [setupData, setSetupData] = useState({ agentName: '', ownerName: '', ownerUsername: '', dmPolicy: 'contacts' })
   const [liveTab, setLiveTab] = useState<LiveTab>('overview')
   const [provider, setProvider] = useState('codex')
   const [switchingProvider, setSwitchingProvider] = useState(false)
@@ -820,7 +851,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       const d = await post('/auth/request-otp', { phone: phone.trim() })
       if (!d.success) throw new Error(d.error)
       setAgent({ tenantId: d.tenantId, phoneCodeHash: d.phoneCodeHash, phone: d.phone })
-      setScreen('otp')
+      setScreen('setup')
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -876,6 +907,29 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const handlePlan = async (planId: string) => {
     if (!agent || planId !== 'free') return
     try {
+      // Write setup preferences to workspace — only on fresh provision
+      const existingCheck = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md').then(r=>r.json()).catch(()=>({content:''}))
+      const isFirstTime = !existingCheck.content || existingCheck.content.length < 100
+      if (isFirstTime && (setupData.agentName || setupData.ownerName || setupData.dmPolicy !== 'contacts')) {
+        const userContent = `# User\n\nOwner name: ${setupData.ownerName || 'Not set'}\nAgent name: ${setupData.agentName || 'Not set'}\nDM policy: ${setupData.dmPolicy}\n\nThis file is updated automatically as the agent learns more about the owner.`
+        const ownerLine = setupData.ownerName ? `\n\nYour owner's name is ${setupData.ownerName}. Always address them by this name.` : ''
+        const agentLine = setupData.agentName ? `\n\nYour name is ${setupData.agentName}. When introducing yourself, use this name.` : ''
+        const soulAddition = ownerLine + agentLine
+        try {
+          await fetch(API + '/agent/workspace/' + agent.tenantId + '/USER.md', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ content: userContent })
+          })
+          if (setupData.agentName) {
+            const soulRes = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md')
+            const soulData = await soulRes.json()
+            await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ content: (soulData.content || '') + soulAddition })
+            })
+          }
+        } catch {}
+      }
       await post('/agent/start-trial', { tenantId: agent.tenantId })
     } catch {}
     await goLive(agent.tenantId)
@@ -2044,7 +2098,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
     }
 
     /* Mobile breakpoint */
+    .hamburger { display: none; }
     @media (max-width: 768px) {
+      .hamburger { display: flex !important; }
       /* Navigation */
       .nav-r {
         display: none;
@@ -2624,6 +2680,80 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         </div>
       )}
 
+      {screen === 'setup' && (
+        <div className="auth-page">
+          <div className="auth-card" style={{maxWidth:460}}>
+            <div className="auth-logo">AGENT<em>R</em></div>
+            <div className="auth-title">Set up your agent</div>
+            <div className="field">
+              <div className="field-lbl">What should your agent call you?</div>
+              <input className="field-inp" placeholder="e.g. Mike, Boss, Alex" maxLength={32}
+                value={setupData.ownerName}
+                onChange={e => setSetupData(p => ({...p, ownerName: e.target.value}))} />
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Your agent will address you by this name in every conversation.</div>
+            </div>
+
+            <div className="field">
+              <div className="field-lbl">Your main Telegram username <span style={{color:'var(--text3)',fontWeight:400}}>(for Manual mode)</span></div>
+              <input className="field-inp" placeholder="@username" maxLength={64}
+                value={setupData.ownerUsername}
+                onChange={e => setSetupData(p => ({...p, ownerUsername: e.target.value}))} />
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Only needed if you select Manual only below. This is your personal account username.</div>
+            </div>
+
+            <div className="field">
+              <div className="field-lbl">Give your agent a name <span style={{color:'var(--text3)',fontWeight:400}}>(optional)</span></div>
+              <input className="field-inp" placeholder="e.g. Nova, Rex, Axiom" maxLength={32}
+                value={setupData.agentName}
+                onChange={e => setSetupData(p => ({...p, agentName: e.target.value}))} />
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>What your agent calls itself. Leave blank to skip.</div>
+            </div>
+
+            <div className="field">
+              <div className="field-lbl">Who can trigger your agent?</div>
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:2,marginBottom:8}}>Your agent runs on a sub-account. This controls who activates it by DMing that account.</div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {[
+                  {id:'everyone', label:'Everyone',      desc:'Any incoming DM triggers the agent'},
+                  {id:'contacts', label:'Contacts only', desc:'Only people saved in your contacts'},
+                  {id:'manual',   label:'Manual only',   desc:'Only activates when you message it yourself'},
+                ].map(opt => (
+                  <div key={opt.id}
+                    onClick={() => setSetupData(p => ({...p, dmPolicy: opt.id}))}
+                    style={{display:'flex',alignItems:'flex-start',gap:12,padding:'12px 14px',borderRadius:8,border:`1px solid ${setupData.dmPolicy===opt.id?'var(--blue)':'var(--border)'}`,background:setupData.dmPolicy===opt.id?'var(--blue-bg)':'var(--surface)',cursor:'pointer',transition:'all .15s'}}>
+                    <div style={{width:16,height:16,borderRadius:'50%',border:`2px solid ${setupData.dmPolicy===opt.id?'var(--blue)':'var(--border2)'}`,background:setupData.dmPolicy===opt.id?'var(--blue)':'transparent',flexShrink:0,marginTop:2,transition:'all .15s'}} />
+                    <div>
+                      <div style={{fontSize:14,fontWeight:500,color:'var(--text)'}}>{opt.label}</div>
+                      <div style={{fontSize:12,color:'var(--text3)',marginTop:1}}>{opt.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn btn-dark btn-full" style={{marginTop:8}}
+              onClick={async () => {
+                if (agent) {
+                  try {
+                    await post('/agent/setup', {
+                      tenantId: agent.tenantId,
+                      agentName: setupData.agentName,
+                      dmPolicy: setupData.dmPolicy,
+                      ownerUsername: setupData.ownerUsername,
+                      ownerName: setupData.ownerName,
+                    })
+                  } catch {}
+                }
+                setScreen('otp')
+              }}>
+              Continue
+            </button>
+            <button className="back-btn" style={{marginTop:12,width:'100%',justifyContent:'center'}}
+              onClick={() => setScreen('phone')}>← Back</button>
+          </div>
+        </div>
+      )}
+
       {screen === 'otp' && (
         <div className="auth-page">
           <div className="auth-card">
@@ -2740,7 +2870,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         <div className="live">
           <div className="live-topbar">
             <div style={{display:'flex',alignItems:'center'}}>
-              <button className="sidebar-toggle" onClick={() => setSidebarOpen(s => !s)} style={{display:"flex",alignItems:"center",background:"none",border:"none",fontSize:20,cursor:"pointer",padding:"8px",color:"var(--text)",marginRight:8}}>☰</button>
+              <button className="sidebar-toggle" onClick={() => setSidebarOpen(s => !s)} className="hamburger" style={{background:"none",border:"none",fontSize:20,cursor:"pointer",padding:"8px",color:"var(--text)",marginRight:8}}>☰</button>
               <div className="logo">AGENT<em>R</em></div>
             </div>
             <div className="live-topbar-r">
@@ -2850,7 +2980,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
             {liveTab === 'workspace' && (<WorkspaceTab tenantId={agent.tenantId} apiBase={detectApiBase()} />)}
             {liveTab === 'marketplace' && (<MarketplaceTab tenantId={agent.tenantId} />)}
-            {liveTab === 'credits' && (<CreditsTab tenantId={agent.tenantId} />)}
+            {liveTab === 'credits' && (<CreditsTab tenantId={agent.tenantId} tonWallet={tonWallet} tonConnectUI={tonConnectUI} />)}
             {liveTab === 'bots' && (<BotsTab tenantId={agent.tenantId} />)}
             {liveTab === 'activity' && (<ActivityTab tenantId={agent.tenantId} />)}
           </div>

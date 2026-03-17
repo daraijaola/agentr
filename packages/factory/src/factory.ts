@@ -62,6 +62,7 @@ export class AgentFactory {
       phone,
       walletAddress: address,
       walletMnemonicEnc: mnemonicEnc,
+      telegramUserId: me?.id ? BigInt(me.id) : undefined,
       plan: 'starter',
     })
 
@@ -138,9 +139,16 @@ export class AgentFactory {
         // runtime.start() — not needed
         this.runtimes.set(tenant.id, runtime)
         console.log(`[AgentFactory] Resumed: ${tenant.id}`)
-      } catch (err) {
-        console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
-        await this.db.updateAgentStatus(tenant.id, 'error', String(err))
+      } catch (err: any) {
+        const msg = String(err)
+        if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
+          console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
+          try { const {unlinkSync,existsSync}=await import('fs');const {join}=await import('path');const sf=join('/root/agentr/sessions',tenant.id+'.session');if(existsSync(sf))unlinkSync(sf) } catch {}
+          await this.db.updateAgentStatus(tenant.id, 'error', msg)
+        } else {
+          console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
+          await this.db.updateAgentStatus(tenant.id, 'error', msg)
+        }
       }
     }
   }

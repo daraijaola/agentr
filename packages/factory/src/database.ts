@@ -66,7 +66,7 @@ export class Database {
   }
 
   //  Tenants
-  async upsertTenant(data: { id: string; userId: string; phone: string; walletAddress: string; walletMnemonicEnc: string; plan?: string }): Promise<void> {
+  async upsertTenant(data: { id: string; userId: string; phone: string; walletAddress: string; walletMnemonicEnc: string; plan?: string; telegramUserId?: bigint }): Promise<void> {
     await this.pool.query(
       `INSERT INTO tenants (id, user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
        VALUES ($1, $2, $3, $4, $5, $6)

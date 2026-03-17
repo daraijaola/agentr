@@ -3,6 +3,7 @@ import type { LLMConfig, ChatMessage } from '../llm/client.js'
 import { ToolRegistry } from './tool-registry.js'
 import type { AgentConfig } from '../types/index.js'
 import { loadWorkspace } from '../soul/loader.js'
+import { maskOldToolResults } from './observation-masking.js'
 
 const MAX_ITER = 20
 const MAX_SIZE = 3500
@@ -107,7 +108,20 @@ export class AgentRuntime {
     try {
       while (iters < MAX_ITER) {
         iters++
-        const res = await this.llm.chat({ systemPrompt, messages, tools: tools.length > 0 ? tools : undefined })
+
+        // Compact context if too long (adapted from Teleton's compaction.ts)
+        if (messages.length > 60) {
+          const keepRecent = 20
+          const oldMsgs = messages.slice(0, messages.length - keepRecent)
+          const recentMsgs = messages.slice(-keepRecent)
+          const summary = `[Auto-compacted ${oldMsgs.length} earlier messages in this conversation. Recent context preserved below.]`
+          messages = [{ role: 'user', content: summary }, ...recentMsgs]
+          console.log('[Runtime:' + this.config.tenantId + '] Context compacted: ' + oldMsgs.length + ' msgs → summary')
+        }
+
+        // Mask old tool results to save context window
+        const maskedMessages = maskOldToolResults(messages as any) as typeof messages
+        const res = await this.llm.chat({ systemPrompt, messages: maskedMessages, tools: tools.length > 0 ? tools : undefined })
         const nextMessages = stripReasoning(res.messages)
         messages = stripReasoning([...messages, ...nextMessages])
 
@@ -180,6 +194,8 @@ export class AgentRuntime {
   updateLLM(config: LLMConfig): void {
     this.llm = new LLMClient(config)
   }
+
+  clearHistory(chatId: string): void { this.conversations.delete(chatId) }
 
   async stop(): Promise<void> { this.conversations.clear() }
   resetConversation(chatId: string): void { this.conversations.delete(chatId) }
