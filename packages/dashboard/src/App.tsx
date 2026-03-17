@@ -785,7 +785,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const [copied, setCopied] = useState(false)
   const [setupData, setSetupData] = useState({ agentName: '', ownerName: '', ownerUsername: '', dmPolicy: 'contacts' })
   const [liveTab, setLiveTab] = useState<LiveTab>('overview')
-  const [provider, setProvider] = useState('codex')
+  const [provider, setProvider] = useState('claude')
   const [switchingProvider, setSwitchingProvider] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -797,7 +797,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       try {
         const a = JSON.parse(saved)
         setAgent(a)
-        setProvider(a.provider ?? 'codex')
+        setProvider(a.provider ?? 'claude')
         setScreen('live')
         apiGet('/agent/status/' + a.tenantId).then(d => {
           if (d.status === 'online' && d.telegram) {
@@ -850,8 +850,8 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       if (blocked.blocked) throw new Error('This account has used its free trial. Please upgrade to continue.')
       const d = await post('/auth/request-otp', { phone: phone.trim() })
       if (!d.success) throw new Error(d.error)
-      setAgent({ tenantId: d.tenantId, phoneCodeHash: d.phoneCodeHash, phone: d.phone })
-      setScreen('setup')
+      setAgent({ tenantId: d.tenantId, phoneCodeHash: d.phoneCodeHash, phone: d.phone, isNew: !d.existing })
+      setScreen('otp')
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -865,7 +865,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       })
       if (d.error === '2FA_REQUIRED') { setScreen('twofa'); return }
       if (!d.success) throw new Error(d.error)
-      setScreen('pricing')
+      // If existing tenant with active agent, skip straight to live
+      if (!agent.isNew) {
+        await goLive(agent.tenantId)
+      } else {
+        setScreen('setup')
+      }
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -877,7 +882,11 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         tenantId: agent.tenantId, phone: agent.phone, password: twofa.trim(),
       })
       if (!d.success) throw new Error(d.error)
-      setScreen('pricing')
+      if (agent?.isNew === false) {
+        await goLive(agent.tenantId)
+      } else {
+        setScreen('setup')
+      }
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -931,6 +940,8 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         } catch {}
       }
       await post('/agent/start-trial', { tenantId: agent.tenantId })
+      // Provision the agent
+      await post('/agent/provision', { tenantId: agent.tenantId, phone: agent.phone })
     } catch {}
     await goLive(agent.tenantId)
   }
@@ -2495,7 +2506,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                 try {
                   const a = JSON.parse(saved)
                   const d = await apiGet('/agent/status/' + a.tenantId)
-                  if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'codex'); setScreen('live'); return }
+                  if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'claude'); setScreen('live'); return }
                 } catch {}
               }
               const savedId = localStorage.getItem('agentr_tenantId')
@@ -2530,7 +2541,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                   try {
                     const a = JSON.parse(saved)
                     const d = await apiGet('/agent/status/' + a.tenantId)
-                    if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'codex'); setScreen('live'); return }
+                    if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'claude'); setScreen('live'); return }
                   } catch {}
                 }
                 setScreen('phone')
@@ -2542,6 +2553,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
           <div className="hero">
             <div className="hero-left">
+              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#000',color:'#fff',fontSize:12,fontWeight:700,padding:'8px 18px',borderRadius:4,marginBottom:16,width:'fit-content',letterSpacing:'1.5px',textTransform:'uppercase',boxShadow:'4px 4px 0px #0098EA'}}>
+                Limited time — Claude AI free on every agent
+              </div>
               <div className="hero-tag">
                 <div className="tag-dot" />
                 AI Agent Factory on TON
@@ -2552,9 +2566,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                 <em>through conversation.</em>
               </h1>
               <p className="hero-p">
-                One master AI agent that lives on your Telegram. It builds bots, 
-                deploys mini apps, creates TON websites, spawns sub-agents, 
-                and manages payments — all through plain English. No code required.
+                One master AI agent that lives on your Telegram account. It builds bots, deploys code, manages your TON wallet, and interacts with the blockchain — all through plain conversation. We handle the AI, the infrastructure, and the API keys. You just talk.
               </p>
               <div className="hero-actions">
                 <button className="btn btn-dark" onClick={() => setScreen('phone')}>Launch your agent</button>
@@ -2564,7 +2576,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                     try {
                       const a = JSON.parse(saved)
                       const d = await apiGet('/agent/status/' + a.tenantId)
-                      if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'codex'); setScreen('live'); return }
+                      if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'claude'); setScreen('live'); return }
                     } catch {}
                   }
                   setScreen('phone')
@@ -2744,7 +2756,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                     })
                   } catch {}
                 }
-                setScreen('otp')
+                setScreen('pricing')
               }}>
               Continue
             </button>
@@ -2815,7 +2827,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             </div>
             <div className="plans-grid" >
               {[
-                {id:'free',name:'Free Trial',price:'Free',period:'1 day',highlight:false,cta:'Start free',note:'ChatGPT Codex only. No credit card.',features:['24hr access','ChatGPT Codex model','Basic agent capabilities']},
+                {id:'free',name:'Free Trial',price:'Free',period:'1 day',highlight:false,cta:'Start free',note:'Powered by Claude. No credit card.',features:['24hr access','Claude AI (limited)','TON wallet included']},
                 {id:'starter',name:'Starter',price:'$15',period:'mo',highlight:false,cta:'Subscribe',note:'',features:['7,500 credits/mo','All models','Bots & mini apps','TON payments','Cocoon hosting']},
                 {id:'pro',name:'Pro',price:'$29',period:'mo',highlight:true,cta:'Subscribe',note:'',features:['20,000 credits/mo','All models','Sub-agents (soon)','TON Sites & DNS','Marketplace']},
                 {id:'elite',name:'Elite',price:'$49',period:'mo',highlight:false,cta:'Subscribe',note:'',features:['40,000 credits/mo','All models priority','Swarm mode','Publish agents & earn 75%','Dedicated support']},
@@ -2870,7 +2882,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         <div className="live">
           <div className="live-topbar">
             <div style={{display:'flex',alignItems:'center'}}>
-              <button className="sidebar-toggle" onClick={() => setSidebarOpen(s => !s)} className="hamburger" style={{background:"none",border:"none",fontSize:20,cursor:"pointer",padding:"8px",color:"var(--text)",marginRight:8}}>☰</button>
+              <button className="sidebar-toggle hamburger" onClick={() => setSidebarOpen(s => !s)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",padding:"8px",color:"var(--text)",marginRight:8}}>☰</button>
               <div className="logo">AGENT<em>R</em></div>
             </div>
             <div className="live-topbar-r">
@@ -2927,7 +2939,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:0,margin:'-22px -22px 20px',borderBottom:'1px solid var(--border)'}}>
                     {[
                       {label:'Status',value:'Online',sub:'Listening for DMs',color:'var(--ok)'},
-                      {label:'Model',value:provider==='codex'?'GPT-5.4 Codex':provider==='openai'?'GPT-4o':'Kimi K2',sub:provider==='codex'?'ChatGPT Codex':provider==='openai'?'ChatGPT API':'Moonshot AI',color:'var(--text)'},
+                      {label:'Model',value:provider==='codex'?'GPT-5.4 Codex':provider==='openai'?'GPT-4o':provider==='claude'?'Claude Sonnet':provider==='kimi'?'Kimi K2':'Unknown',sub:provider==='codex'?'ChatGPT Codex':provider==='openai'?'ChatGPT API':provider==='claude'?'Anthropic':provider==='kimi'?'Moonshot AI':'',color:'var(--text)'},
                       {label:'Runtime',value:'Active',sub:'PM2 managed',color:'var(--text)'},
                     ].map((item,i)=> (
                       <div key={item.label} style={{padding:'16px 20px',borderRight:i<2?'1px solid var(--border)':'none'}}>
@@ -2945,10 +2957,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                   <div className="info-label" style={{marginBottom:14}}>AI Model</div>
                   <div className="provider-grid">
                     {[
-                      {id:'codex',name:'ChatGPT Codex',sub:'Free — powered by Codex',img:'/openai.webp',available:true},
+                      {id:'claude',name:'Claude',sub:'Exceptional reasoning',img:'/claude.webp',available:true},
                       {id:'openai',name:'ChatGPT',sub:'GPT-4o, full API',img:'/openai.webp',available:false},
                       {id:'kimi',name:'Kimi',sub:'Fast and capable',img:'/kimi.webp',available:false},
-                      {id:'claude',name:'Claude',sub:'Exceptional reasoning',img:'/claude.webp',available:false},
                       {id:'gemini',name:'Gemini',sub:'Multimodal intelligence',img:'/gemini.webp',available:false},
                     ].map(p => (
                       <div key={p.id} className={`prov-card${provider===p.id?' active':''}${!p.available?' locked':''}`} onClick={()=>p.available&&!switchingProvider&&switchProvider(p.id)}>

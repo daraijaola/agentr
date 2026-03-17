@@ -6,7 +6,7 @@ export interface ChatOptions { systemPrompt?: string; messages: ChatMessage[]; t
 export interface ChatResponse { text: string; toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>; messages: ChatMessage[] }
 
 const URLS: Record<string, string> = {
-  anthropic: 'https://api.anthropic.com/v1/chat/completions',
+  anthropic: 'https://api.anthropic.com/v1/messages',
   openai: 'https://api.openai.com/v1/chat/completions',
   moonshot: 'https://api.moonshot.ai/v1/chat/completions',
   'openai-codex': 'https://chatgpt.com/backend-api/codex/responses'
@@ -65,23 +65,59 @@ export class LLMClient {
     }
 
     const apiKey = this.config.apiKey
+
+    // Anthropic requires system as top-level param, not in messages
+    const anthropicMessages = provider === 'anthropic'
+      ? cleanMessages.filter(m => m.role !== 'system')
+      : cleanMessages
+
     const body: Record<string, unknown> = {
       model,
       max_tokens: this.config.maxTokens ?? 8192,
       temperature: provider === 'moonshot' ? 1 : (this.config.temperature ?? 0.7),
-      messages: cleanMessages,
+      messages: anthropicMessages,
+      ...(provider === 'anthropic' && options.systemPrompt ? { system: options.systemPrompt } : {}),
       ...(provider === 'moonshot' ? { enable_thinking: false } : {})
     }
     if (options.tools?.length) {
-      body.tools = options.tools.map(t => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema } }))
-      body.tool_choice = 'auto'
+      if (provider === 'anthropic') {
+        body.tools = options.tools.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }))
+        body.tool_choice = { type: 'auto' }
+      } else {
+        body.tools = options.tools.map(t => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema } }))
+        body.tool_choice = 'auto'
+      }
     }
     const res = await fetch(URLS[provider], {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      headers: provider === 'anthropic'
+        ? { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
+        : { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify(body)
     })
     if (!res.ok) throw new Error(`LLM error ${res.status}: ${await res.text()}`)
+
+    // Anthropic Messages API response format
+    if (provider === 'anthropic') {
+      const data = await res.json() as { content: Array<Record<string, unknown>>; stop_reason: string }
+      let text = ''
+      const rawTC: ToolCallRaw[] = []
+      for (const block of data.content ?? []) {
+        if (block['type'] === 'text') text += (block['text'] as string) ?? ''
+        else if (block['type'] === 'tool_use') {
+          rawTC.push({ id: block['id'] as string, type: 'function', function: { name: block['name'] as string, arguments: JSON.stringify(block['input'] ?? {}) } })
+        }
+      }
+      const toolCalls = rawTC.map(tc => {
+        let input: Record<string, unknown> = {}
+        try { input = JSON.parse(tc.function.arguments) as Record<string, unknown> } catch { input = { _raw: tc.function.arguments } }
+        return { id: tc.id, name: tc.function.name, input }
+      })
+      const assistantMsg: ChatMessage = { role: 'assistant', content: text || null, ...(rawTC.length > 0 ? { tool_calls: rawTC } : {}) }
+      return { text, toolCalls, messages: [...cleanMessages, assistantMsg] }
+    }
+
+    // OpenAI / Moonshot response format
     const data = await res.json() as { choices: Array<{ message: { content: string | null; tool_calls?: ToolCallRaw[] } }> }
     const choice = data.choices[0]?.message
     const text = choice?.content ?? ''

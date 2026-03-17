@@ -137,6 +137,7 @@ export class AgentFactory {
           walletAddress: tenant.wallet_address,
         })
         // runtime.start() — not needed
+        attachMessageListener(tenant.id, tgClient, runtime)
         this.runtimes.set(tenant.id, runtime)
         console.log(`[AgentFactory] Resumed: ${tenant.id}`)
       } catch (err: any) {

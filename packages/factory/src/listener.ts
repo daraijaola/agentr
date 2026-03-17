@@ -40,31 +40,6 @@ export function attachMessageListener(
     console.log('[Listener:' + tenantId + '] Replied: ' + response.content.slice(0, 80))
   })
 
-  const debouncer = new MessageDebouncer(700, async (chatId, messages, replyToId, userName, tgClient) => {
-    const combined = messages.join('\n')
-    try { await tgClient.setTyping(chatId) } catch {}
-    await new Promise(r => setTimeout(r, TYPING_DELAY_MS))
-    const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
-    if (!response.content) return
-    const MAX_TG = 4000
-    const text = response.content
-    if (text.length <= MAX_TG) {
-      await tgClient.sendMessage(chatId, text, { replyTo: replyToId })
-    } else {
-      const chunks: string[] = []
-      let rem = text
-      while (rem.length > 0) {
-        let cut = MAX_TG
-        if (rem.length > MAX_TG) { const nl = rem.lastIndexOf('\n', MAX_TG); cut = nl > MAX_TG / 2 ? nl : MAX_TG }
-        chunks.push(rem.slice(0, cut)); rem = rem.slice(cut)
-      }
-      for (let i = 0; i < chunks.length; i++) {
-        await tgClient.sendMessage(chatId, chunks[i], i === 0 ? { replyTo: replyToId } : undefined)
-        if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
-      }
-    }
-    console.log('[Listener:' + tenantId + '] Replied: ' + response.content.slice(0, 80))
-  })
 
   client.onMessage(
     async (event: NewMessageEvent) => {
