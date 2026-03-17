@@ -12,6 +12,16 @@ const WORKSPACE_FILES = [
   "MEMORY.md",
 ] as const
 
+export async function loadBootstrap(tenantId: string): Promise<string | null> {
+  const workspacePath = path.join(WORKSPACE_ROOT, tenantId)
+  const fp = path.join(workspacePath, 'BOOTSTRAP.md')
+  try {
+    const text = await fs.readFile(fp, 'utf8')
+    if (text.trim()) return text.trim()
+  } catch {}
+  return null
+}
+
 export async function loadWorkspace(tenantId: string): Promise<string> {
   const workspacePath = path.join(WORKSPACE_ROOT, tenantId)
   const sections: string[] = []
