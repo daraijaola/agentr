@@ -82,7 +82,7 @@ agentRoutes.post(
   '/provider',
   zValidator('json', z.object({
     tenantId: z.string(),
-    provider: z.enum(['kimi', 'openai']),
+    provider: z.enum(['kimi', 'openai', 'claude']),
   })),
   async (c) => {
     const { tenantId, provider } = c.req.valid('json')
@@ -97,8 +97,9 @@ agentRoutes.post(
         [provider, tenantId]
       )
       const providerMap = {
-        kimi:   { provider: 'moonshot', model: 'kimi-k2-turbo-preview', apiKey: process.env['MOONSHOT_API_KEY'] ?? '' },
-        openai: { provider: 'openai',   model: 'gpt-4o',                apiKey: process.env['OPENAI_API_KEY'] ?? '' },
+        kimi:   { provider: 'moonshot',   model: 'kimi-k2-turbo-preview', apiKey: process.env['MOONSHOT_API_KEY'] ?? '' },
+        openai: { provider: 'openai',     model: 'gpt-4o',               apiKey: process.env['OPENAI_API_KEY'] ?? '' },
+        claude: { provider: 'anthropic',  model: 'claude-sonnet-4-6',    apiKey: process.env['ANTHROPIC_API_KEY'] ?? '' },
       }
       const cfg = providerMap[provider]
       runtime.updateLLM({ provider: cfg.provider as never, model: cfg.model, apiKey: cfg.apiKey })

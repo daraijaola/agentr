@@ -17,7 +17,8 @@ authRoutes.post(
       'SELECT id FROM tenants WHERE phone = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
       [phone, 'active']
     )
-    const tenantId = (existingRows as any[]).length > 0 ? (existingRows as any[])[0].id : randomUUID()
+    const isExisting = (existingRows as any[]).length > 0
+    const tenantId = isExisting ? (existingRows as any[])[0].id : randomUUID()
     try {
       // Clear stale session file if it exists - forces fresh auth
       try {
@@ -27,7 +28,7 @@ authRoutes.post(
         if (existsSync(sf)) { unlinkSync(sf); console.log('[Auth] Cleared stale session for', tenantId) }
       } catch {}
       const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)
-      return c.json({ success: true, tenantId, phoneCodeHash, phone })
+      return c.json({ success: true, tenantId, phoneCodeHash, phone, existing: isExisting })
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500)
     }
