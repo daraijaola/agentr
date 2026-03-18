@@ -5,6 +5,26 @@ import type { AgentConfig } from '../types/index.js'
 import { loadWorkspace } from '../soul/loader.js'
 import { maskOldToolResults } from './observation-masking.js'
 
+function sanitizeForAnthropic(messages: any[]): any[] {
+  // Remove orphaned tool_result blocks (tool_result without preceding tool_use)
+  const result: any[] = []
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]
+    if (msg.role === 'tool') {
+      // Check if previous assistant message had a matching tool_use
+      const prev = result[result.length - 1]
+      const hasToolUse = prev?.role === 'assistant' && (
+        Array.isArray(prev.content)
+          ? prev.content.some((b: any) => b.type === 'tool_use' && b.id === msg.tool_call_id)
+          : prev.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id)
+      )
+      if (!hasToolUse) continue // skip orphaned tool result
+    }
+    result.push(msg)
+  }
+  return result
+}
+
 const MAX_ITER = 20
 const MAX_SIZE = 3500
 
@@ -98,7 +118,9 @@ export class AgentRuntime {
   async processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
-    let messages: ChatMessage[] = [...stripReasoning(this.hist(chatId)), { role: 'user', content: envelope }]
+    const histMessages = stripReasoning(this.hist(chatId))
+    const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages
+    let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
     const tools = this.tools.list().map(t => ({ name: t.name, description: t.description, inputSchema: t.parameters }))
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []

@@ -60,16 +60,50 @@ export class LLMClient {
     messages.push(...options.messages)
     const cleanMessages = messages.map(m => { const { reasoning_content, ...rest } = m as Record<string, unknown>; void reasoning_content; return rest })
 
+    // Anthropic needs different message format
+    const anthropicMessages = provider === 'anthropic'
+      ? cleanMessages
+          .filter((m: any) => m.role !== 'system')
+          .filter((m: any, i: number, arr: any[]) => {
+            // Remove orphaned tool results
+            if (m.role !== 'tool') return true
+            const prev = arr[i - 1]
+            return prev?.role === 'assistant' && (prev.tool_calls?.some((tc: any) => tc.id === m.tool_call_id) || (Array.isArray(prev.content) && prev.content.some((b: any) => b.type === 'tool_use' && b.id === m.tool_call_id)))
+          })
+          .map((m: any) => {
+            if (m.role === 'tool') {
+              // Convert tool results to Anthropic format
+              return {
+                role: 'user',
+                content: [{ type: 'tool_result', tool_use_id: m.tool_call_id ?? m.id ?? 'unknown', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
+              }
+            }
+            if (m.role === 'assistant' && m.tool_calls?.length) {
+              // Convert assistant tool calls to Anthropic format
+              return {
+                role: 'assistant',
+                content: [
+                  ...(m.content ? [{ type: 'text', text: m.content }] : []),
+                  ...m.tool_calls.map((tc: any) => ({
+                    type: 'tool_use',
+                    id: tc.id,
+                    name: tc.function.name,
+                    input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })()
+                  }))
+                ]
+              }
+            }
+            return m
+          })
+      : cleanMessages
+
     if (provider === 'openai-codex') {
       return this.chatCodex(model, cleanMessages, options)
     }
 
     const apiKey = this.config.apiKey
 
-    // Anthropic requires system as top-level param, not in messages
-    const anthropicMessages = provider === 'anthropic'
-      ? cleanMessages.filter(m => m.role !== 'system')
-      : cleanMessages
+    // anthropicMessages already defined above with full message transformation
 
     const body: Record<string, unknown> = {
       model,
