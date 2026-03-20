@@ -11,13 +11,14 @@ authRoutes.post(
   '/request-otp',
   zValidator('json', z.object({ phone: z.string().min(10) })),
   async (c) => {
-    const { phone } = c.req.valid('json')
+    const { phone: rawPhone } = c.req.valid('json')
+    const phone = rawPhone.replace(/\s+/g, '')
     // Reuse existing active tenant for same phone
     const existingRows = await agentFactory.getDb().query<any>(
-      'SELECT id FROM tenants WHERE phone = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
-      [phone, 'active']
+      'SELECT id FROM tenants WHERE phone = $1 ORDER BY created_at DESC LIMIT 1',
+      [phone]
     )
-    const isExisting = (existingRows as any[]).length > 0
+    const isExisting = (existingRows as any[]).length > 0 && (existingRows as any[])[0].id
     const tenantId = isExisting ? (existingRows as any[])[0].id : randomUUID()
     try {
       // Clear stale session file if it exists - forces fresh auth

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { StonApiClient } from "@ston-fi/api";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";

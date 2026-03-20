@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import {
   loadWallet,
   getKeyPair,

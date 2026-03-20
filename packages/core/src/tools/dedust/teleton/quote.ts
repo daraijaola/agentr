@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Address } from "@ton/core";
 import { getCachedTonClient } from "../../../ton/wallet-service.js";
 import { Factory, Asset, PoolType, ReadinessStatus } from "@dedust/sdk";

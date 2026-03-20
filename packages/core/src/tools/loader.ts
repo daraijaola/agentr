@@ -68,5 +68,31 @@ export async function registerMVPTools(
   const { tools: dnsTools } = await import('./dns/teleton/index.js')
   adaptTeletonTools(dnsTools, ctx).forEach((t) => registry.register(t))
 
+  // -- Swarm: multi sub-agent execution
+  const { tools: swarmTools } = await import('./swarm/index.js')
+  swarmTools.forEach((entry) => {
+    registry.register({
+      name: entry.tool.name,
+      description: entry.tool.description,
+      parameters: entry.tool.parameters as Record<string, unknown>,
+      execute: async (params: Record<string, unknown>) => {
+        try {
+          return await (entry.executor as Function)(params, { tenantId: ctx.tenantId })
+        } catch (err) {
+          return { success: false, error: String(err) }
+        }
+      },
+    })
+  })
+
+
+  // -- Serve static files publicly
+  const { serveStaticTool, serveStaticExecutor } = await import('./deploy/serve-static.js')
+  registry.register({
+    name: serveStaticTool.name,
+    description: serveStaticTool.description,
+    parameters: serveStaticTool.parameters as Record<string, unknown>,
+    execute: async (params) => serveStaticExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
   console.log(`[ToolLoader] Registered ${registry.list().length} tools for tenant: ${ctx.tenantId}`)
 }

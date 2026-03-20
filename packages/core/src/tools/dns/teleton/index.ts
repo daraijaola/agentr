@@ -6,7 +6,7 @@ import { dnsBidTool, dnsBidExecutor } from "./bid.js";
 import { dnsLinkTool, dnsLinkExecutor } from "./link.js";
 import { dnsUnlinkTool, dnsUnlinkExecutor } from "./unlink.js";
 import { dnsSetSiteTool, dnsSetSiteExecutor } from "./set-site.js";
-import type { ToolEntry } from "../types.js";
+import type { ToolEntry } from "../../types.js";
 
 export { dnsCheckTool, dnsCheckExecutor };
 export { dnsAuctionsTool, dnsAuctionsExecutor };

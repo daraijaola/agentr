@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { fetchWithTimeout } from "../../../utils/fetch.js";
 import { STONFI_API_BASE_URL } from "../../../constants/api-endpoints.js";
 import { getErrorMessage } from "../../../utils/errors.js";

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { loadWallet, getKeyPair, getCachedTonClient } from "../../../ton/wallet-service.js";
 import { WalletContractV5R1, toNano, internal } from "@ton/ton";
 import { Address, SendMode, beginCell } from "@ton/core";

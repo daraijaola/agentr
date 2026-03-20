@@ -6,7 +6,7 @@
 import { Api } from "telegram";
 import { Type } from "@sinclair/typebox";
 import { randomLong } from "../../../utils/gramjs-bigint.js";
-import type { Tool, ToolExecutor } from "../types.js";
+import type { Tool, ToolExecutor } from "../../types.js";
 import { createLogger } from "../../../utils/logger.js";
 
 const log = createLogger("BotInlineSend");

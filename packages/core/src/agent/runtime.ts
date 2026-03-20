@@ -26,7 +26,7 @@ function sanitizeForAnthropic(messages: any[]): any[] {
 }
 
 const MAX_ITER = 20
-const MAX_SIZE = 3500
+const MAX_SIZE = 6000
 
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
 export interface AgentResponse { content: string; toolCalls?: Array<{ name: string; input: Record<string, unknown> }> }
@@ -38,9 +38,11 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
 function looksLikeFinalReport(text: string): boolean {
   const lower = text.toLowerCase()
   const evidenceKeywords = [
-    'success: true', 'online', 'deployed', 'started', 'process is live',
+    'success: true', 'online', 'deployed', 'started', 'process is live', 'swarm completed', 'sub-agents',
     'exit code: 0', 'balance:', 'sent', 'written', 'saved', 'error:',
-    'failed', 'could not', 'tool evidence'
+    'failed', 'could not', 'tool evidence', 'http://', 'port', 'server',
+    'created', 'running', 'complete', 'done', 'here is', 'here are',
+    'the link', 'you can', 'accessible'
   ]
   return evidenceKeywords.some(kw => lower.includes(kw))
 }
@@ -66,7 +68,10 @@ export class AgentRuntime {
 
   private async sys(): Promise<string> {
     let workspace = ''
-    try { workspace = await loadWorkspace(this.config.tenantId) } catch { /* not ready */ }
+    try {
+      const raw = await loadWorkspace(this.config.tenantId)
+      workspace = raw.length > 800 ? raw.slice(0, 800) + '\n...[workspace truncated]' : raw
+    } catch { /* not ready */ }
 
     const base = [
       `⚠️ CRITICAL BEHAVIORAL OVERRIDE ⚠️`,
@@ -74,6 +79,7 @@ export class AgentRuntime {
       `You are an EXECUTION ENGINE running on Telegram account @${this.config.telegramPhone}.`,
       `You have tools to take real actions on Telegram and TON blockchain.`,
       `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
+      `SERVER PUBLIC IP: 46.101.74.170 — When hosting anything, always give links as http://46.101.74.170:PORT`,
       `IMPORTANT: In direct messages, the user is the owner of this account.`,
       ``,
       `ABSOLUTE RULES (violating these = failure):`,
@@ -109,6 +115,8 @@ export class AgentRuntime {
       `- Any completion claim without tool evidence`,
       ``,
       `Use memory_write to store durable facts in MEMORY.md when relevant.`,
+      `WEBSITE FLOW: After deploying any website, always say: "Your site is live at [URL]. Want a custom .ton domain? I can register one — check availability with dns_check, then you fund my wallet and I handle the auction automatically."`,
+      `TON DOMAIN FLOW: (1) dns_check to verify available, (2) tell user estimated price, (3) wait for user to fund agent wallet, (4) dns_start_auction, (5) monitor with dns_check until won, (6) dns_link to point domain to site.`,
       `Respond concise and factual after execution.`,
     ].join('\n')
 
@@ -119,9 +127,13 @@ export class AgentRuntime {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
-    const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages
+    const trimmedHist = histMessages.length > 6 ? histMessages.slice(-6) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
-    const tools = this.tools.list().map(t => ({ name: t.name, description: t.description, inputSchema: t.parameters }))
+    const tools = this.tools.list().map(t => ({
+      name: t.name,
+      description: t.description.slice(0, 300),
+      inputSchema: t.parameters
+    }))
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
     const systemPrompt = await this.sys()
@@ -131,16 +143,25 @@ export class AgentRuntime {
       while (iters < MAX_ITER) {
         iters++
 
-        // Compact context if too long (adapted from Teleton's compaction.ts)
+        // Compact context if too long - only trim at safe boundaries
         if (messages.length > 60) {
-          const keepRecent = 20
-          const oldMsgs = messages.slice(0, messages.length - keepRecent)
-          const recentMsgs = messages.slice(-keepRecent)
-          const summary = `[Auto-compacted ${oldMsgs.length} earlier messages in this conversation. Recent context preserved below.]`
-          messages = [{ role: 'user', content: summary }, ...recentMsgs]
-          console.log('[Runtime:' + this.config.tenantId + '] Context compacted: ' + oldMsgs.length + ' msgs → summary')
+          const allMsgs = messages as any[]
+          // Find last safe cut: assistant message with NO tool_use, followed by user
+          let cutAt = -1
+          for (let i = allMsgs.length - 20; i >= 1; i--) {
+            const prev = allMsgs[i - 1]
+            const curr = allMsgs[i]
+            if (prev.role === 'assistant' && curr.role === 'user') {
+              const hasToolUse = Array.isArray(prev.content) && prev.content.some((b: any) => b.type === 'tool_use')
+              if (!hasToolUse) { cutAt = i; break }
+            }
+          }
+          if (cutAt > 0) {
+            messages = allMsgs.slice(cutAt) as typeof messages
+            console.log('[Runtime:' + this.config.tenantId + '] Safe trimmed to ' + messages.length + ' msgs')
+          }
         }
-
+        
         // Mask old tool results to save context window
         const maskedMessages = maskOldToolResults(messages as any) as typeof messages
         const res = await this.llm.chat({ systemPrompt, messages: maskedMessages, tools: tools.length > 0 ? tools : undefined })
@@ -164,7 +185,7 @@ export class AgentRuntime {
 
         if (res.toolCalls.length === 0) {
           if (res.text.trim().length > 0) {
-            if (toolsRanThisTurn && !looksLikeFinalReport(res.text)) {
+            if (toolsRanThisTurn && !looksLikeFinalReport(res.text) && res.text.trim().length < 50) {
               messages = stripReasoning([
                 ...messages,
                 {
@@ -203,13 +224,18 @@ export class AgentRuntime {
         }
       }
     } catch (e) {
-      finalResponse = `Sorry, I ran into an error: ${String(e)}. Please try again.`
+      const errStr = String(e)
+      if (errStr.includes('429') || errStr.includes('rate_limit')) {
+        finalResponse = 'Rate limit reached. Please wait 60 seconds and try again.'
+      } else {
+        finalResponse = `Sorry, I ran into an error: ${errStr}. Please try again.`
+      }
     }
 
     if (!finalResponse) {
       finalResponse = 'No verified assistant message was produced in this turn. I cannot claim completion without explicit tool evidence.'
     }
-    this.conversations.set(chatId, messages.slice(-40))
+    this.conversations.set(chatId, messages.slice(-6))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
   }
 

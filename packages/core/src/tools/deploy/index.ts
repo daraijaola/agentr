@@ -1,4 +1,4 @@
-import type { ToolEntry } from "../types.js"
+import type { ToolEntry } from "../../types.js"
 import { codeExecuteTool, codeExecuteExecutor } from "./code-execute.js"
 import {
   processStartTool, processStartExecutor,

@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox"
 import { execSync, spawnSync } from "child_process"
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs"
 import path from "path"
-import type { Tool, ToolExecutor, ToolResult } from "../types.js"
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js"
 import { getWorkspaceRoot } from "../../workspace/index.js"
 const SESSIONS_ROOT = "/root/agentr/sessions"
 const LEGACY_WORKSPACE_ROOT = "/tmp/agentr-workspace"
@@ -74,7 +74,7 @@ interface ProcessStartParams {
 
 export const processStartTool: Tool = {
   name: "process_start",
-  description: "Deploy and start a script as a persistent background process using PM2. The process survives restarts. Use this to deploy Telegram bots, servers, or any long-running script from your workspace. IMPORTANT: Always install dependencies via code_execute (bash: pip3 install ... or npm install ...) BEFORE calling this tool, or the process will crash.",
+  description: "Deploy and start a script as a persistent background process using PM2. The process survives restarts. Use this to deploy Telegram bots, servers, or any long-running script from your workspace. IMPORTANT: Always install dependencies via code_execute (bash: pip3 install ... or npm install ...) BEFORE calling this tool, or the process will crash. When the script is a web server on a PORT, always tell the user the public URL: http://46.101.74.170:PORT",
   parameters: Type.Object({
     name: Type.String({ description: "Short name for this process (e.g. mybot, server)" }),
     file: Type.String({ description: "Filename in your workspace to run (e.g. bot.js)" }),
