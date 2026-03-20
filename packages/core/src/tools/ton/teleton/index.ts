@@ -5,7 +5,7 @@ import { tonSendTool, tonSendExecutor } from "./send.js";
 import { tonGetTransactionsTool, tonGetTransactionsExecutor } from "./get-transactions.js";
 import { tonMyTransactionsTool, tonMyTransactionsExecutor } from "./my-transactions.js";
 import { tonChartTool, tonChartExecutor } from "./chart.js";
-import type { ToolEntry } from "../types.js";
+import type { ToolEntry } from "../../types.js";
 
 export { tonGetAddressTool, tonGetAddressExecutor };
 export { tonGetBalanceTool, tonGetBalanceExecutor };

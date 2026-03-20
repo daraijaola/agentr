@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { tonapiFetch } from "../../../constants/api-endpoints.js";
 import { getWalletAddress } from "../../../ton/wallet-service.js";
 import { getErrorMessage } from "../../../utils/errors.js";

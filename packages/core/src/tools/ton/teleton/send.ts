@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { Address } from "@ton/core";
-import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { loadWallet } from "../../../ton/wallet-service.js";
 import { sendTon } from "../../../ton/transfer.js";
 import { getErrorMessage } from "../../../utils/errors.js";

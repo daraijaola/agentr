@@ -6,7 +6,7 @@ import { workspaceWriteTool, workspaceWriteExecutor } from "./write.js";
 import { workspaceDeleteTool, workspaceDeleteExecutor } from "./delete.js";
 import { workspaceInfoTool, workspaceInfoExecutor } from "./info.js";
 import { workspaceRenameTool, workspaceRenameExecutor } from "./rename.js";
-import type { ToolEntry } from "../types.js";
+import type { ToolEntry } from "../../types.js";
 
 export { workspaceListTool, workspaceListExecutor };
 export { workspaceReadTool, workspaceReadExecutor };

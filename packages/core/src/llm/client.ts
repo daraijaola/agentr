@@ -93,6 +93,10 @@ export class LLMClient {
                 ]
               }
             }
+            if (m.role === 'assistant') {
+              const text = typeof m.content === 'string' ? m.content : ''
+              return { role: 'assistant', content: text ? [{ type: 'text', text }] : [{ type: 'text', text: ' ' }] }
+            }
             return m
           })
       : cleanMessages
@@ -107,10 +111,12 @@ export class LLMClient {
 
     const body: Record<string, unknown> = {
       model,
-      max_tokens: this.config.maxTokens ?? 8192,
+      max_tokens: this.config.maxTokens ?? 1024,
       temperature: provider === 'moonshot' ? 1 : (this.config.temperature ?? 0.7),
       messages: anthropicMessages,
-      ...(provider === 'anthropic' && options.systemPrompt ? { system: options.systemPrompt } : {}),
+      ...(provider === 'anthropic' && options.systemPrompt ? {
+        system: [{ type: 'text', text: options.systemPrompt, cache_control: { type: 'ephemeral' } }]
+      } : {}),
       ...(provider === 'moonshot' ? { enable_thinking: false } : {})
     }
     if (options.tools?.length) {
@@ -125,7 +131,7 @@ export class LLMClient {
     const res = await fetch(URLS[provider], {
       method: 'POST',
       headers: provider === 'anthropic'
-        ? { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
+        ? { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'prompt-caching-2024-07-31' }
         : { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify(body)
     })
