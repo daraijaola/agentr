@@ -50,7 +50,7 @@ authRoutes.post(
       const ok = await bridgeManager.verifyOtp(tenantId, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
       await agentFactory.provision(tenantId, phone)
-      return c.json({ success: true, tenantId, message: 'Agent provisioned and live', mock_payment: true })
+      return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
     } catch (err) {
       if (String(err).includes('2FA_REQUIRED')) {
         return c.json({ success: false, error: '2FA_REQUIRED', tenantId }, 202)
@@ -74,7 +74,7 @@ authRoutes.post(
       const ok = await bridgeManager.verify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
       await agentFactory.provision(tenantId, phone)
-      return c.json({ success: true, tenantId, message: 'Agent provisioned and live', mock_payment: true })
+      return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
     } catch (err) {
       console.error('[verify-2fa ERROR]', err)
       return c.json({ success: false, error: String(err) }, 500)
