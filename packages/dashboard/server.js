@@ -1,7 +1,7 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
-const dist = '/root/agentr/packages/dashboard/dist'
+const dist = path.join(__dirname, 'dist')
 
 http.createServer((req, res) => {
   const url = req.url.split('?')[0]
