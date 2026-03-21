@@ -43,7 +43,7 @@ async function runSubAgent(task: SubAgentTask, apiKey: string, model: string): P
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2048,
+        max_tokens: 512,
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
       }),

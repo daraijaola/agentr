@@ -80,22 +80,24 @@ export class LLMClient {
             }
             if (m.role === 'assistant' && m.tool_calls?.length) {
               // Convert assistant tool calls to Anthropic format
+              const toolUseBlocks = m.tool_calls.map((tc: any) => ({
+                type: 'tool_use',
+                id: tc.id,
+                name: tc.function.name,
+                input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })()
+              }))
+              const textContent = typeof m.content === 'string' && m.content.trim() ? m.content.trim() : null
               return {
                 role: 'assistant',
                 content: [
-                  ...(m.content ? [{ type: 'text', text: m.content }] : []),
-                  ...m.tool_calls.map((tc: any) => ({
-                    type: 'tool_use',
-                    id: tc.id,
-                    name: tc.function.name,
-                    input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })()
-                  }))
+                  ...(textContent ? [{ type: 'text', text: textContent }] : []),
+                  ...toolUseBlocks
                 ]
               }
             }
             if (m.role === 'assistant') {
-              const text = typeof m.content === 'string' ? m.content : ''
-              return { role: 'assistant', content: text ? [{ type: 'text', text }] : [{ type: 'text', text: ' ' }] }
+              const text = typeof m.content === 'string' ? m.content.trim() : ''
+              return { role: 'assistant', content: [{ type: 'text', text: text || ' ' }] }
             }
             return m
           })
@@ -111,7 +113,7 @@ export class LLMClient {
 
     const body: Record<string, unknown> = {
       model,
-      max_tokens: this.config.maxTokens ?? 1024,
+      max_tokens: this.config.maxTokens ?? 512,
       temperature: provider === 'moonshot' ? 1 : (this.config.temperature ?? 0.7),
       messages: anthropicMessages,
       ...(provider === 'anthropic' && options.systemPrompt ? {

@@ -25,7 +25,7 @@ function sanitizeForAnthropic(messages: any[]): any[] {
   return result
 }
 
-const MAX_ITER = 20
+const MAX_ITER = 8
 const MAX_SIZE = 6000
 
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
@@ -117,7 +117,7 @@ export class AgentRuntime {
       `Use memory_write to store durable facts in MEMORY.md when relevant.`,
       `WEBSITE FLOW: After deploying any website, always say: "Your site is live at [URL]. Want a custom .ton domain? I can register one — check availability with dns_check, then you fund my wallet and I handle the auction automatically."`,
       `TON DOMAIN FLOW: (1) dns_check to verify available, (2) tell user estimated price, (3) wait for user to fund agent wallet, (4) dns_start_auction, (5) monitor with dns_check until won, (6) dns_link to point domain to site.`,
-      `Respond concise and factual after execution.`,
+      `CRYPTO PAGE RULE: When building a crypto price webpage, do NOT call ton_price or any price tool. Write HTML/JS that fetches from https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,the-open-network&vs_currencies=usd directly in the browser. Then call serve_static. Respond concise and factual after execution.`,
     ].join('\n')
 
     return workspace ? `${workspace}\n\n---\n\n${base}` : base
