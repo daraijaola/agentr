@@ -1,32 +1,33 @@
-// Telegram MTProto bridge  GramJS (TONresistor fork)
-// TODO: Adapt from Teleton src/telegram/
-// Multi-user: one session file per tenantId
+import { TelegramUserClient } from './client.js'
 
 export class TelegramBridge {
-  private tenantId: string
-  private sessionPath: string
+  private client: TelegramUserClient
 
-  constructor(tenantId: string, sessionPath: string) {
-    this.tenantId = tenantId
-    this.sessionPath = sessionPath
+  constructor(private sessionPath: string) {
+    this.client = new TelegramUserClient(sessionPath)
   }
 
-  async connect(_phone: string): Promise<string> {
-    // TODO: init GramJS client, request phone code
-    // Returns: phoneCodeHash
-    return 'phone_code_hash_placeholder'
+  async requestOtp(phone: string) {
+    return this.client.requestOtp(phone)
   }
 
-  async verifyOtp(_phone: string, _hash: string, _code: string): Promise<boolean> {
-    // TODO: complete MTProto auth, save session to sessionPath
-    return false
+  async verifyOtp(phoneCodeHash: string, code: string) {
+    return this.client.verifyOtp(phoneCodeHash, code)
   }
 
-  async sendMessage(_chatId: string, _text: string): Promise<void> {
-    // TODO: GramJS sendMessage
+  async verify2FA(password: string) {
+    return this.client.verify2FA(password)
   }
 
-  async disconnect(): Promise<void> {
-    // TODO: cleanup GramJS client
+  async sendMessage(chatId: string, text: string, opts?: { replyTo?: number }) {
+    return this.client.sendMessage(chatId, text, opts)
+  }
+
+  async disconnect() {
+    return this.client.disconnect()
+  }
+
+  getClient() {
+    return this.client
   }
 }

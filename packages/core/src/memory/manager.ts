@@ -1,29 +1,21 @@
-// Memory manager  SQLite WAL + FTS5 + sqlite-vec
-// TODO: Adapt from Teleton src/memory/
-
 export class MemoryManager {
-  private dbPath: string
-
-  constructor(dbPath: string) {
-    this.dbPath = dbPath
-  }
+  private store = new Map<string, string>()
 
   async init(): Promise<void> {
-    console.log(`[MemoryManager] Init DB at ${this.dbPath}`)
-    // TODO: open SQLite, run migrations, init FTS5 + sqlite-vec
+    // In-memory store initialised
   }
 
-  async write(key: string, value: string): Promise<void> {
-    // TODO: persist to SQLite
+  async set(key: string, value: string): Promise<void> {
+    this.store.set(key, value)
   }
 
-  async read(key: string): Promise<string | null> {
-    // TODO: read from SQLite
-    return null
+  async get(key: string): Promise<string | undefined> {
+    return this.store.get(key)
   }
 
   async search(query: string): Promise<string[]> {
-    // TODO: FTS5 + vector search
-    return []
+    return Array.from(this.store.values()).filter(v =>
+      v.toLowerCase().includes(query.toLowerCase())
+    )
   }
 }
