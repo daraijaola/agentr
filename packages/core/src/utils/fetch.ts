@@ -1,10 +1,5 @@
-export async function fetchWithTimeout(url: string, options?: RequestInit & { timeoutMs?: number }): Promise<Response> {
-  const { timeoutMs = 10000, ...rest } = options ?? {}
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, { ...rest, signal: controller.signal })
-  } finally {
-    clearTimeout(timer)
-  }
+export async function fetchJson<T = unknown>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options)
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+  return res.json() as Promise<T>
 }

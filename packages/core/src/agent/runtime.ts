@@ -32,7 +32,7 @@ export interface ProcessMessageOptions { chatId: string; userMessage: string; us
 export interface AgentResponse { content: string; toolCalls?: Array<{ name: string; input: Record<string, unknown> }> }
 
 function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
-  return msgs.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as ChatMessage })
+  return msgs.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as unknown as ChatMessage })
 }
 
 function looksLikeFinalReport(text: string): boolean {
