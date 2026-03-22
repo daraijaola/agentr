@@ -3,7 +3,7 @@ import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 // @ts-ignore — stub module, resolved at runtime
 import { markdownToTelegramHtml } from "../../../telegram/formatting.js";
 // @ts-ignore — stub module, resolved at runtime
-import { TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../constants/limits.js";
+const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 
