@@ -1,6 +1,5 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-// @ts-ignore — stub module, resolved at runtime
 import { fetchWithTimeout } from "../../../utils/fetch.js";
 import { GECKOTERMINAL_API_URL, tonapiFetch } from "../../constants/api-endpoints.js";
 import { getErrorMessage } from "../../utils/errors.js";

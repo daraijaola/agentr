@@ -15,8 +15,7 @@ import {
   EDGE_VOICES,
   PIPER_VOICES,
   type TTSProvider,
-// @ts-ignore — stub module, resolved at runtime
-} from "../../../../services/tts.js";
+} from "../../../services/tts.js";
 import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";

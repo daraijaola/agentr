@@ -6,9 +6,7 @@ import {
   type ImageContent,
   type TextContent,
 } from "@mariozechner/pi-ai";
-// @ts-ignore — stub module, resolved at runtime
 import { getProviderModel, getEffectiveApiKey } from "../../../client.js";
-// @ts-ignore — stub module, resolved at runtime
 import { getProviderMetadata, type SupportedProvider } from "../../../../config/providers.js";
 import { readFileSync, existsSync } from "fs";
 import { extname } from "path";
@@ -100,12 +98,9 @@ export const visionAnalyzeExecutor: ToolExecutor<VisionAnalyzeParams> = async (
           "Must provide either 'filePath' for local files OR both 'chatId' and 'messageId' for Telegram images",
       };
     }
-    // @ts-ignore
 
-    // @ts-ignore
     // Get API key from context
     const currentProvider = (context as any).config?.agent?.provider;
-    // @ts-ignore
     const apiKey = (context as any).config?.agent?.api_key;
     if (!apiKey && currentProvider !== "local" && currentProvider !== "cocoon") {
       return {
@@ -261,13 +256,9 @@ export const visionAnalyzeExecutor: ToolExecutor<VisionAnalyzeParams> = async (
         "You are analyzing an image. Provide a helpful, detailed description or answer the user's question about the image. Be concise but thorough.",
       messages: [userMsg],
     };
-    // @ts-ignore
 
     // Get model from configured provider
-    // @ts-ignore
     const provider = ((context as any).config?.agent?.provider || "anthropic") as SupportedProvider;
-    // @ts-ignore
-    // @ts-ignore
     const providerMeta = getProviderMetadata(provider);
     const modelId = (context as any).config?.agent?.model || providerMeta.defaultModel;
     const model = getProviderModel(provider, modelId);

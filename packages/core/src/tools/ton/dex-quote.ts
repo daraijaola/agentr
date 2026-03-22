@@ -253,8 +253,7 @@ export const dexQuoteExecutor: ToolExecutor<DexQuoteParams> = async (
     }
 
     if (quotes.length === 1) {
-    // @ts-ignore
-      recommended = quotes[0].dex;
+      recommended = (quotes[0] as any).dex;
     } else {
       // Compare outputs
       if (stonfiQuote.expectedOutput > dedustQuote.expectedOutput) {

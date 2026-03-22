@@ -12,7 +12,7 @@
     "noUnusedParameters": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true

@@ -2,8 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api } from "telegram";
 import { randomLong } from "../../../utils/gramjs-bigint.js";
-// @ts-ignore — stub module, resolved at runtime
-import { TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../../constants/limits.js";
+import { MAX_MESSAGE_LENGTH as TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 

@@ -35,8 +35,7 @@ export const botInlineSendTool: Tool = {
 export const botInlineSendExecutor: ToolExecutor<BotInlineSendParams> = async (params, context) => {
   const { plugin, query, resultIndex = 0 } = params;
 
-    // @ts-ignore
-  const botUsername = context.config?.telegram?.bot_username;
+  const botUsername = (context as any).config?.telegram?.bot_username;
   if (!botUsername) {
     return {
       success: false,
@@ -44,7 +43,6 @@ export const botInlineSendExecutor: ToolExecutor<BotInlineSendParams> = async (p
     };
   }
 
-    // @ts-ignore
   if (!(context as any).bridge?.isAvailable()) {
     return {
       success: false,
