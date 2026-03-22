@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api } from "telegram";
-import { toLong } from "../../../../utils/gramjs-bigint.js";
+import { toLong } from "../../../utils/gramjs-bigint.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 
@@ -55,7 +55,7 @@ export const telegramGetParticipantsExecutor: ToolExecutor<GetParticipantsParams
     const { chatId, filter = "all", limit = 100 } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get chat entity
     const entity = await gramJsClient.getEntity(chatId);

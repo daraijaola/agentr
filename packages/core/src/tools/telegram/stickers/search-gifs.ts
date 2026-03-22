@@ -46,7 +46,7 @@ export const telegramSearchGifsExecutor: ToolExecutor<SearchGifsParams> = async 
     const { query, limit = 10 } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get @gif bot entity
     const gifBot = await gramJsClient.getEntity("@gif");

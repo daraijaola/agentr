@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-import { toLong } from "../../../../utils/gramjs-bigint.js";
+import { toLong } from "../../../utils/gramjs-bigint.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 
@@ -43,7 +43,7 @@ export const telegramGetMyStickersExecutor: ToolExecutor<GetMyStickersParams> = 
     const { limit = 20 } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get all installed sticker sets
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped

@@ -50,3 +50,5 @@ export async function getTonPrice(): Promise<number> {
     return 0
   }
 }
+
+export function invalidateTonClientCache(): void { _client = null }

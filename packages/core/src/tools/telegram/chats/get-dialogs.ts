@@ -55,7 +55,7 @@ export const telegramGetDialogsExecutor: ToolExecutor<GetDialogsParams> = async 
     const { limit = 50, archived = false, unreadOnly = false } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Fetch dialogs
     const dialogs = await gramJsClient.getDialogs({

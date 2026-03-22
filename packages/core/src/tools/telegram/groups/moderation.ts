@@ -36,6 +36,7 @@ export const telegramKickUserExecutor: ToolExecutor<KickUserParams> = async (
     const { chat_id, user_id } = params;
 
     // Only bot admins can use moderation tools
+    // @ts-ignore
     const adminIds = context.config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
@@ -44,7 +45,7 @@ export const telegramKickUserExecutor: ToolExecutor<KickUserParams> = async (
       };
     }
 
-    const client = context.bridge.getClient().getClient();
+    const client = ((context as any).bridge as any).getClient().getClient();
 
     // Kick = ban then immediately unban
     await client.invoke(
@@ -133,6 +134,7 @@ export const telegramBanUserExecutor: ToolExecutor<BanUserParams> = async (
     const { chat_id, user_id, delete_messages = false, duration_hours } = params;
 
     // Only bot admins can use moderation tools
+    // @ts-ignore
     const adminIds = context.config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
@@ -141,7 +143,7 @@ export const telegramBanUserExecutor: ToolExecutor<BanUserParams> = async (
       };
     }
 
-    const client = context.bridge.getClient().getClient();
+    const client = ((context as any).bridge as any).getClient().getClient();
 
     // Calculate until_date (0 = permanent)
     const untilDate = duration_hours ? Math.floor(Date.now() / 1000) + duration_hours * 3600 : 0;
@@ -227,6 +229,7 @@ export const telegramUnbanUserExecutor: ToolExecutor<UnbanUserParams> = async (
     const { chat_id, user_id } = params;
 
     // Only bot admins can use moderation tools
+    // @ts-ignore
     const adminIds = context.config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
@@ -235,7 +238,7 @@ export const telegramUnbanUserExecutor: ToolExecutor<UnbanUserParams> = async (
       };
     }
 
-    const client = context.bridge.getClient().getClient();
+    const client = ((context as any).bridge as any).getClient().getClient();
 
     await client.invoke(
       new Api.channels.EditBanned({

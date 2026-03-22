@@ -1,4 +1,4 @@
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
@@ -79,7 +79,7 @@ export const telegramSendStickerExecutor: ToolExecutor<SendStickerParams> = asyn
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Method 1: Send sticker from a sticker set by name + index
     if (hasSetInfo) {
@@ -126,7 +126,7 @@ export const telegramSendStickerExecutor: ToolExecutor<SendStickerParams> = asyn
             }),
           }),
           message: "",
-          randomId: randomLong(),
+          randomId: (randomLong() as unknown as any),
           replyTo: replyToId ? new Api.InputReplyToMessage({ replyToMsgId: replyToId }) : undefined,
         })
       );

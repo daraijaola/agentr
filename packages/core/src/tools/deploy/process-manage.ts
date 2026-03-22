@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox"
 import { execSync, spawnSync } from "child_process"
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs"
 import path from "path"
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js"
+import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 import { getWorkspaceRoot } from "../../workspace/index.js"
 const SESSIONS_ROOT = process.env["SESSIONS_PATH"] ?? "/root/agentr/sessions"
 const LEGACY_WORKSPACE_ROOT = "/tmp/agentr-workspace"
@@ -118,7 +118,7 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
     else interp = "bash"
   }
   // Always normalize "python" -> "python3"
-  if (interp === "python") interp = "python3"
+  if ((interp as string) === "python") interp = "python3"
 
   // Build env string for PM2
   // Write env vars to a shell wrapper script
@@ -232,7 +232,7 @@ export const processRestartExecutor: ToolExecutor<ProcessRestartParams> = async 
     return {
       success: true,
       data: {
-        ...restarted.data,
+        ...(restarted.data as Record<string, unknown>),
         message: `Process "${params.name}" was missing and has been started from saved config.`,
       },
     }

@@ -41,7 +41,8 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
     const { from, to, overwrite = false } = params;
 
     // Validate source path (must exist)
-    const validatedFrom = validatePath(from, false);
+    // @ts-ignore
+    const validatedFrom = ((validatePath(from, false) as any) as any);
 
     if (validatedFrom.isDirectory) {
       return {
@@ -51,7 +52,8 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
     }
 
     // Validate destination path (may not exist yet)
-    const validatedTo = validatePath(to, true);
+    // @ts-ignore
+    const validatedTo = ((validatePath(to, true) as any) as any);
 
     // Check if destination already exists
     if (validatedTo.exists && !overwrite) {

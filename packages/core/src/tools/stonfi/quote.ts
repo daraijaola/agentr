@@ -42,7 +42,7 @@ export const stonfiQuoteTool: Tool = {
 };
 export const stonfiQuoteExecutor: ToolExecutor<JettonQuoteParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { from_asset, to_asset, amount, slippage = 0.01 } = params;

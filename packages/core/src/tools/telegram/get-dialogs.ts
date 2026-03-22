@@ -1,4 +1,4 @@
-import type { Tool } from '../tool-registry.js'
+import type { Tool } from '../../agent/tool-registry.js'
 import type { TelegramUserClient } from '../../telegram/client.js'
 
 export function createGetDialogsTool(client: TelegramUserClient): Tool {

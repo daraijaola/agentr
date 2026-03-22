@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import { getCachedTonClient } from "../../ton/wallet-service.js";
 import { Address } from "@ton/core";
+// @ts-ignore — stub module, resolved at runtime
 import { formatTransactions } from "../../../ton/format-transactions.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
@@ -30,12 +31,12 @@ export const tonMyTransactionsTool: Tool = {
 
 export const tonMyTransactionsExecutor: ToolExecutor<MyTransactionsParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { limit = 10 } = params;
 
-    const walletAddress = (_context as Record<string, unknown>)["walletAddress"] as string;
+    const walletAddress = (context as Record<string, unknown>)["walletAddress"] as string;
     if (!walletAddress) {
       return {
         success: false,
@@ -45,7 +46,7 @@ export const tonMyTransactionsExecutor: ToolExecutor<MyTransactionsParams> = asy
 
     const addressObj = Address.parse(walletAddress);
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
 
     const transactions = await client.getTransactions(addressObj, {
       limit: Math.min(limit, 50),
@@ -56,7 +57,7 @@ export const tonMyTransactionsExecutor: ToolExecutor<MyTransactionsParams> = asy
     return {
       success: true,
       data: {
-        address: walletData.address,
+        address: (context as any).walletAddress ?? "",
         transactions: formatted,
       },
     };

@@ -50,7 +50,7 @@ export const dedustQuoteTool: Tool = {
 };
 export const dedustQuoteExecutor: ToolExecutor<DedustQuoteParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { from_asset, to_asset, amount, pool_type = "volatile", slippage = 0.01 } = params;
@@ -86,7 +86,7 @@ export const dedustQuoteExecutor: ToolExecutor<DedustQuoteParams> = async (
       }
     }
 
-    const tonClient = await getCachedTonClient();
+    const tonClient = getCachedTonClient();
 
     const factory = tonClient.open(
       Factory.createFromAddress(Address.parse(DEDUST_FACTORY_MAINNET))

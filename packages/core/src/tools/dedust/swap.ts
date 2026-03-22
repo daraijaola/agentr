@@ -56,12 +56,14 @@ export const dedustSwapTool: Tool = {
 };
 export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { from_asset, to_asset, amount, pool_type = "volatile", slippage = 0.01 } = params;
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic in context")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -100,7 +102,7 @@ export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
       }
     }
 
-    const tonClient = await getCachedTonClient();
+    const tonClient = getCachedTonClient();
 
     const factory = tonClient.open(
       Factory.createFromAddress(Address.parse(DEDUST_FACTORY_MAINNET))
@@ -138,8 +140,8 @@ export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
 
     // Prepare wallet and sender — wrapped in tx lock to prevent seqno races
     // with concurrent StonFi or other DeDust swaps
-    return withTxLock(async () => {
-      const keyPair = await getKeyPair();
+    return withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
+      const keyPair = await getKeyPair((context as any).mnemonic);
       if (!keyPair) {
         return { success: false, error: "Wallet key derivation failed." };
       }
@@ -152,7 +154,7 @@ export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
 
       if (isTonInput) {
         // Check balance for TON swaps
-        const balance = await tonClient.getBalance(Address.parse(walletData.address));
+        const balance = await tonClient.getBalance(Address.parse(walletData.wallet.address.toString({ bounceable: false })));
         const requiredAmount = amountIn + toNano(DEDUST_GAS.SWAP_TON_TO_JETTON);
         if (balance < requiredAmount) {
           return {
@@ -196,7 +198,7 @@ export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
 
         const jettonRoot = tonClient.open(JettonRoot.createFromAddress(jettonAddress));
         const jettonWallet = tonClient.open(
-          await jettonRoot.getWallet(Address.parse(walletData.address))
+          await jettonRoot.getWallet(Address.parse(walletData.wallet.address.toString({ bounceable: false })))
         );
 
         // Build swap payload using SDK
@@ -209,7 +211,7 @@ export const dedustSwapExecutor: ToolExecutor<DedustSwapParams> = async (
         await jettonWallet.sendTransfer(sender, toNano(DEDUST_GAS.SWAP_JETTON_TO_ANY), {
           destination: jettonVault.address,
           amount: amountIn,
-          responseAddress: Address.parse(walletData.address),
+          responseAddress: Address.parse(walletData.wallet.address.toString({ bounceable: false })),
           forwardAmount: toNano(DEDUST_GAS.FORWARD_GAS),
           forwardPayload: swapPayload,
         });

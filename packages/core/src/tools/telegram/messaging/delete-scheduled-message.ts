@@ -32,7 +32,7 @@ export const telegramDeleteScheduledMessageExecutor: ToolExecutor<
 > = async (params, context): Promise<ToolResult> => {
   try {
     const { chatId, messageIds } = params;
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
     const entity = await gramJsClient.getEntity(chatId);
 
     await gramJsClient.invoke(

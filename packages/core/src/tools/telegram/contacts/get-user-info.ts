@@ -53,7 +53,7 @@ export const telegramGetUserInfoExecutor: ToolExecutor<GetUserInfoParams> = asyn
       };
     }
 
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Resolve the user entity
     let entity: Api.User;

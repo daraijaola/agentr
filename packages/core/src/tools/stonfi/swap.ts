@@ -52,12 +52,14 @@ export const stonfiSwapTool: Tool = {
 };
 export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { from_asset, to_asset, amount, slippage = 0.01 } = params;
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic as string[]
+    if (!mnemonic?.length) return { success: false, error: "No wallet mnemonic in context" }
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -84,7 +86,7 @@ export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
       };
     }
 
-    const tonClient = await getCachedTonClient();
+    const tonClient = getCachedTonClient();
     const stonApiClient = new StonApiClient();
 
     // Fetch decimals for accurate conversion (TON=9, USDT=6, WBTC=8, etc.)
@@ -116,8 +118,8 @@ export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
     const contracts = dexFactory(routerInfo);
     const router = tonClient.open(contracts.Router.create(routerInfo.address));
 
-    return withTxLock(async () => {
-      const keyPair = await getKeyPair();
+    return withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
+      const keyPair = await getKeyPair((context as any).mnemonic as string[]);
       if (!keyPair) {
         return { success: false, error: "Wallet key derivation failed." };
       }
@@ -147,7 +149,7 @@ export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
 
         // TON -> Jetton
         txParams = await router.getSwapTonToJettonTxParams({
-          userWalletAddress: walletData.address,
+          userWalletAddress: walletData.wallet.address.toString({ bounceable: false }),
           proxyTon,
           askJettonAddress: toAddress,
           offerAmount: BigInt(simulationResult.offerUnits),
@@ -156,7 +158,7 @@ export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
       } else if (isTonOutput) {
         // Jetton -> TON
         txParams = await router.getSwapJettonToTonTxParams({
-          userWalletAddress: walletData.address,
+          userWalletAddress: walletData.wallet.address.toString({ bounceable: false }),
           proxyTon,
           offerJettonAddress: fromAddress,
           offerAmount: BigInt(simulationResult.offerUnits),
@@ -165,7 +167,7 @@ export const stonfiSwapExecutor: ToolExecutor<JettonSwapParams> = async (
       } else {
         // Jetton -> Jetton
         txParams = await router.getSwapJettonToJettonTxParams({
-          userWalletAddress: walletData.address,
+          userWalletAddress: walletData.wallet.address.toString({ bounceable: false }),
           offerJettonAddress: fromAddress,
           askJettonAddress: toAddress,
           offerAmount: BigInt(simulationResult.offerUnits),

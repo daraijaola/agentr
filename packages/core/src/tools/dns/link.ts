@@ -40,7 +40,7 @@ export const dnsLinkTool: Tool = {
 };
 export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain } = params;
@@ -50,7 +50,9 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
     domain = domain.toLowerCase().replace(/\.ton$/, "");
     const fullDomain = `${domain}.ton`;
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -59,7 +61,7 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
     }
 
     // Use agent's wallet if no address specified
-    const targetAddress = wallet_address || walletData.address;
+    const targetAddress = wallet_address || walletData.wallet.address.toString({ bounceable: false });
 
     // Validate target address
     try {
@@ -110,7 +112,7 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
 
     // Normalize addresses for comparison
     const ownerNormalized = Address.parse(ownerAddress).toString();
-    const agentNormalized = Address.parse(walletData.address).toString();
+    const agentNormalized = Address.parse(walletData.wallet.address.toString({ bounceable: false })).toString();
 
     if (ownerNormalized !== agentNormalized) {
       return {
@@ -119,7 +121,7 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
       };
     }
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -129,10 +131,10 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const contract = client.open(wallet);
 
-    await withTxLock(async () => {
+    await withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await contract.getSeqno();
 
       // Build wallet record value cell: dns_smc_address#9fd3 + address + flags
@@ -172,7 +174,7 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
         domain: fullDomain,
         linkedWallet: targetAddress,
         nftAddress,
-        from: walletData.address,
+        from: walletData.wallet.address.toString({ bounceable: false }),
         message: `Linked ${fullDomain} → ${targetAddress}\n  NFT: ${nftAddress}\n  Transaction sent (changes apply in a few seconds)`,
       },
     };

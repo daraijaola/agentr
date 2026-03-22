@@ -6,7 +6,7 @@ import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import { readFileSync } from "fs";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-import { toLong } from "../../../../utils/gramjs-bigint.js";
+import { toLong } from "../../../utils/gramjs-bigint.js";
 import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -46,7 +46,7 @@ export const telegramSetChatPhotoExecutor: ToolExecutor<SetChatPhotoParams> = as
   try {
     const { chat_id, photo_path, delete_photo = false } = params;
 
-    const client = context.bridge.getClient().getClient();
+    const client = (context.bridge as any).getClient().getClient();
 
     // Get entity to determine if it's a channel or regular chat
     const entity = await client.getEntity(chat_id);

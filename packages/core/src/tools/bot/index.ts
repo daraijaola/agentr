@@ -1,4 +1,4 @@
-import type { ToolEntry } from "../../types.js"
+import type { ToolEntry } from "../types.js"
 import { botInlineSendTool, botInlineSendExecutor } from "./inline-send.js"
 import { createTelegramBotTool, createTelegramBotExecutor } from "./create-bot.js"
 

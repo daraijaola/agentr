@@ -36,7 +36,7 @@ export const telegramCreateGroupExecutor: ToolExecutor<CreateGroupParams> = asyn
   try {
     const { title, users } = params;
 
-    const client = context.bridge.getClient().getClient();
+    const client = (context.bridge as any).getClient().getClient();
 
     // Resolve user entities
     const userEntities: Api.TypeInputUser[] = [];

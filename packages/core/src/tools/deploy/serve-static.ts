@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox"
 import { execSync } from "child_process"
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js"
+import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
 const PUBLIC_BASE = "https://agentr.online/sites"
 

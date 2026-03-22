@@ -1,4 +1,4 @@
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
@@ -99,11 +99,11 @@ export const telegramCreateQuizExecutor: ToolExecutor<CreateQuizParams> = async 
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Create quiz poll with correct answer
     const poll = new Api.Poll({
-      id: randomLong(),
+      id: (randomLong() as unknown as any),
       question: new Api.TextWithEntities({ text: question, entities: [] }),
       answers: options.map(
         (opt, idx) =>
@@ -129,7 +129,7 @@ export const telegramCreateQuizExecutor: ToolExecutor<CreateQuizParams> = async 
           solutionEntities: [],
         }),
         message: "",
-        randomId: randomLong(),
+        randomId: (randomLong() as unknown as any),
       })
     );
 

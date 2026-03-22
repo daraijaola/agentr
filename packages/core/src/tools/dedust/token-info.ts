@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import { DEDUST_API_URL } from "./constants.js";
-import { fetchWithTimeout } from "../../../utils/fetch.js";
+import { fetchWithTimeout } from "../../utils/fetch.js";
 import { findAsset, findAssetBySymbol, fromUnits } from "./asset-cache.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
@@ -62,7 +62,7 @@ interface Holder {
 }
 export const dedustTokenInfoExecutor: ToolExecutor<DedustTokenInfoParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { token } = params;

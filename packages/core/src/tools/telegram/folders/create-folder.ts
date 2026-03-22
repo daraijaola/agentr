@@ -84,7 +84,7 @@ export const telegramCreateFolderExecutor: ToolExecutor<CreateFolderParams> = as
     } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get existing filters to determine next ID
     // GetDialogFilters returns messages.DialogFilters { filters: [] } (not a plain array)

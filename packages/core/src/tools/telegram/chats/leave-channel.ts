@@ -38,7 +38,7 @@ export const telegramLeaveChannelExecutor: ToolExecutor<LeaveChannelParams> = as
     const { channel } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Resolve the channel entity
     let channelEntity;

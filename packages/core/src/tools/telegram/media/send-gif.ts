@@ -1,4 +1,4 @@
-import { randomLong, toLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong, toLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
@@ -81,7 +81,7 @@ export const telegramSendGifExecutor: ToolExecutor<SendGifParams> = async (
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Method 1: Send GIF from inline bot result (@gif)
     if (hasInlineResult) {
@@ -92,7 +92,7 @@ export const telegramSendGifExecutor: ToolExecutor<SendGifParams> = async (
           queryId: toLong(BigInt(queryId!)),
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guarded by hasInlineResult check
           id: resultId!,
-          randomId: randomLong(),
+          randomId: (randomLong() as unknown as any),
           replyTo: replyToId ? new Api.InputReplyToMessage({ replyToMsgId: replyToId }) : undefined,
         })
       );

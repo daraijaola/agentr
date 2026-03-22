@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox"
 import { execSync } from "child_process"
 import { writeFileSync, mkdirSync, rmSync } from "fs"
 import path from "path"
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js"
+import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
 interface CodeExecuteParams {
   language: "python" | "javascript" | "bash"

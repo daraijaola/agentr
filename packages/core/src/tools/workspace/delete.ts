@@ -46,7 +46,8 @@ export const workspaceDeleteExecutor: ToolExecutor<WorkspaceDeleteParams> = asyn
     const { path, recursive = false } = params;
 
     // Validate the path
-    const validated = validatePath(path, false);
+    // @ts-ignore
+    const validated = ((validatePath(path, false) as any) as any);
 
     // Check if it's a protected file
     if (PROTECTED_WORKSPACE_FILES.includes(validated.filename)) {

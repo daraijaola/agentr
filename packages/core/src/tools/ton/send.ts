@@ -34,7 +34,7 @@ export const tonSendTool: Tool = {
 };
 export const tonSendExecutor: ToolExecutor<SendParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { to, amount, comment } = params;
@@ -49,7 +49,9 @@ export const tonSendExecutor: ToolExecutor<SendParams> = async (
       };
     }
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic as string[]
+    if (!mnemonic?.length) return { success: false, error: "No wallet mnemonic" }
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -57,7 +59,7 @@ export const tonSendExecutor: ToolExecutor<SendParams> = async (
       };
     }
 
-    const txRef = await sendTon({ toAddress: to, amount, comment });
+    const txRef = await sendTon({ mnemonic: (context as any).mnemonic as string[], to: to, amount, comment });
 
     if (!txRef) {
       return {
@@ -72,7 +74,7 @@ export const tonSendExecutor: ToolExecutor<SendParams> = async (
         to,
         amount,
         comment: comment || null,
-        from: walletData.address,
+        from: walletData.wallet.address.toString({ bounceable: false }),
         message: `Sent ${amount} TON to ${to}${comment ? ` (${comment})` : ""}`,
       },
     };

@@ -52,7 +52,7 @@ export const telegramGetResaleGiftsExecutor: ToolExecutor<GetResaleGiftsParams> 
 ): Promise<ToolResult> => {
   try {
     const { giftId, limit = 30, sortByPrice = false } = params;
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     if (!/^\d+$/.test(giftId)) {
       return {

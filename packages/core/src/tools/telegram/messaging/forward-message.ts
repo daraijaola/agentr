@@ -1,4 +1,4 @@
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
@@ -59,7 +59,7 @@ export const telegramForwardMessageExecutor: ToolExecutor<ForwardMessageParams> 
     const { fromChatId, toChatId, messageIds, silent = false, background = false } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Forward messages using GramJS API
     const _result = await gramJsClient.invoke(
@@ -69,7 +69,7 @@ export const telegramForwardMessageExecutor: ToolExecutor<ForwardMessageParams> 
         id: messageIds,
         silent,
         background,
-        randomId: messageIds.map(() => randomLong()),
+        randomId: messageIds.map(() => randomLong() as unknown as any),
       })
     );
 

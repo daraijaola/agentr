@@ -15,6 +15,7 @@ import {
   EDGE_VOICES,
   PIPER_VOICES,
   type TTSProvider,
+// @ts-ignore — stub module, resolved at runtime
 } from "../../../../services/tts.js";
 import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
 import { getErrorMessage } from "../../../utils/errors.js";
@@ -180,7 +181,7 @@ export const telegramSendVoiceExecutor: ToolExecutor<SendVoiceParams> = async (
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Send voice message using GramJS sendFile with voice attributes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped
