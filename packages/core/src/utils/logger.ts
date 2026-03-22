@@ -91,19 +91,7 @@ function resolveLevel(): LogLevel {
 // ── Build pino multistream ────────────────────────────────────────────
 const webUIStream = new WebUILogStream();
 
-const usePretty = process.env.AGENTR_LOG_PRETTY === "true";
-
-const stdoutStream = usePretty
-  ? pino.transport({
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "HH:MM:ss",
-        ignore: "pid,hostname,module",
-        messageFormat: "{if module}[{module}] {end}{msg}",
-      },
-    })
-  : pino.destination(1); // raw JSON to stdout
+const stdoutStream = pino.destination(1); // raw JSON to stdout
 
 // Keep reference to multistream for runtime level updates
 const initialLevel = resolveLevel();

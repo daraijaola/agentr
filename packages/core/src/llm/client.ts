@@ -12,7 +12,7 @@ const URLS: Record<string, string> = {
   'openai-codex': 'https://chatgpt.com/backend-api/codex/responses'
 }
 const DEFAULTS: Record<string, string> = {
-  anthropic: 'claude-sonnet-4-5',
+  anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-4o',
   moonshot: 'moonshot-v1-128k',
   'openai-codex': 'gpt-5.3-codex'
