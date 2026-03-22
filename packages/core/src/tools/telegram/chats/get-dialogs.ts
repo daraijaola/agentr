@@ -82,8 +82,8 @@ export const telegramGetDialogsExecutor: ToolExecutor<GetDialogsParams> = async 
     }
 
     // Calculate summary stats
-    const totalUnread = formattedDialogs.reduce((sum, d) => sum + d.unreadCount, 0);
-    const totalMentions = formattedDialogs.reduce((sum, d) => sum + d.unreadMentionsCount, 0);
+    const totalUnread = formattedDialogs.reduce((sum: any, d: any) => sum + d.unreadCount, 0);
+    const totalMentions = formattedDialogs.reduce((sum: any, d: any) => sum + d.unreadMentionsCount, 0);
 
     return {
       success: true,

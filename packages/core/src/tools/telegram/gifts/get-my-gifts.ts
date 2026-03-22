@@ -105,7 +105,7 @@ export const telegramGetMyGiftsExecutor: ToolExecutor<GetMyGiftsParams> = async 
     } = params;
     const gramJsClient = (context.bridge as any).getClient().getClient();
 
-    const targetUserId = viewSender ? context.senderId.toString() : userId;
+    const targetUserId = viewSender ? (context as any).senderId!.toString() : userId;
 
     const peer = targetUserId
       ? await gramJsClient.getEntity(targetUserId)
@@ -240,7 +240,7 @@ export const telegramGetMyGiftsExecutor: ToolExecutor<GetMyGiftsParams> = async 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped
     const collectibles = gifts.filter((g: any) => g.isCollectible);
 
-    const viewingLabel = viewSender ? `sender (${context.senderId})` : userId || "self";
+    const viewingLabel = viewSender ? `sender (${(context as any).senderId!})` : userId || "self";
     log.info(
       `get_my_gifts: viewing ${viewingLabel}, found ${gifts.length} gifts (${collectibles.length} collectibles)`
     );
