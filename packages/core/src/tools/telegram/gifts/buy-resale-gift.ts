@@ -41,7 +41,7 @@ export const telegramBuyResaleGiftExecutor: ToolExecutor<BuyResaleGiftParams> = 
     // Buy for self
     const toId = new Api.InputPeerSelf();
 
-    const invoice = new Api.InputInvoiceStarGiftResale({
+    const invoice = new Api.InputInvoiceStarGift({
       slug,
       toId,
     });
