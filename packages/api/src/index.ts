@@ -30,7 +30,7 @@ const app = new Hono()
 
 app.use('*', logger())
 app.use('*', ipRateLimit(120))
-app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }))
+app.use('*', cors({ origin: ['https://agentr.online', 'http://localhost:5173'], allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
@@ -39,7 +39,6 @@ app.route('/auth', authRoutes)
 app.use('/agent/message', authMiddleware)
 app.use('/agent/provision', authMiddleware)
 app.use('/agent/deprovision', authMiddleware)
-app.use('/agent/status', authMiddleware)
 app.use('/agent/provider', authMiddleware)
 app.route('/agent', agentRoutes)
 
