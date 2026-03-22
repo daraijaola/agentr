@@ -40,8 +40,16 @@ export class AgentFactory {
     const mnemonicEnc = Buffer.from(mnemonic.join(' ')).toString('base64')
     console.log(`[AgentFactory] Wallet: ${address}`)
 
-    // 2. Get Telegram user info
-    const tgClient = bridgeManager.get(tenantId)
+    // 2. Get Telegram user info — start gramjs bridge using Telethon-saved session
+    let tgClient = bridgeManager.get(tenantId)
+    if (!tgClient) {
+      try {
+        tgClient = await bridgeManager.resume(tenantId, phone)
+        console.log('[AgentFactory] gramjs bridge started for:', tenantId)
+      } catch (e) {
+        console.warn('[AgentFactory] gramjs bridge failed (no listener):', e)
+      }
+    }
     const me = tgClient?.getMe()
 
     // 3. Upsert user in DB
