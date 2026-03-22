@@ -64,8 +64,7 @@ export const telegramGetResaleGiftsExecutor: ToolExecutor<GetResaleGiftsParams> 
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped
     const result: any = await gramJsClient.invoke(
-      new Api.payments.GetSavedStarGifts({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped
+      new (Api.payments.GetSavedStarGifts as any)({
         offset: "",
         limit,
         sortByPrice,
