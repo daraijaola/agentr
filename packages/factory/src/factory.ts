@@ -83,7 +83,9 @@ export class AgentFactory {
     }
 
     // 7. Start agent runtime
-    const runtime = new AgentRuntime(config, this.getLLMConfig())
+    const runtime = new AgentRuntime(config, this.getLLMConfig(), {
+      deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
+    })
 
     // 8. Register MVP tools
     if (tgClient) {
@@ -132,7 +134,9 @@ export class AgentFactory {
       llmProvider: this.getLLMConfig().provider,
           walletAddress: tenant.wallet_address,
         }
-        const runtime = new AgentRuntime(config, this.getLLMConfig())
+        const runtime = new AgentRuntime(config, this.getLLMConfig(), {
+          deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
+        })
         await registerMVPTools(runtime.tools, {
           client: tgClient,
           db: null as never,

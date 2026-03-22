@@ -256,7 +256,7 @@ You are a personal AI agent running on your owner's Telegram account, deployed a
 What you are:
 - A full-stack coding agent capable of writing, running, and deploying code in any language
 - A Telegram operator with the ability to send messages, manage chats, create bots, and build mini apps
-- This agent runs on a server with PUBLIC IP: 46.101.74.170. When deploying web servers, always give the user the public URL: http://46.101.74.170:PORT (not localhost)
+- This agent runs on a server with PUBLIC IP: ${process.env.SERVER_PUBLIC_IP ?? 'localhost'}. When deploying web servers, always give the user the public URL: http://${process.env.SERVER_PUBLIC_IP ?? 'localhost'}:PORT (not localhost)
 - A TON blockchain agent with a live wallet, capable of checking balances, monitoring transactions, and executing payments
 - A file manager with a persistent workspace where you store code, configs, and memory across sessions
 - A process manager that can spawn, monitor, and kill running services
@@ -479,6 +479,8 @@ agentRoutes.post('/marketplace/deploy',
   }
 )
 
+import bcrypt from 'bcryptjs'
+
 // POST /agent/dev/register
 agentRoutes.post('/dev/register',
   zValidator('json', z.object({
@@ -497,8 +499,9 @@ agentRoutes.post('/dev/register',
       const existing = await db.query('SELECT id FROM dev_accounts WHERE email = $1', [body.email])
       if ((existing as any[]).length > 0) return c.json({ success: false, error: 'Email already registered' }, 400)
       const crypto = await import('crypto')
-      const hash = crypto.createHash('sha256').update(body.password).digest('hex')
-      const token = crypto.randomBytes(32).toString('hex')
+      const hash = await bcrypt.hash(body.password, 12)
+      const crypto2 = await import('crypto')
+      const token = crypto2.randomBytes(32).toString('hex')
       await db.query(
         'INSERT INTO dev_accounts (name, email, telegram_username, wallet_address, password_hash, token, category, bio, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [body.name, body.email, body.telegram, body.wallet, hash, token, body.category, body.bio ?? '', 'pending']
@@ -516,10 +519,11 @@ agentRoutes.post('/dev/login',
     try {
       const db = agentFactory.getDb()
       const crypto = await import('crypto')
-      const hash = crypto.createHash('sha256').update(password).digest('hex')
-      const rows = await db.query<any>('SELECT id, name, token, approved, earnings_credits FROM dev_accounts WHERE email = $1 AND password_hash = $2', [email, hash])
+      const rows = await db.query<any>('SELECT id, name, token, approved, earnings_credits, password_hash FROM dev_accounts WHERE email = $1', [email])
       if (!(rows as any[]).length) return c.json({ success: false, error: 'Invalid email or password' }, 401)
       const dev = (rows as any[])[0]
+      const validPassword = await bcrypt.compare(password, dev.password_hash)
+      if (!validPassword) return c.json({ success: false, error: 'Invalid email or password' }, 401)
       return c.json({ success: true, token: dev.token, name: dev.name, approved: dev.approved, earnings: dev.earnings_credits, id: dev.id })
     } catch (err) { return c.json({ success: false, error: String(err) }, 500) }
   }
@@ -590,9 +594,11 @@ agentRoutes.post('/dev/withdraw',
   }
 )
 
-// GET /agent/admin/submissions?password=xxx
-agentRoutes.get('/admin/submissions', async (c) => {
-  const password = c.req.query('password')
+// POST /agent/admin/submissions
+agentRoutes.post('/admin/submissions',
+  zValidator('json', z.object({ password: z.string() })),
+  async (c) => {
+  const { password } = c.req.valid('json')
   if (password !== process.env['ADMIN_PASSWORD']) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

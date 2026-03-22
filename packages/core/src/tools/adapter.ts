@@ -14,10 +14,10 @@ export interface AdapterContext {
   mnemonic?: string[]
 }
 
-export function adaptTeletonTools(entries: ToolEntry[], adapterCtx: AdapterContext): Tool[] {
+export function adaptTools(entries: ToolEntry[], adapterCtx: AdapterContext): Tool[] {
   const { client } = adapterCtx
 
-  // Bridge object that matches what ALL Teleton tools expect
+  // Bridge object that matches the tool context interface
   const bridge = {
     // tools call: context.bridge.getClient().getClient() to get raw GramJS
     getClient: () => ({

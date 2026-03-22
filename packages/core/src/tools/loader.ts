@@ -1,36 +1,36 @@
-import { adaptTeletonTools } from './adapter.js'
+import { adaptTools } from './adapter.js'
 import type { AdapterContext } from './adapter.js'
 import type { ToolRegistry } from '../agent/tool-registry.js'
 import { memoryWriteTool } from './memory-write.js'
 
-// MVP tool set: Teleton tools adapted for AGENTR
+// AGENTR MVP tool set
 export async function registerMVPTools(
   registry: ToolRegistry,
   ctx: AdapterContext
 ): Promise<void> {
   // -- Telegram: chats
   const { tools: chatTools } = await import('./telegram/chats/index.js')
-  adaptTeletonTools(chatTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(chatTools, ctx).forEach((t) => registry.register(t))
 
   // -- Telegram: messaging
   const { tools: msgTools } = await import('./telegram/messaging/index.js')
-  adaptTeletonTools(msgTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(msgTools, ctx).forEach((t) => registry.register(t))
 
   // -- Telegram: groups
   const { tools: groupTools } = await import('./telegram/groups/index.js')
-  adaptTeletonTools(groupTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(groupTools, ctx).forEach((t) => registry.register(t))
 
   // -- TON: wallet + transactions
   const { tools: tonTools } = await import('./ton/index.js')
-  adaptTeletonTools(tonTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(tonTools, ctx).forEach((t) => registry.register(t))
 
   // -- Bot creation
   const { tools: botTools } = await import('./bot/index.js')
-  adaptTeletonTools(botTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(botTools, ctx).forEach((t) => registry.register(t))
 
   // -- Workspace: file operations (per-tenant sandboxed)
   const { tools: wsTools } = await import('./workspace/index.js')
-  adaptTeletonTools(wsTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(wsTools, ctx).forEach((t) => registry.register(t))
 
   // -- Deploy: code_execute + process management
   const { tools: deployTools } = await import('./deploy/index.js')
@@ -66,7 +66,7 @@ export async function registerMVPTools(
 
   // -- DNS: .ton domain tools
   const { tools: dnsTools } = await import('./dns/index.js')
-  adaptTeletonTools(dnsTools, ctx).forEach((t) => registry.register(t))
+  adaptTools(dnsTools, ctx).forEach((t) => registry.register(t))
 
   // -- Swarm: multi sub-agent execution
   const { tools: swarmTools } = await import('./swarm/index.js')

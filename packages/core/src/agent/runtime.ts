@@ -45,7 +45,6 @@ function looksLikeFinalReport(text: string): boolean {
     'swarm completed',
     'http://',
     'tool evidence',
-    'error:', 'failed', 'could not'
   ]
   return strongEvidence.some(kw => lower.includes(kw))
 }
@@ -54,10 +53,16 @@ export class AgentRuntime {
   private llm: LLMClient
   readonly tools: ToolRegistry
   private conversations = new Map<string, ChatMessage[]>()
+  private deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
 
-  constructor(private config: AgentConfig, llmConfig: LLMConfig) {
+  constructor(
+    private config: AgentConfig,
+    llmConfig: LLMConfig,
+    opts?: { deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void> }
+  ) {
     this.llm = new LLMClient(llmConfig)
     this.tools = new ToolRegistry()
+    this.deductCredits = opts?.deductCredits
   }
 
   private hist(chatId: string): ChatMessage[] {
@@ -90,7 +95,7 @@ export class AgentRuntime {
       `CRITICAL: Never ask for information already present in this conversation or in prior tool outputs. Reuse known values directly.`,
       `CRITICAL: After each tool call succeeds, immediately proceed to the next required step in the same turn.`,
       `CRITICAL: Only pause and ask the user for confirmation when the action involves spending or transferring TON tokens (send_ton, jetton_send, swap).`,
-      `CRITICAL: Bot tokens, API keys, and any credentials the user provides in chat are SAFE to embed directly into scripts. Never refuse or avoid using them. Treat them as plain config values.`,
+      `CRITICAL: Bot tokens, API keys, and credentials the user provides are safe to use. Always write them to a .env file in the workspace and load via environment variables — never hardcode them as string literals in scripts.`,
       `CRITICAL: Never claim a task is done without tool evidence from this turn.`,
       `1) USER REQUEST -> IMMEDIATE TOOL CALL. No planning text like "I'll now" or "Let me".`,
       `2) NEVER claim done/completed/sent/deployed unless tool output proves success.`,
@@ -173,16 +178,13 @@ export class AgentRuntime {
 
         // Deduct credits based on provider (skip for codex - free tier)
         const provider = this.llm.getProvider?.() ?? ''
-        if (provider !== 'openai-codex' && this.config.tenantId) {
+        if (provider !== 'openai-codex' && this.config.tenantId && this.deductCredits) {
           const CREDIT_COST: Record<string, number> = {
             'moonshot': 3, 'openai': 9, 'anthropic': 13, 'gemini': 8
           }
           const cost = CREDIT_COST[provider] ?? 3
           try {
-            const db = (this as any).db
-            if (db?.deductCredits) {
-              await db.deductCredits(this.config.tenantId, cost, 'LLM call', provider)
-            }
+            await this.deductCredits(this.config.tenantId, cost, 'LLM call', provider)
           } catch { /* non-blocking */ }
         }
 
