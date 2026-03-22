@@ -593,7 +593,7 @@ agentRoutes.post('/dev/withdraw',
 // GET /agent/admin/submissions?password=xxx
 agentRoutes.get('/admin/submissions', async (c) => {
   const password = c.req.query('password')
-  if (password !== process.env['ADMIN_PASSWORD'] && password !== 'agentr2026admin') {
+  if (password !== process.env['ADMIN_PASSWORD']) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
@@ -627,7 +627,7 @@ agentRoutes.post('/admin/approve',
   zValidator('json', z.object({ password: z.string(), agentId: z.string(), action: z.enum(['approve','reject']), reviewer_notes: z.string().optional() })),
   async (c) => {
     const { password, agentId, action, reviewer_notes } = c.req.valid('json')
-    if (password !== process.env['ADMIN_PASSWORD'] && password !== 'agentr2026admin') {
+    if (password !== process.env['ADMIN_PASSWORD']) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
@@ -647,7 +647,7 @@ agentRoutes.post('/admin/approve-dev',
   zValidator('json', z.object({ password: z.string(), devId: z.string(), action: z.enum(['approve','reject']) })),
   async (c) => {
     const { password, devId, action } = c.req.valid('json')
-    if (password !== process.env['ADMIN_PASSWORD'] && password !== 'agentr2026admin') {
+    if (password !== process.env['ADMIN_PASSWORD']) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
