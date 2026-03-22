@@ -119,10 +119,10 @@ export const workspaceInfoExecutor: ToolExecutor<WorkspaceInfoParams> = async (
       security: {
         note: "You can ONLY access files within this workspace.",
         protectedFiles: [
-          "~/.teleton/config.yaml (API keys)",
-          "~/.teleton/wallet.json (TON mnemonic)",
-          "~/.teleton/telegram_session.txt (session)",
-          "~/.teleton/memory.db (database)",
+          "config.yaml (API keys)",
+          "wallet.json (TON mnemonic)",
+          "telegram_session.txt (session)",
+          "memory.db (database)",
         ],
       },
     };

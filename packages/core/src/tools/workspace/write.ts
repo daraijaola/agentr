@@ -19,7 +19,7 @@ interface WorkspaceWriteParams {
 export const workspaceWriteTool: Tool = {
   name: "workspace_write",
   description:
-    "Write a file to workspace. Only ~/.teleton/workspace/ is writable. Cannot write to protected locations.",
+    "Write a file to workspace. Only your private workspace is writable. Cannot write to protected locations.",
 
   parameters: Type.Object({
     path: Type.String({
