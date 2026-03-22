@@ -45,6 +45,11 @@ export class AgentFactory {
     const me = tgClient?.getMe()
 
     // 3. Upsert user in DB
+    // First ensure a user record exists (Telethon bridge doesn't populate bridgeManager)
+    await this.db.query(
+      `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
+      [tenantId]
+    )
     let userId = tenantId
     if (me) {
       userId = await this.db.upsertUser({
