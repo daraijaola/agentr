@@ -351,7 +351,7 @@ The agent writes here when:
     }
 
     // Try to read from sys() prompt files if they exist in sessions dir
-    const sessionsDir = join('/root/agentr/sessions', tenantId)
+    const sessionsDir = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenantId)
 
     for (const [fname, defaultContent] of Object.entries(CORE)) {
       const fp = join(dir, fname)
