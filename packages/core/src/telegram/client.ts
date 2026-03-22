@@ -8,7 +8,7 @@ import { dirname } from 'path'
 import { withFloodRetry } from './flood-retry.js'
 
 //  Per-tenant Telegram MTProto client
-// Adapted from Teleton (MIT)  multi-tenant layer added by AGENTR
+// Per-tenant MTProto client — multi-tenant layer by AGENTR
 // Key difference: one TelegramUserClient instance per tenantId, not global
 
 export interface TelegramClientConfig {
