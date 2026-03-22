@@ -37,14 +37,17 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
 
 function looksLikeFinalReport(text: string): boolean {
   const lower = text.toLowerCase()
-  const evidenceKeywords = [
-    'success: true', 'online', 'deployed', 'started', 'process is live', 'swarm completed', 'sub-agents',
-    'exit code: 0', 'balance:', 'sent', 'written', 'saved', 'error:',
-    'failed', 'could not', 'tool evidence', 'http://', 'port', 'server',
-    'created', 'running', 'complete', 'done', 'here is', 'here are',
-    'the link', 'you can', 'accessible'
+  // Only exit loop on strong tool evidence — not generic words
+  const strongEvidence = [
+    'success: true',
+    'exit code: 0',
+    'process is live',
+    'swarm completed',
+    'http://',
+    'tool evidence',
+    'error:', 'failed', 'could not'
   ]
-  return evidenceKeywords.some(kw => lower.includes(kw))
+  return strongEvidence.some(kw => lower.includes(kw))
 }
 
 export class AgentRuntime {
