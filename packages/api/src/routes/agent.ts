@@ -9,24 +9,30 @@ export const agentRoutes = new Hono()
 // GET /agent/status/:tenantId
 agentRoutes.get('/status/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
-  const client = bridgeManager.get(tenantId)
-  const runtime = agentFactory.get(tenantId)
-
-  if (!client || !runtime) {
+  try {
+    const db = agentFactory.getDb()
+    const rows = await db.query<any>(
+      `SELECT ai.status, t.phone, t.owner_name, t.owner_username, t.wallet_address
+       FROM agent_instances ai JOIN tenants t ON t.id = ai.tenant_id
+       WHERE ai.tenant_id = $1 ORDER BY ai.created_at DESC LIMIT 1`,
+      [tenantId]
+    )
+    if (!(rows as any[]).length) return c.json({ status: 'offline', tenantId })
+    const row = (rows as any[])[0]
+    const isOnline = row.status === 'running'
+    return c.json({
+      status: isOnline ? 'online' : 'offline',
+      tenantId,
+      walletAddress: row.wallet_address,
+      telegram: isOnline ? {
+        username: row.owner_username || null,
+        firstName: row.owner_name || null,
+        phone: row.phone,
+      } : null,
+    })
+  } catch {
     return c.json({ status: 'offline', tenantId })
   }
-
-  const me = client.getMe()
-  return c.json({
-    status: client.isConnected() ? 'online' : 'offline',
-    tenantId,
-    tools: runtime.tools.list().length,
-    telegram: me ? {
-      username: me.username,
-      firstName: me.firstName,
-      phone: me.phone,
-    } : null,
-  })
 })
 
 // POST /agent/message � user sends message to their agent
