@@ -2,8 +2,8 @@ import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { markdownToTelegramHtml } from "../../../../telegram/formatting.js";
 import { TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../../constants/limits.js";
-import { getErrorMessage } from "../../../../utils/errors.js";
-import { createLogger } from "../../../../utils/logger.js";
+import { getErrorMessage } from "../../../utils/errors.js";
+import { createLogger } from "../../../utils/logger.js";
 
 const log = createLogger("Tools");
 

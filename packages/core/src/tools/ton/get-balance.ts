@@ -1,8 +1,8 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-import { getWalletBalance } from "../../../ton/wallet-service.js";
-import { getErrorMessage } from "../../../utils/errors.js";
-import { createLogger } from "../../../utils/logger.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import { getWalletBalance } from "../../ton/wallet-service.js";
+import { getErrorMessage } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
 const log = createLogger("Tools");
 export const tonGetBalanceTool: Tool = {
   name: "ton_get_balance",

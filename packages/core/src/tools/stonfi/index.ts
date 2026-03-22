@@ -3,7 +3,7 @@ import { stonfiQuoteTool, stonfiQuoteExecutor } from "./quote.js";
 import { stonfiSearchTool, stonfiSearchExecutor } from "./search.js";
 import { stonfiTrendingTool, stonfiTrendingExecutor } from "./trending.js";
 import { stonfiPoolsTool, stonfiPoolsExecutor } from "./pools.js";
-import type { ToolEntry } from "../../types.js";
+import type { ToolEntry } from "../types.js";
 
 export { stonfiSwapTool, stonfiSwapExecutor };
 export { stonfiQuoteTool, stonfiQuoteExecutor };

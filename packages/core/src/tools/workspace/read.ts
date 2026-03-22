@@ -2,9 +2,9 @@
 
 import { Type } from "@sinclair/typebox";
 import { readFileSync, lstatSync } from "fs";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
-import { getErrorMessage } from "../../../utils/errors.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import { validateReadPath, WorkspaceSecurityError } from "../../workspace/index.js";
+import { getErrorMessage } from "../../utils/errors.js";
 
 interface WorkspaceReadParams {
   path: string;

@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-import { loadWallet, getKeyPair, getCachedTonClient } from "../../../ton/wallet-service.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
+import { loadWallet, getKeyPair, getCachedTonClient } from "../../ton/wallet-service.js";
 import { WalletContractV5R1, toNano, internal, beginCell } from "@ton/ton";
 import { Address, SendMode } from "@ton/core";
-import { getErrorMessage } from "../../../utils/errors.js";
-import { createLogger } from "../../../utils/logger.js";
-import { withTxLock } from "../../../ton/tx-lock.js";
+import { getErrorMessage } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
+import { withTxLock } from "../../ton/tx-lock.js";
 
 const log = createLogger("Tools");
 

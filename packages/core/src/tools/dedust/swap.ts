@@ -1,19 +1,19 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import {
   loadWallet,
   getKeyPair,
   getCachedTonClient,
   invalidateTonClientCache,
-} from "../../../ton/wallet-service.js";
+} from "../../ton/wallet-service.js";
 import { WalletContractV5R1, toNano, fromNano } from "@ton/ton";
 import { Address } from "@ton/core";
 import { Factory, Asset, PoolType, ReadinessStatus, JettonRoot, VaultJetton } from "@dedust/sdk";
 import { DEDUST_FACTORY_MAINNET, DEDUST_GAS, NATIVE_TON_ADDRESS } from "./constants.js";
 import { getDecimals, toUnits, fromUnits } from "./asset-cache.js";
-import { withTxLock } from "../../../ton/tx-lock.js";
-import { getErrorMessage } from "../../../utils/errors.js";
-import { createLogger } from "../../../utils/logger.js";
+import { withTxLock } from "../../ton/tx-lock.js";
+import { getErrorMessage } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
 
 const log = createLogger("Tools");
 interface DedustSwapParams {
