@@ -3,7 +3,7 @@
 import { Type } from "@sinclair/typebox";
 import { unlinkSync, rmdirSync, readdirSync, rmSync } from "fs";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-import { validatePath, WorkspaceSecurityError } from "../../workspace/index.js";
+import { validateWritePath, WorkspaceSecurityError } from "../../workspace/index.js";
 import { getErrorMessage } from "../../utils/errors.js";
 
 interface WorkspaceDeleteParams {

@@ -36,7 +36,7 @@ export const telegramKickUserExecutor: ToolExecutor<KickUserParams> = async (
     const { chat_id, user_id } = params;
 
     // Only bot admins can use moderation tools
-    const adminIds = context.config?.telegram?.admin_ids ?? [];
+    const adminIds = (context as any).config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
         success: false,
@@ -133,7 +133,7 @@ export const telegramBanUserExecutor: ToolExecutor<BanUserParams> = async (
     const { chat_id, user_id, delete_messages = false, duration_hours } = params;
 
     // Only bot admins can use moderation tools
-    const adminIds = context.config?.telegram?.admin_ids ?? [];
+    const adminIds = (context as any).config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
         success: false,
@@ -227,7 +227,7 @@ export const telegramUnbanUserExecutor: ToolExecutor<UnbanUserParams> = async (
     const { chat_id, user_id } = params;
 
     // Only bot admins can use moderation tools
-    const adminIds = context.config?.telegram?.admin_ids ?? [];
+    const adminIds = (context as any).config?.telegram?.admin_ids ?? [];
     if (!adminIds.includes(context.senderId)) {
       return {
         success: false,

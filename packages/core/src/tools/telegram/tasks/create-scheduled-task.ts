@@ -6,6 +6,7 @@ import { MAX_DEPENDENTS_PER_TASK } from "../../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 
+const MAX_DEPENDENTS_PER_TASK = 10
 const log = createLogger("Tools");
 
 /**
@@ -209,7 +210,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       };
     }
 
-    const { getTaskStore } = await import("../../../../memory/agent/tasks.js");
+    const { getTaskStore } = await import("../../../memory/agent/tasks.js");
     const taskStore = getTaskStore(context.db);
 
     // Security: Validate that adding this task won't exceed dependent limit for any parent
