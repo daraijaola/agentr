@@ -16,9 +16,9 @@ import {
   PIPER_VOICES,
   type TTSProvider,
 } from "../../../../services/tts.js";
-import { validateReadPath, WorkspaceSecurityError } from "../../../../workspace/index.js";
-import { getErrorMessage } from "../../../../utils/errors.js";
-import { createLogger } from "../../../../utils/logger.js";
+import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
+import { getErrorMessage } from "../../../utils/errors.js";
+import { createLogger } from "../../../utils/logger.js";
 
 const log = createLogger("Tools");
 

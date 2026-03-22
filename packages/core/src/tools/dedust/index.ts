@@ -3,7 +3,7 @@ import { dedustSwapTool, dedustSwapExecutor } from "./swap.js";
 import { dedustPoolsTool, dedustPoolsExecutor } from "./pools.js";
 import { dedustPricesTool, dedustPricesExecutor } from "./prices.js";
 import { dedustTokenInfoTool, dedustTokenInfoExecutor } from "./token-info.js";
-import type { ToolEntry } from "../../types.js";
+import type { ToolEntry } from "../types.js";
 
 export { dedustQuoteTool, dedustQuoteExecutor };
 export { dedustSwapTool, dedustSwapExecutor };

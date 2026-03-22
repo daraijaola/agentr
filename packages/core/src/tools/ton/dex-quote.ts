@@ -1,14 +1,14 @@
 import { Type } from "@sinclair/typebox";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import type { TonClient } from "@ton/ton";
 import { Address } from "@ton/core";
-import { getCachedTonClient } from "../../../ton/wallet-service.js";
+import { getCachedTonClient } from "../../ton/wallet-service.js";
 import { StonApiClient } from "@ston-fi/api";
 import { Factory, Asset, PoolType, ReadinessStatus } from "@dedust/sdk";
 import { DEDUST_FACTORY_MAINNET, NATIVE_TON_ADDRESS } from "../dedust/constants.js";
 import { getDecimals, toUnits, fromUnits } from "../dedust/asset-cache.js";
-import { getErrorMessage } from "../../../utils/errors.js";
-import { createLogger } from "../../../utils/logger.js";
+import { getErrorMessage } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
 
 const log = createLogger("Tools");
 interface DexQuoteParams {

@@ -4,9 +4,9 @@ import { Api, helpers } from "telegram";
 import { CustomFile } from "telegram/client/uploads.js";
 import { readFileSync, statSync } from "fs";
 import { basename } from "path";
-import { validateReadPath, WorkspaceSecurityError } from "../../../../workspace/index.js";
-import { getErrorMessage } from "../../../../utils/errors.js";
-import { createLogger } from "../../../../utils/logger.js";
+import { validateReadPath, WorkspaceSecurityError } from "../../../workspace/index.js";
+import { getErrorMessage } from "../../../utils/errors.js";
+import { createLogger } from "../../../utils/logger.js";
 
 const log = createLogger("Tools");
 

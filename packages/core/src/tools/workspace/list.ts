@@ -3,13 +3,13 @@
 import { Type } from "@sinclair/typebox";
 import { readdirSync, lstatSync } from "fs";
 import { join } from "path";
-import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
+import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import {
   validateDirectory,
   WORKSPACE_ROOT,
   WorkspaceSecurityError,
-} from "../../../workspace/index.js";
-import { getErrorMessage } from "../../../utils/errors.js";
+} from "../../workspace/index.js";
+import { getErrorMessage } from "../../utils/errors.js";
 
 interface WorkspaceListParams {
   path?: string;
