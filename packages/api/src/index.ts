@@ -34,7 +34,13 @@ app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
-app.use('/agent/*', authMiddleware)
+// Public agent endpoints (no auth required)
+// Protected agent endpoints
+app.use('/agent/message', authMiddleware)
+app.use('/agent/provision', authMiddleware)
+app.use('/agent/deprovision', authMiddleware)
+app.use('/agent/status', authMiddleware)
+app.use('/agent/provider', authMiddleware)
 app.route('/agent', agentRoutes)
 
 app.onError((err, c) => {

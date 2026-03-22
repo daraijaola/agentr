@@ -103,6 +103,25 @@ export class TelegramUserClient {
     }
 
     if (result instanceof Api.auth.SentCode) {
+      const sentType = result.type?.className
+      console.log('[Auth] Code sent via:', sentType, '| nextType:', result.nextType?.className ?? 'none')
+
+      if (sentType === 'auth.SentCodeTypeApp' && result.nextType) {
+        console.log('[Auth] Forcing resend via:', result.nextType.className)
+        try {
+          const resent = await this.client.invoke(new Api.auth.ResendCode({
+            phoneNumber: this.config.phone,
+            phoneCodeHash: result.phoneCodeHash,
+          }))
+          if (resent instanceof Api.auth.SentCode) {
+            console.log('[Auth] Resent successfully via:', resent.type?.className)
+            return { phoneCodeHash: resent.phoneCodeHash, phone: this.config.phone }
+          }
+        } catch (resendErr) {
+          console.error('[Auth] Resend failed:', resendErr)
+        }
+      }
+
       return { phoneCodeHash: result.phoneCodeHash, phone: this.config.phone }
     }
 
