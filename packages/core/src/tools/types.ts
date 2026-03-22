@@ -31,3 +31,16 @@ export interface ToolEntry {
   executor: ToolExecutor
   scope?: 'dm-only' | 'all' | 'group-only' | 'always'
 }
+
+export type ToolContext = {
+  tenantId: string
+  chatId?: string
+  walletAddress?: string
+  mnemonic?: string[]
+  bridge?: unknown
+  config?: unknown
+  db?: unknown
+  senderId?: number
+  isGroup?: boolean
+  [key: string]: unknown
+}
