@@ -15,7 +15,7 @@ interface WorkspaceReadParams {
 export const workspaceReadTool: Tool = {
   name: "workspace_read",
   description:
-    "Read a file from workspace. Only ~/.teleton/workspace/ is accessible. Use encoding='base64' for binary files.",
+    "Read a file from workspace. Only your private workspace is accessible. Use encoding='base64' for binary files.",
   category: "data-bearing",
   parameters: Type.Object({
     path: Type.String({
