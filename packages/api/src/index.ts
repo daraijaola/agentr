@@ -7,9 +7,28 @@ import { healthRoutes } from './routes/health.js'
 import { agentFactory } from '@agentr/factory'
 import { cors } from 'hono/cors'
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+function ipRateLimit(max: number) {
+  return async (c: any, next: any) => {
+    const ip = c.req.header('x-forwarded-for') ?? c.req.header('cf-connecting-ip') ?? 'unknown'
+    const now = Date.now()
+    const entry = rateLimitMap.get(ip)
+    if (!entry || now > entry.resetAt) {
+      rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 })
+    } else {
+      entry.count++
+      if (entry.count > max) {
+        return c.json({ error: 'Too many requests' }, 429)
+      }
+    }
+    await next()
+  }
+}
+
 const app = new Hono()
 
 app.use('*', logger())
+app.use('*', ipRateLimit(120))
 app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }))
 
 app.route('/health', healthRoutes)
