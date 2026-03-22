@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   telegram_id BIGINT UNIQUE,
+  telegram_user_id BIGINT,
   username VARCHAR(255),
   first_name VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW(),
