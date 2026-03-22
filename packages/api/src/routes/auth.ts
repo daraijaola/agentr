@@ -25,7 +25,7 @@ authRoutes.post(
       try {
         const { unlinkSync, existsSync } = await import('fs')
         const { join } = await import('path')
-        const sf = join('/root/agentr/sessions', tenantId + '.session')
+        const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenantId + '.session')
         if (existsSync(sf)) { unlinkSync(sf); console.log('[Auth] Cleared stale session for', tenantId) }
       } catch {}
       const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)

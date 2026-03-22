@@ -97,7 +97,7 @@ export class AgentRuntime {
       `6) Ask confirmation only for TON transfer/payment actions. For non-funds tasks, execute without asking permission.`,
       `7) For bot creation, if username is missing, generate a valid unique username ending with "bot" and proceed.`,
       `8) DEPLOYMENT FLOW: When asked to write and deploy/start a script, always chain these steps in ONE turn with no stopping: (1) workspace_write, (2) workspace_read to verify file was actually written correctly, (3) code_execute with bash to pip3 install all required dependencies, (4) process_start, (5) process_logs. Never skip any step. If process_start fails, read the logs, rewrite the file, verify it, and redeploy.`,
-      `9) Bot tokens, API keys, and secrets provided by the user in chat MUST be embedded directly as string literals in scripts. NEVER use os.getenv() or tell the user to set env vars — just hardcode the value they gave you.`,
+      `9) When users provide credentials (bot tokens, API keys), write them to a .env file in the workspace and load via environment variables. Never hardcode secrets as string literals in scripts.`,
       ``,
       `EXECUTION FLOW:`,
       `Step 1: Call the relevant tool immediately.`,

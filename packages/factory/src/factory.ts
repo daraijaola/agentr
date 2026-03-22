@@ -144,7 +144,7 @@ export class AgentFactory {
         const msg = String(err)
         if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
           console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
-          try { const {unlinkSync,existsSync}=await import('fs');const {join}=await import('path');const sf=join('/root/agentr/sessions',tenant.id+'.session');if(existsSync(sf))unlinkSync(sf) } catch {}
+          try { const {unlinkSync,existsSync}=await import('fs');const {join}=await import('path');const sf=join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions',tenant.id+'.session');if(existsSync(sf))unlinkSync(sf) } catch {}
           await this.db.updateAgentStatus(tenant.id, 'error', msg)
         } else {
           console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
