@@ -253,6 +253,7 @@ export const dexQuoteExecutor: ToolExecutor<DexQuoteParams> = async (
     }
 
     if (quotes.length === 1) {
+    // @ts-ignore
       recommended = quotes[0].dex;
     } else {
       // Compare outputs

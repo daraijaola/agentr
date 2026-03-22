@@ -156,7 +156,7 @@ export const telegramJoinChannelExecutor: ToolExecutor<JoinChannelParams> = asyn
         return {
           success: true,
           data: {
-            channel: params.channel,
+            channel: params.channel ?? null,
             message: `Already a member of ${params.channel}`,
           },
         };
@@ -177,7 +177,7 @@ export const telegramJoinChannelExecutor: ToolExecutor<JoinChannelParams> = asyn
         return {
           success: true,
           data: {
-            channel: params.channel,
+            channel: params.channel ?? null,
             message: "Join request sent. Waiting for admin approval.",
           },
         };
