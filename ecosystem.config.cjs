@@ -10,10 +10,11 @@ module.exports = {
       autorestart: true,
       env: {
         DATABASE_URL: 'postgresql://agentr:agentr@localhost:5432/agentr',
-        TELEGRAM_API_ID: 10213775,
-        TELEGRAM_API_HASH: '10177b03e1db0f6d99e2e2f3f8ed9450',
+        TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '',
+        TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || '',
         SESSIONS_PATH: '/root/agentr/sessions',
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
+        API_SECRET: process.env.API_SECRET || '',
         AGENTR_LOG_PRETTY: 'false',
         LLM_PROVIDER: 'anthropic',
         NODE_ENV: 'production',

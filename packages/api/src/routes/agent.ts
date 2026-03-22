@@ -12,7 +12,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
   try {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
-      `SELECT ai.status, t.phone, t.owner_name, t.owner_username, t.wallet_address
+      `SELECT ai.status, t.owner_name, t.owner_username, t.wallet_address
        FROM agent_instances ai JOIN tenants t ON t.id = ai.tenant_id
        WHERE ai.tenant_id = $1 ORDER BY ai.created_at DESC LIMIT 1`,
       [tenantId]
