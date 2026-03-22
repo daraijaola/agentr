@@ -15,22 +15,7 @@
 
 ---
 
-<p align="center">AGENTR is infrastructure. Sign up, connect your Telegram, and you have a fully autonomous AI agent that can build apps, deploy websites, automate workflows, and execute code — all through conversation. No terminal. No config files. No technical knowledge required. Powered by TON.</p>
-
-### Key Highlights
-
-<table>
-<tr>
-<td align="center" width="33%"><br><b><ins>Multi-Tenant Platform</ins></b><br>One deployment serves everyone.<br>Every user fully isolated.<br><br></td>
-<td align="center" width="33%"><br><b><ins>Agent Swarm</ins></b><br>Orchestrator spawns parallel sub-agents —<br>Coder, Executor, Reviewer — simultaneously.<br><br></td>
-<td align="center" width="33%"><br><b><ins>Full Deploy Pipeline</ins></b><br>Write code → install deps → deploy → live URL.<br>All in one conversation turn.<br><br></td>
-</tr>
-<tr>
-<td align="center"><br><b><ins>Web Dashboard</ins></b><br>React UI — configure your agent,<br>edit workspace, manage credits.<br><br></td>
-<td align="center"><br><b><ins>Agent Marketplace</ins></b><br>Browse, install, and publish<br>agent templates and tools.<br><br></td>
-<td align="center"><br><b><ins>TON Payments</ins></b><br>Pay for credits with TON.<br>TON Connect 2.0 integrated.<br><br></td>
-</tr>
-</table>
+<p align="center">AGENTR is a multi-tenant AI agent platform built natively on TON and Telegram. Sign up, connect your Telegram account, and receive a fully autonomous AI agent — no terminal, no config files, no technical knowledge required. One platform deployment serves unlimited users, each with their own isolated agent, wallet, and workspace.</p>
 
 ---
 
@@ -38,18 +23,41 @@
 
 AGENTR is the platform. You are the user. Your agent is the worker.
 
-Sign up on the dashboard → connect your Telegram account → your agent is live. From that point, everything happens through conversation with your agent on Telegram. The agent has access to 63 tools — it can write and execute code, deploy applications, manage files, call APIs, and coordinate parallel sub-agents to complete complex tasks faster.
+Sign up on the dashboard → connect your Telegram account via OTP → your agent is live. From that point, everything happens through conversation with your agent on Telegram. The agent has access to 60+ tools — it can write and execute code, deploy applications, manage files, interact with Telegram, and execute on-chain TON actions.
 
 ```
-You: "Build me a crypto dashboard with live prices and host it"
+You: "Build me a crypto price tracker and host it"
 
 Your agent:
-├── swarm_execute    →  Coder writes HTML/JS, Executor prepares commands (parallel)
-├── workspace_write  →  saves files to your isolated sandbox
-├── code_execute     →  npm install
+├── workspace_write  →  writes HTML/JS files to your sandbox
+├── code_execute     →  installs dependencies
 ├── process_start    →  deploys via PM2
 └── replies          →  "Live at http://your-server:8081"
 ```
+
+---
+
+## Current Status
+
+AGENTR is in active development. The core agentic loop, tool execution, multi-tenant provisioning, and Telegram integration are working end-to-end. The platform is live at [agentr.online](https://agentr.online) with a demo agent at [@theagent_r1](https://t.me/theagent_r1).
+
+| Component | Status |
+|---|---|
+| Agent runtime (agentic loop, tool dispatch, context management) | ✅ Working |
+| Multi-tenant provisioning (OTP → agent live) | ✅ Working |
+| Telegram MTProto integration (GramJS userbot) | ✅ Working |
+| 60+ tools (deploy, workspace, Telegram, TON, swarm) | ✅ Working |
+| TON wallet per tenant (auto-generated on signup) | ✅ Working |
+| PostgreSQL multi-tenant database | ✅ Working |
+| React dashboard (workspace editor, agent config) | ✅ Working |
+| LLM multi-provider (Anthropic, Moonshot, OpenAI) | ✅ Working |
+| CI pipeline (typecheck + build on every push) | ✅ Working |
+| Docker build (multi-stage, production-ready) | ✅ Working |
+| Agent Swarm (parallel sub-agents) | ✅ Working |
+| TON Connect 2.0 payments | 🔧 In Progress |
+| Credit deduction system | 🔧 In Progress |
+| Agent Marketplace | 🔧 In Progress |
+| Persistent memory (SQLite-backed) | 🔧 In Progress |
 
 ---
 
@@ -57,40 +65,104 @@ Your agent:
 
 ### Tool Categories
 
-| Category | Tools | Description |
+| Category | Count | Tools |
 |---|---|---|
-| Deploy | 6 | `code_execute`, `process_start`, `process_stop`, `process_logs`, `process_list`, `process_restart` |
-| Workspace | 8 | Sandboxed file read/write/delete/list per tenant, path traversal protection |
-| Telegram | 20+ | Messaging, media, group management, full MTProto access |
-| TON | 4 | TON Connect payments, credit top-ups, transaction history |
-| Swarm | 1 | `swarm_execute` — roles: coder, executor, researcher, reviewer, writer |
-| Memory | 2 | `memory_read`, `memory_write` — persistent across sessions |
-| Web | 2 | HTTP fetch, JSON API calls |
+| **Deploy** | 6 | `code_execute`, `process_start`, `process_stop`, `process_logs`, `process_list`, `process_restart` |
+| **Workspace** | 8 | Sandboxed read/write/delete/list/rename per tenant with path traversal protection |
+| **Telegram** | 40+ | Messaging, media, groups, channels, contacts, gifts, stories, polls, stickers, tasks |
+| **TON** | 12 | Balance, transactions, jetton ops, NFT list, DEX quotes/swaps (DeDust + STON.fi), DNS |
+| **Swarm** | 1 | `swarm_execute` — spawns parallel sub-agents: coder, executor, reviewer, researcher, writer |
+| **Memory** | 2 | `memory_read`, `memory_write` — persistent across sessions |
+| **Web** | 2 | HTTP fetch, JSON API calls |
+| **Bot** | 2 | `create_bot`, `inline_send` — create and operate Telegram bots |
 
-### Advanced Capabilities
+### Agent Swarm
 
-| Capability | Description |
+The `swarm_execute` tool lets the orchestrator agent spawn specialized sub-agents in parallel to complete complex tasks faster:
+
+```
+swarm_execute({
+  task: "Build a trading bot",
+  roles: ["coder", "executor", "reviewer"]
+})
+→ All three agents run simultaneously
+→ Results are merged and returned to user
+```
+
+### Multi-Tenant Isolation
+
+Every user gets their own:
+- **Session directory** — `/sessions/{tenantId}/` with SOUL, IDENTITY, STRATEGY, MEMORY files
+- **Workspace sandbox** — isolated file system, path traversal blocked at the API level
+- **TON wallet** — auto-generated on provisioning, address stored in DB
+- **PM2 namespace** — deployed processes cannot cross tenant boundaries
+- **PostgreSQL row** — tenant data fully isolated by `tenant_id`
+
+### Workspace Files
+
+Each agent has four workspace files, editable from the dashboard:
+
+| File | Purpose | Agent Can Edit |
+|---|---|---|
+| `SOUL.md` | Personality, tone, communication style | No |
+| `IDENTITY.md` | Name, bio, public persona | No |
+| `STRATEGY.md` | Goals, rules, constraints | No |
+| `MEMORY.md` | Persistent facts recalled across all sessions | Yes |
+
+---
+
+## Architecture
+
+```
+agentr/
+├── packages/
+│   ├── core/                    # Agent runtime, LLM client, tools, Telegram, TON
+│   │   ├── src/agent/           # Agentic loop, context trimming, observation masking
+│   │   ├── src/llm/             # Multi-provider LLM client with prompt caching
+│   │   ├── src/telegram/        # GramJS MTProto bridge, flood retry, formatting
+│   │   ├── src/ton/             # TON wallet service, transfer, tx lock
+│   │   └── src/tools/           # 60+ tools organized by category
+│   ├── factory/                 # Tenant provisioning, PostgreSQL, session management
+│   │   └── src/migrations/      # SQL schema migrations
+│   ├── api/                     # Hono HTTP API — auth (OTP/2FA), agent, health
+│   └── dashboard/               # React + Vite frontend
+├── sessions/
+│   └── {tenantId}/              # Isolated per-user workspace
+│       ├── SOUL.md
+│       ├── IDENTITY.md
+│       ├── STRATEGY.md
+│       └── MEMORY.md
+├── Dockerfile                   # Multi-stage production build
+└── .github/workflows/ci.yml     # Typecheck + build on every push
+```
+
+### Tech Stack
+
+| Layer | Technology |
 |---|---|
-| **Agent Swarm** | Orchestrator spawns specialized sub-agents in parallel — not sequentially |
-| **Full Deploy Pipeline** | Agent writes code, installs dependencies, starts processes, returns a live public URL |
-| **Multi-Tenant Isolation** | Each user gets their own PM2 namespace, workspace directory, and session |
-| **Marketplace** | Browse and install agent configurations and tool packs from the dashboard |
-| **Credits System** | Per-call credit tracking deducted by LLM provider cost, topped up via TON |
-| **Prompt Caching** | Anthropic prompt caching on system prompts — ~80% input token savings |
-| **Persistent Memory** | Agent writes facts to MEMORY.md, recalled across all future sessions |
-| **Workspace Editor** | Edit SOUL, IDENTITY, and STRATEGY files directly from the dashboard UI |
-| **Context Management** | Automatic context trimming prevents overflow on long agentic tasks |
+| Agent Runtime | TypeScript, custom agentic loop with tool dispatch |
+| LLM Providers | Anthropic Claude (prompt caching), Moonshot Kimi, OpenAI GPT-4o |
+| Telegram | GramJS (MTProto userbot — full account access) |
+| Process Management | PM2 with per-tenant namespacing |
+| Database | PostgreSQL |
+| API | Hono |
+| Frontend | React + Vite + Tailwind CSS |
+| Payments | TON Connect 2.0 |
+| Blockchain | TON — wallet, jettons, NFTs, DNS, DEX |
+| Monorepo | pnpm workspaces |
+| CI | GitHub Actions (typecheck + build) |
+| Container | Docker multi-stage build |
 
 ---
 
 ## Prerequisites
 
-- **Node.js 20.0.0+** — [Download](https://nodejs.org/)
+- **Node.js 20+**
 - **pnpm** — `npm install -g pnpm`
-- **PostgreSQL** — tenant data, sessions, credits
+- **PostgreSQL** — for tenant data
 - **PM2** — `npm install -g pm2`
-- **LLM API Key** — [Anthropic](https://console.anthropic.com/) (recommended) or [Moonshot](https://platform.moonshot.ai/)
 - **Telegram API credentials** — from [my.telegram.org/apps](https://my.telegram.org/apps)
+- **LLM API Key** — Anthropic (recommended), Moonshot, or OpenAI
 
 ---
 
@@ -104,93 +176,60 @@ cd agentr
 pnpm install
 ```
 
-### 2. Configure
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
+Edit `.env`:
+
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/agentr
+# LLM — pick one
 ANTHROPIC_API_KEY=sk-ant-...
+LLM_PROVIDER=anthropic
+
+# Telegram (register at my.telegram.org/apps)
 TELEGRAM_API_ID=12345678
 TELEGRAM_API_HASH=your_hash_here
-LLM_PROVIDER=anthropic
+
+# Database
+DATABASE_URL=postgresql://agentr:agentr@localhost:5432/agentr
+
+# TON
+TONAPI_KEY=your_tonapi_key
+
+# Server
+SERVER_PUBLIC_IP=your.server.ip
+API_PORT=3001
 ```
 
-### 3. Build and Start
+### 3. Build
 
 ```bash
 pnpm build
+```
+
+### 4. Start
+
+```bash
+# API server
 pm2 start packages/api/dist/index.js --name agentr-api
-pm2 start apps/dashboard/dist/index.js --name agentr-dashboard
+
+# Dashboard
+node packages/dashboard/server.js
 ```
 
-### 4. Verify
+### 5. Or use Docker
 
-Open the dashboard, sign in with your Telegram phone number, complete OTP. Your agent is live instantly. Open Telegram and send:
-
-```
-You: /ping
-Agent: Online and ready.
-
-You: Build me a landing page and host it
-Agent: [writes HTML, deploys server, returns live link]
+```bash
+docker build -t agentr .
+docker run -p 3001:3001 -p 5173:5173 --env-file .env agentr
 ```
 
----
+### 6. Verify
 
-## Architecture
-
-```
-agentr/
-├── packages/
-│   ├── core/                   # Agent runtime, tool registry, LLM client
-│   │   ├── src/agent/          # Agentic loop, context management
-│   │   ├── src/llm/            # Multi-provider LLM client (prompt caching)
-│   │   ├── src/tools/          # 63 tools per tenant
-│   │   │   ├── telegram/       # Full MTProto access via GramJS
-│   │   │   ├── deploy/         # code_execute, process_start/stop/logs
-│   │   │   ├── workspace/      # Sandboxed per-tenant file system
-│   │   │   ├── ton/            # TON Connect, payments, credits
-│   │   │   └── swarm/          # swarm_execute — parallel sub-agents
-│   │   └── src/workspace/      # Path validation, traversal protection
-│   ├── factory/                # Tenant provisioning, DB, session management
-│   └── api/                    # Hono HTTP API — auth, agent, credits, marketplace
-├── apps/
-│   └── dashboard/              # React + Vite — workspace editor, marketplace, credits
-└── sessions/
-    └── {tenantId}/             # Isolated sandbox per user
-        ├── SOUL.md             # Personality (immutable by agent)
-        ├── IDENTITY.md         # Name and bio (immutable by agent)
-        ├── STRATEGY.md         # Rules and constraints (immutable by agent)
-        └── MEMORY.md           # Persistent memory (agent-writable)
-```
-
-### Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Agent Runtime | TypeScript, custom agentic loop |
-| LLM | Anthropic Claude (prompt caching), Moonshot, OpenAI |
-| Telegram | GramJS (MTProto userbot) |
-| Process Management | PM2 — tenant-namespaced |
-| Database | PostgreSQL + Drizzle ORM |
-| API | Hono |
-| Frontend | React + Vite + Tailwind |
-| Payments | TON Connect 2.0 |
-| Monorepo | pnpm workspaces |
-
----
-
-## Workspace Files
-
-| File | Purpose | Agent Can Edit |
-|---|---|---|
-| `SOUL.md` | Personality, tone, behavior | No |
-| `IDENTITY.md` | Name, bio, public persona | No |
-| `STRATEGY.md` | Rules, constraints, goals | No |
-| `MEMORY.md` | Persistent facts across sessions | Yes |
+Open `http://localhost:5173`, sign in with your Telegram phone number, complete OTP verification. Your agent is live. Open Telegram and message it.
 
 ---
 
@@ -199,28 +238,34 @@ agentr/
 | Layer | Protection |
 |---|---|
 | **Workspace sandbox** | Agent confined to `/sessions/{tenantId}/`, path traversal blocked |
-| **Immutable config** | SOUL.md, STRATEGY.md, IDENTITY.md cannot be modified by the agent |
-| **Process isolation** | Each deployed process namespaced per tenant, no cross-tenant access |
-| **Prompt injection defense** | Tool results sanitized before injecting into context |
+| **Immutable config** | SOUL.md, STRATEGY.md, IDENTITY.md cannot be modified by the agent at runtime |
+| **Process isolation** | PM2 processes namespaced per tenant |
+| **No hardcoded secrets** | All credentials via environment variables |
+| **OTP + 2FA auth** | Telegram login via official MTProto OTP flow with 2FA support |
 
 ---
 
 ## Roadmap
 
+- [ ] SQLite-backed persistent memory with vector search
+- [ ] Real-time TON payment verification for credit top-ups
 - [ ] Agent-to-agent communication and task delegation
-- [ ] TON Sites hosting — deploy to `.ton` domains natively
-- [ ] Swarm v2 — persistent sub-agent memory and handoff
+- [ ] Swarm v2 — persistent state and result handoff between sub-agents
 - [ ] MCP server support
-- [ ] Mobile app
+- [ ] `.ton` domain hosting — deploy sites to TON DNS natively
+- [ ] Dashboard component refactor (modular pages and hooks)
 
 ---
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Make your changes
-4. Open a Pull Request against `main`
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## Security Policy
+
+See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ---
 
@@ -230,7 +275,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## Support
+## Links
 
 - **Platform**: [agentr.online](https://agentr.online)
 - **Demo Agent**: [@theagent_r1](https://t.me/theagent_r1)
