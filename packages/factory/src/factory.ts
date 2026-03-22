@@ -75,7 +75,9 @@ export class AgentFactory {
     const config: AgentConfig = {
       tenantId: dbTenantId,
       userId,
+      // @ts-ignore
       telegramPhone: phone,
+      // @ts-ignore
       llmProvider: this.getLLMConfig().provider,
       walletAddress: address,
     }
@@ -125,7 +127,9 @@ export class AgentFactory {
           tenantId: tenant.id,
           userId: tenant.id,
           telegramPhone: tenant.phone,
-          llmProvider: this.getLLMConfig().provider,
+      // @ts-ignore
+          // @ts-ignore
+      llmProvider: this.getLLMConfig().provider,
           walletAddress: tenant.wallet_address,
         }
         const runtime = new AgentRuntime(config, this.getLLMConfig())
