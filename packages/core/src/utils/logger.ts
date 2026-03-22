@@ -36,7 +36,7 @@ const LEVEL_MAP: Record<number, "log" | "warn" | "error"> = {
 
 // ── Custom writable stream for WebUI SSE ──────────────────────────────
 class WebUILogStream extends Writable {
-  _write(chunk: Buffer, _encoding: string, callback: (error?: Error | null) => void): void {
+  override _write(chunk: Buffer, _encoding: string, callback: (error?: Error | null) => void): void {
     if (listeners.size === 0) {
       callback();
       return;

@@ -84,7 +84,7 @@ export const nftListExecutor: ToolExecutor<NftListParams> = async (
       };
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!Array.isArray(data.nft_items)) {
       return {
         success: false,

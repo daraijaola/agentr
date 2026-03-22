@@ -39,7 +39,7 @@ export const dnsAuctionsExecutor: ToolExecutor<DnsAuctionsParams> = async (
       };
     }
 
-    const auctions = await response.json();
+    const auctions = await response.json() as any;
 
     if (!auctions.data || auctions.data.length === 0) {
       return {

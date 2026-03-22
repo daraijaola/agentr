@@ -56,7 +56,7 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
       };
     }
 
-    const dnsInfo = await dnsResponse.json();
+    const dnsInfo = await dnsResponse.json() as any;
 
     // Check if domain is in auction (no owner yet)
     if (dnsInfo.item?.owner?.address) {
@@ -78,7 +78,7 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
     const auctionsResponse = await tonapiFetch(`/dns/auctions?tld=ton`);
 
     if (auctionsResponse.ok) {
-      const auctions = await auctionsResponse.json();
+      const auctions = await auctionsResponse.json() as any;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TON DNS API response is untyped
       const auction = auctions.data?.find((a: any) => a.domain === fullDomain);
 

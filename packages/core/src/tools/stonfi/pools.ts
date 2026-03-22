@@ -49,7 +49,7 @@ export const stonfiPoolsExecutor: ToolExecutor<JettonPoolsParams> = async (
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     let pools = data.pool_list || [];
 
     // Filter by jetton if provided
@@ -84,7 +84,7 @@ export const stonfiPoolsExecutor: ToolExecutor<JettonPoolsParams> = async (
     try {
       const assetsResponse = await fetchWithTimeout(`${STONFI_API_BASE_URL}/assets`);
       if (assetsResponse.ok) {
-        const assetsData = await assetsResponse.json();
+        const assetsData = await assetsResponse.json() as any;
         for (const asset of assetsData.asset_list || []) {
           assetMap[asset.contract_address] = asset.symbol || "???";
         }

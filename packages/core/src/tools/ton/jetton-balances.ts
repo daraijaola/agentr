@@ -55,7 +55,7 @@ export const jettonBalancesExecutor: ToolExecutor<JettonBalancesParams> = async 
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const balances: JettonBalance[] = [];
 
     // Parse each jetton balance

@@ -134,10 +134,10 @@ export class LLMClient {
         body.tool_choice = 'auto'
       }
     }
-    const res = await fetch(URLS[provider], {
+    const res = await fetch(URLS[provider]!, {
       method: 'POST',
       headers: provider === 'anthropic'
-        ? { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'prompt-caching-2024-07-31' }
+        ? { 'Content-Type': 'application/json', 'x-api-key': apiKey!, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'prompt-caching-2024-07-31' }
         : { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify(body)
     })
@@ -199,7 +199,7 @@ export class LLMClient {
         parallel_tool_calls: false
       } : {})
     }
-    const res = await fetch(URLS['openai-codex'], {
+    const res = await fetch(URLS['openai-codex']!, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

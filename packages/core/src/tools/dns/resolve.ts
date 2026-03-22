@@ -48,7 +48,7 @@ export const dnsResolveExecutor: ToolExecutor<DnsResolveParams> = async (
       };
     }
 
-    const dnsInfo = await response.json();
+    const dnsInfo = await response.json() as any;
 
     // Check if domain has an owner
     if (!dnsInfo.item?.owner?.address) {

@@ -62,7 +62,7 @@ export const stonfiSearchExecutor: ToolExecutor<JettonSearchParams> = async (
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const assets = data.asset_list || [];
 
     // Filter and score results

@@ -45,7 +45,7 @@ export const jettonInfoExecutor: ToolExecutor<JettonInfoParams> = async (
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const metadata = data.metadata || {};
 
     const decimals = parseInt(metadata.decimals || "9");

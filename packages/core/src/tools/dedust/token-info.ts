@@ -29,7 +29,7 @@ async function safeFetch<T>(url: string): Promise<T | null> {
   try {
     const response = await fetchWithTimeout(url);
     if (!response.ok) return null;
-    return (await response.json()) as T;
+    return (await response.json() as any) as T;
   } catch {
     return null;
   }

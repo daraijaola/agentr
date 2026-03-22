@@ -70,7 +70,7 @@ export const tonChartExecutor: ToolExecutor<ChartParams> = async (
       };
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
 
     if (!Array.isArray(data.points) || data.points.length === 0) {
       return {
