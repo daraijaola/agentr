@@ -1,7 +1,7 @@
 import fs from "fs/promises"
 import path from "path"
 
-const WORKSPACE_ROOT = "/root/agentr/workspaces"
+const WORKSPACE_ROOT = process.env["WORKSPACES_PATH"] ?? "/root/agentr/workspaces"
 
 const WORKSPACE_FILES = [
   "SOUL.md",
