@@ -1,6 +1,6 @@
 import { Value } from '@sinclair/typebox/value'
 import type { TSchema } from '@sinclair/typebox'
-import type { ToolEntry } from './teleton/types.js'
+import type { ToolEntry } from './types.js'
 import type { Tool } from '../agent/tool-registry.js'
 import type { TelegramUserClient } from '../telegram/client.js'
 import type Database from 'better-sqlite3'

@@ -9,27 +9,27 @@ export async function registerMVPTools(
   ctx: AdapterContext
 ): Promise<void> {
   // -- Telegram: chats
-  const { tools: chatTools } = await import('./telegram/teleton/chats/index.js')
+  const { tools: chatTools } = await import('./telegram/chats/index.js')
   adaptTeletonTools(chatTools, ctx).forEach((t) => registry.register(t))
 
   // -- Telegram: messaging
-  const { tools: msgTools } = await import('./telegram/teleton/messaging/index.js')
+  const { tools: msgTools } = await import('./telegram/messaging/index.js')
   adaptTeletonTools(msgTools, ctx).forEach((t) => registry.register(t))
 
   // -- Telegram: groups
-  const { tools: groupTools } = await import('./telegram/teleton/groups/index.js')
+  const { tools: groupTools } = await import('./telegram/groups/index.js')
   adaptTeletonTools(groupTools, ctx).forEach((t) => registry.register(t))
 
   // -- TON: wallet + transactions
-  const { tools: tonTools } = await import('./ton/teleton/index.js')
+  const { tools: tonTools } = await import('./ton/index.js')
   adaptTeletonTools(tonTools, ctx).forEach((t) => registry.register(t))
 
   // -- Bot creation
-  const { tools: botTools } = await import('./bot/teleton/index.js')
+  const { tools: botTools } = await import('./bot/index.js')
   adaptTeletonTools(botTools, ctx).forEach((t) => registry.register(t))
 
   // -- Workspace: file operations (per-tenant sandboxed)
-  const { tools: wsTools } = await import('./workspace/teleton/index.js')
+  const { tools: wsTools } = await import('./workspace/index.js')
   adaptTeletonTools(wsTools, ctx).forEach((t) => registry.register(t))
 
   // -- Deploy: code_execute + process management
@@ -65,7 +65,7 @@ export async function registerMVPTools(
   })
 
   // -- DNS: .ton domain tools
-  const { tools: dnsTools } = await import('./dns/teleton/index.js')
+  const { tools: dnsTools } = await import('./dns/index.js')
   adaptTeletonTools(dnsTools, ctx).forEach((t) => registry.register(t))
 
   // -- Swarm: multi sub-agent execution
