@@ -19,7 +19,6 @@ export const telegramGetStarsBalanceTool: Tool = {
     "Retrieve your current Stars balance, or TON balance (internal ledger) with ton=true.",
   category: "data-bearing",
   parameters: Type.Object({
-    // ton: Type.Optional(
       Type.Boolean({
         description: "If true, returns TON balance instead of Stars balance.",
       })
@@ -41,7 +40,6 @@ export const telegramGetStarsBalanceExecutor: ToolExecutor<GetStarsBalanceParams
     const result: any = await gramJsClient.invoke(
       new Api.payments.GetStarsStatus({
         peer: new Api.InputPeerSelf(),
-        // ton: params.ton || undefined,
       })
     );
 
