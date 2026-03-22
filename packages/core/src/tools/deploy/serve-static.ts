@@ -16,7 +16,7 @@ export const serveStaticTool: Tool = {
 export const serveStaticExecutor: ToolExecutor<{ filename: string; port?: number }> = async (params, context): Promise<ToolResult> => {
   const { filename, port = 8080 } = params
   const tenantId = context.tenantId
-  const dir = `/root/agentr/sessions/${tenantId}`
+  const dir = `${process.env["SESSIONS_PATH"] ?? "/root/agentr/sessions"}/${tenantId}`
 
   try {
     // Kill any existing server on this port

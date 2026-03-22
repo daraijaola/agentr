@@ -1,8 +1,8 @@
 import path from 'path'
 import { existsSync, lstatSync } from 'fs'
 
-const SESSIONS_ROOT = '/root/agentr/sessions'
-export const WORKSPACE_ROOT = '/root/agentr/sessions'
+const SESSIONS_ROOT = process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions'
+export const WORKSPACE_ROOT = process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions'
 
 export const WORKSPACE_PATHS = {
   root: WORKSPACE_ROOT,
