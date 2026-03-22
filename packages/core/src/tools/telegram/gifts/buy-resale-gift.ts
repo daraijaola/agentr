@@ -10,6 +10,7 @@ const log = createLogger("Tools");
  * Parameters for buying a resale gift
  */
 interface BuyResaleGiftParams {
+  slug: string;
 }
 
 /**
@@ -20,6 +21,7 @@ export const telegramBuyResaleGiftTool: Tool = {
   description:
     "Buy a collectible from the resale marketplace using Stars. Get slug from telegram_get_resale_gifts.",
   parameters: Type.Object({
+    slug: Type.String({
       description: "The slug of the listing to purchase (from telegram_get_resale_gifts)",
     }),
   }),
