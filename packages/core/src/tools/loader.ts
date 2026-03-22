@@ -32,22 +32,25 @@ export async function registerMVPTools(
   const { tools: wsTools } = await import('./workspace/index.js')
   adaptTools(wsTools, ctx).forEach((t) => registry.register(t))
 
-  // -- Deploy: code_execute + process management
-  const { tools: deployTools } = await import('./deploy/index.js')
-  deployTools.forEach((entry) => {
+  // -- Deploy: exec tools + legacy process management
+  const { execRunTool, execRunExecutor, execInstallTool, execInstallExecutor,
+          execServiceTool, execServiceExecutor, execStatusTool, execStatusExecutor,
+          codeExecuteTool, codeExecuteExecutor } = await import('./deploy/index.js')
+  const execTools = [
+    { tool: execRunTool, executor: execRunExecutor },
+    { tool: execInstallTool, executor: execInstallExecutor },
+    { tool: execServiceTool, executor: execServiceExecutor },
+    { tool: execStatusTool, executor: execStatusExecutor },
+    { tool: codeExecuteTool, executor: codeExecuteExecutor },
+  ]
+  execTools.forEach(({ tool, executor }) => {
     registry.register({
-      name: entry.tool.name,
-      description: entry.tool.description,
-      parameters: entry.tool.parameters as Record<string, unknown>,
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters as Record<string, unknown>,
       execute: async (params: Record<string, unknown>) => {
-        try {
-          return await (entry.executor as Function)(params, {
-            tenantId: ctx.tenantId,
-            walletAddress: ctx.walletAddress,
-          })
-        } catch (err) {
-          return { success: false, error: String(err) }
-        }
+        try { return await (executor as Function)(params, { tenantId: ctx.tenantId, walletAddress: ctx.walletAddress }) }
+        catch (err) { return { success: false, error: String(err) } }
       },
     })
   })
