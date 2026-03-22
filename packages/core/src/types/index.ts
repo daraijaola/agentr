@@ -2,7 +2,7 @@ export interface AgentConfig {
   tenantId: string
   userId: string
   telegramPhone: string
-  llmProvider: 'anthropic' | 'openai' | 'moonshot'
+  llmProvider: 'anthropic' | 'openai' | 'moonshot' | 'openai-codex'
   walletAddress?: string
 }
 
@@ -29,7 +29,7 @@ export interface Tenant {
   userId: string
   phone: string
   walletAddress: string
-  plan: 'starter' | 'builder' | 'pro' | 'enterprise'
+  plan: 'starter' | 'pro' | 'elite' | 'enterprise'
   status: 'pending' | 'active' | 'suspended'
   createdAt: Date
 }
