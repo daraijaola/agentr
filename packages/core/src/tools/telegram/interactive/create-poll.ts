@@ -2,8 +2,7 @@ import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
-// @ts-ignore — stub module, resolved at runtime
-import { MAX_POLL_QUESTION_LENGTH } from "../../../../constants/limits.js";
+import { MAX_POLL_OPTIONS } from "../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
 

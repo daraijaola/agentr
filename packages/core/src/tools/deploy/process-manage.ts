@@ -55,8 +55,7 @@ function resolveTenantScriptPath(tenantId: string, file: string): { workspaceDir
   const found = candidates.find((c) => existsSync(c.filePath))
   if (found) return found
 
-    // @ts-ignore
-  return candidates[0]
+  return candidates[0] as string
 }
 
 function tenantProcessName(tenantId: string, name: string): string {

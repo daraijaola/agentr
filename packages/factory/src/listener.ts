@@ -2,7 +2,7 @@ import type { AgentRuntime } from '@agentr/core'
 import { MessageDebouncer } from './debouncer.js'
 import type { TelegramUserClient } from '@agentr/core'
 import { agentFactory } from './factory.js'
-// @ts-ignore
+// @ts-expect-error — gramjs NewMessage types not exported
 import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 
 const TYPING_DELAY_MS = 500
