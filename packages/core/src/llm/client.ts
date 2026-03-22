@@ -262,3 +262,10 @@ export class LLMClient {
     return (await this.chat({ systemPrompt, messages: [{ role: 'user', content: prompt }] })).text
   }
 }
+
+export function getProviderModel(_provider: string, _modelId?: string): string {
+  return _modelId ?? 'default'
+}
+export function getEffectiveApiKey(_provider: string, _apiKey: string): string {
+  return _apiKey
+}

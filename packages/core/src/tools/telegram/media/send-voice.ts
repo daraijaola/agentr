@@ -150,12 +150,12 @@ export const telegramSendVoiceExecutor: ToolExecutor<SendVoiceParams> = async (
 
       if (voice) {
         // Check Piper voices first (if using piper or no provider specified)
-        if (provider === "piper" && voice.toLowerCase() in PIPER_VOICES) {
+        if (provider === "piper" && PIPER_VOICES.includes(voice.toLowerCase())) {
           resolvedVoice = voice.toLowerCase();
         }
         // Then check Edge voices
-        else if (voice in EDGE_VOICES) {
-          resolvedVoice = EDGE_VOICES[voice as keyof typeof EDGE_VOICES];
+        else if (EDGE_VOICES.includes(voice)) {
+          resolvedVoice = voice;
         }
       }
 

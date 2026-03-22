@@ -6,3 +6,4 @@ export const MAX_SCHEDULE_AHEAD_DAYS = 365
 export const MAX_WRITE_SIZE = 512 * 1024
 export const MAX_READ_SIZE = 1024 * 1024
 export const MAX_WORKSPACE_SIZE = 500 * 1024 * 1024
+export const MAX_DEPENDENTS_PER_TASK = 10
