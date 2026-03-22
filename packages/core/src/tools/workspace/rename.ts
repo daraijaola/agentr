@@ -5,7 +5,7 @@ import { renameSync, existsSync } from "fs";
 import { dirname } from "path";
 import { mkdirSync } from "fs";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-import { validatePath, WorkspaceSecurityError } from "../../workspace/index.js";
+import { validateWritePath, WorkspaceSecurityError } from "../../workspace/index.js";
 import { getErrorMessage } from "../../utils/errors.js";
 
 interface WorkspaceRenameParams {
@@ -41,7 +41,7 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
     const { from, to, overwrite = false } = params;
 
     // Validate source path (must exist)
-    const validatedFrom = validatePath(from, false) as string;
+    const validatedFrom = validateWritePath(from);
 
     if (validatedFrom.isDirectory) {
       return {
@@ -51,7 +51,7 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
     }
 
     // Validate destination path (may not exist yet)
-    const validatedTo = validatePath(to, true) as string;
+    const validatedTo = validateWritePath(to);
 
     // Check if destination already exists
     if (validatedTo.exists && !overwrite) {

@@ -72,7 +72,7 @@ export class TelegramUserClient {
   private saveSession(): void {
     try {
     // gramjs type quirk: connect() returns void
-      const sessionString = this.client.session.save() as string | undefined
+      const sessionString = this.client.session.save() as unknown as string | undefined
       if (typeof sessionString !== 'string' || !sessionString) return
       const dir = dirname(this.config.sessionPath)
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
