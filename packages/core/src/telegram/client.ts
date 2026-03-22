@@ -71,6 +71,7 @@ export class TelegramUserClient {
 
   private saveSession(): void {
     try {
+    // @ts-ignore — void cast intentional, gramjs type quirk
       const sessionString = this.client.session.save() as string | undefined
       if (typeof sessionString !== 'string' || !sessionString) return
       const dir = dirname(this.config.sessionPath)

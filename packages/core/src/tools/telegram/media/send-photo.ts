@@ -69,7 +69,7 @@ export const telegramSendPhotoExecutor: ToolExecutor<SendPhotoParams> = async (
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Send photo using GramJS sendFile
     const result = await gramJsClient.sendFile(chatId, {

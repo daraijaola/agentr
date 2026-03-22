@@ -42,7 +42,7 @@ export const dnsSetSiteTool: Tool = {
 
 export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain, adnl_address } = params;
@@ -60,7 +60,9 @@ export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
       };
     }
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -106,7 +108,7 @@ export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
     }
 
     const ownerNormalized = Address.parse(ownerAddress).toString();
-    const agentNormalized = Address.parse(walletData.address).toString();
+    const agentNormalized = Address.parse(walletData.wallet.address.toString({ bounceable: false })).toString();
 
     if (ownerNormalized !== agentNormalized) {
       return {
@@ -115,7 +117,7 @@ export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
       };
     }
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -125,12 +127,12 @@ export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const contract = client.open(wallet);
 
     const adnlBuffer = Buffer.from(adnl_address, "hex");
 
-    await withTxLock(async () => {
+    await withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await contract.getSeqno();
 
       // Build ADNL record value cell: dns_adnl_address#ad01 + adnl_addr:bits256 + flags:uint8
@@ -169,7 +171,7 @@ export const dnsSetSiteExecutor: ToolExecutor<DnsSetSiteParams> = async (
         domain: fullDomain,
         adnlAddress: adnl_address,
         nftAddress,
-        from: walletData.address,
+        from: walletData.wallet.address.toString({ bounceable: false }),
         message: `Set TON Site record for ${fullDomain} → ADNL ${adnl_address}\n  NFT: ${nftAddress}\n  Transaction sent (changes apply in a few seconds)`,
       },
     };

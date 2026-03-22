@@ -90,7 +90,7 @@ export const telegramReplyKeyboardExecutor: ToolExecutor<ReplyKeyboardParams> = 
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Create reply keyboard markup
     const keyboard = new Api.ReplyKeyboardMarkup({

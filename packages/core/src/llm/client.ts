@@ -43,7 +43,6 @@ async function getCodexToken(): Promise<string> {
   const expires = parseInt(process.env.OPENAI_CODEX_EXPIRES ?? '0')
   const token = process.env.OPENAI_CODEX_ACCESS_TOKEN
   if (!token) throw new Error('No OPENAI_CODEX_ACCESS_TOKEN in env')
-  // Refresh if expiring within 5 minutes
   if (Date.now() > expires - 5 * 60 * 1000) {
     return refreshCodexToken()
   }
@@ -52,34 +51,41 @@ async function getCodexToken(): Promise<string> {
 
 export class LLMClient {
   constructor(private config: LLMConfig) {}
+
+  getProvider(): string {
+    return this.config.provider
+  }
+
   async chat(options: ChatOptions): Promise<ChatResponse> {
     const { provider } = this.config
     const model = this.config.model ?? DEFAULTS[provider]
-    const messages: ChatMessage[] = []
-    if (options.systemPrompt) messages.push({ role: 'system', content: options.systemPrompt })
-    messages.push(...options.messages)
-    const cleanMessages = messages.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as ChatMessage })
+    const msgs: any[] = []
+    if (options.systemPrompt) msgs.push({ role: 'system', content: options.systemPrompt })
+    msgs.push(...options.messages)
+    // Strip reasoning_content fields (some providers return these)
+    const cleanMessages: any[] = msgs.map((m: any) => {
+      const { reasoning_content, ...rest } = m
+      void reasoning_content
+      return rest
+    })
 
     // Anthropic needs different message format
-    const anthropicMessages = provider === 'anthropic'
+    const anthropicMessages: any[] = provider === 'anthropic'
       ? cleanMessages
           .filter((m: any) => m.role !== 'system')
           .filter((m: any, i: number, arr: any[]) => {
-            // Remove orphaned tool results
             if (m.role !== 'tool') return true
             const prev = arr[i - 1]
             return prev?.role === 'assistant' && (prev.tool_calls?.some((tc: any) => tc.id === m.tool_call_id) || (Array.isArray(prev.content) && prev.content.some((b: any) => b.type === 'tool_use' && b.id === m.tool_call_id)))
           })
           .map((m: any) => {
             if (m.role === 'tool') {
-              // Convert tool results to Anthropic format
               return {
                 role: 'user',
                 content: [{ type: 'tool_result', tool_use_id: m.tool_call_id ?? m.id ?? 'unknown', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
               }
             }
             if (m.role === 'assistant' && m.tool_calls?.length) {
-              // Convert assistant tool calls to Anthropic format
               const toolUseBlocks = m.tool_calls.map((tc: any) => ({
                 type: 'tool_use',
                 id: tc.id,
@@ -109,8 +115,6 @@ export class LLMClient {
 
     const apiKey = this.config.apiKey
 
-    // anthropicMessages already defined above with full message transformation
-
     const body: Record<string, unknown> = {
       model,
       max_tokens: this.config.maxTokens ?? 512,
@@ -139,7 +143,6 @@ export class LLMClient {
     })
     if (!res.ok) throw new Error(`LLM error ${res.status}: ${await res.text()}`)
 
-    // Anthropic Messages API response format
     if (provider === 'anthropic') {
       const data = await res.json() as { content: Array<Record<string, unknown>>; stop_reason: string }
       let text = ''
@@ -159,7 +162,6 @@ export class LLMClient {
       return { text, toolCalls, messages: [...cleanMessages as ChatMessage[], assistantMsg] }
     }
 
-    // OpenAI / Moonshot response format
     const data = await res.json() as { choices: Array<{ message: { content: string | null; tool_calls?: ToolCallRaw[] } }> }
     const choice = data.choices[0]?.message
     const text = choice?.content ?? ''
@@ -167,7 +169,7 @@ export class LLMClient {
     const toolCalls = rawTC.map(tc => {
       let input: Record<string, unknown> = {}
       try { input = JSON.parse(tc.function.arguments) as Record<string, unknown> } catch {
-        try { input = JSON.parse(tc.function.arguments + '"\}') as Record<string, unknown> } catch { input = { _raw: tc.function.arguments } }
+        try { input = JSON.parse(tc.function.arguments + '"\\}') as Record<string, unknown> } catch { input = { _raw: tc.function.arguments } }
       }
       return { id: tc.id, name: tc.function.name, input }
     })
@@ -175,17 +177,17 @@ export class LLMClient {
     return { text, toolCalls, messages: [...cleanMessages as ChatMessage[], assistantMsg] }
   }
 
-  private async chatCodex(model: string, messages: Record<string, unknown>[], options: ChatOptions): Promise<ChatResponse> {
+  private async chatCodex(model: string, messages: any[], options: ChatOptions): Promise<ChatResponse> {
     const token = await getCodexToken()
-    // Codex endpoint requires system prompt in 'instructions', not in input array
-    const inputMessages = messages.filter((m: Record<string, unknown>) => m['role'] !== 'system').map((m: Record<string, unknown>) => {
-      const role = m['role'] === 'tool' ? 'user' : m['role'] as string
-      const text = String(m['content'] ?? '')
-      // assistant messages use output_text, user/tool messages use input_text
-      const contentType = (role === 'assistant') ? 'output_text' : 'input_text'
-      return { type: 'message', role, content: [{ type: contentType, text }] }
-    })
-    const instructions = messages.find((m: Record<string, unknown>) => m['role'] === 'system')?.['content'] as string | undefined
+    const inputMessages = messages
+      .filter((m: any) => m.role !== 'system')
+      .map((m: any) => {
+        const role = m.role === 'tool' ? 'user' : m.role as string
+        const text = String(m.content ?? '')
+        const contentType = (role === 'assistant') ? 'output_text' : 'input_text'
+        return { type: 'message', role, content: [{ type: contentType, text }] }
+      })
+    const instructions = messages.find((m: any) => m.role === 'system')?.content as string | undefined
     const body: Record<string, unknown> = {
       model,
       instructions: instructions ?? 'You are a helpful AI assistant.',
@@ -225,7 +227,6 @@ export class LLMClient {
         } else if (evtType === 'response.function_call_arguments.done') {
           const itemId = evt['item_id'] as string ?? 'tc_' + Math.random().toString(36).slice(2)
           const args = evt['arguments'] as string ?? '{}'
-          // We need the function name — track it from output_item.added
           const fnName = (globalFnNames.get(itemId)) ?? 'unknown'
           rawTC.push({ id: itemId, type: 'function', function: { name: fnName, arguments: args } })
         } else if (evtType === 'response.output_item.added') {

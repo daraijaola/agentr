@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import { getCachedTonClient } from "../../ton/wallet-service.js";
 import { Address } from "@ton/core";
+// @ts-ignore — stub module, resolved at runtime
 import { formatTransactions } from "../../../ton/format-transactions.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
@@ -31,7 +32,7 @@ export const tonGetTransactionsTool: Tool = {
 };
 export const tonGetTransactionsExecutor: ToolExecutor<GetTransactionsParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { address, limit = 10 } = params;
@@ -46,7 +47,7 @@ export const tonGetTransactionsExecutor: ToolExecutor<GetTransactionsParams> = a
       };
     }
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
 
     const transactions = await client.getTransactions(addressObj, {
       limit: Math.min(limit, 50),

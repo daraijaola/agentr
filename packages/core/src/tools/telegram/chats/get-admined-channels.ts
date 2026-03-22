@@ -29,7 +29,7 @@ export const telegramGetAdminedChannelsExecutor: ToolExecutor<GetAdminedChannels
   context
 ): Promise<ToolResult> => {
   try {
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     const result = await gramJsClient.invoke(
       new Api.channels.GetAdminedPublicChannels({

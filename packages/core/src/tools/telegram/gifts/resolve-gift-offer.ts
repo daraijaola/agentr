@@ -42,7 +42,7 @@ export const telegramResolveGiftOfferExecutor: ToolExecutor<ResolveGiftOfferPara
 ): Promise<ToolResult> => {
   try {
     const { offerMsgId, decline } = params;
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GramJS API response is untyped
     const invokeParams: any = { offerMsgId };

@@ -33,7 +33,7 @@ export const telegramGetCollectibleInfoExecutor: ToolExecutor<GetCollectibleInfo
 ): Promise<ToolResult> => {
   try {
     const { type, value } = params;
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     const collectible =
       type === "username"

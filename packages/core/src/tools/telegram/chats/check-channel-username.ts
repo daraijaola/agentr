@@ -43,7 +43,7 @@ export const telegramCheckChannelUsernameExecutor: ToolExecutor<
       };
     }
 
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
     const entity = await gramJsClient.getEntity(channelId);
 
     if (entity.className !== "Channel") {

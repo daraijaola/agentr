@@ -58,7 +58,7 @@ export const telegramSetUsernameExecutor: ToolExecutor<SetUsernameParams> = asyn
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Update username
     const _result = await gramJsClient.invoke(

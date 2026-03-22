@@ -2,7 +2,7 @@
  * telegram_send_dice - Send animated dice/games in Telegram
  */
 
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api } from "telegram";
@@ -47,7 +47,7 @@ export const telegramSendDiceExecutor: ToolExecutor<SendDiceParams> = async (
     const { chat_id, emoticon = "🎲", reply_to } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Send dice using SendMedia
     const result = await gramJsClient.invoke(
@@ -55,7 +55,7 @@ export const telegramSendDiceExecutor: ToolExecutor<SendDiceParams> = async (
         peer: chat_id,
         media: new Api.InputMediaDice({ emoticon }),
         message: "",
-        randomId: randomLong(),
+        randomId: (randomLong() as unknown as any),
         replyTo: reply_to ? new Api.InputReplyToMessage({ replyToMsgId: reply_to }) : undefined,
       })
     );

@@ -64,10 +64,10 @@ export const telegramGetHistoryExecutor: ToolExecutor<GetHistoryParams> = async 
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Use cached peer if available, fall back to raw chatId string
-    const entity = context.bridge.getPeer(chatId) || chatId;
+    const entity = (context.bridge as any).getPeer(chatId) || chatId;
 
     // Fetch messages using GramJS getMessages
     const messages = await gramJsClient.getMessages(entity, {

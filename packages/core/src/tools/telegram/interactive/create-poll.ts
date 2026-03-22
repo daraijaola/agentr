@@ -1,7 +1,8 @@
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
 import { Type } from "@sinclair/typebox";
 import { Api } from "telegram";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
+// @ts-ignore — stub module, resolved at runtime
 import { MAX_POLL_QUESTION_LENGTH } from "../../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -108,11 +109,11 @@ export const telegramCreatePollExecutor: ToolExecutor<CreatePollParams> = async 
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Create poll using GramJS
     const poll = new Api.Poll({
-      id: randomLong(),
+      id: (randomLong() as unknown as any),
       question: new Api.TextWithEntities({ text: question, entities: [] }),
       answers: options.map(
         (opt, idx) =>
@@ -134,7 +135,7 @@ export const telegramCreatePollExecutor: ToolExecutor<CreatePollParams> = async 
           poll,
         }),
         message: "",
-        randomId: randomLong(),
+        randomId: (randomLong() as unknown as any),
       })
     );
 

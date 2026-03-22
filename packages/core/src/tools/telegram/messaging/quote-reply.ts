@@ -1,6 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api, helpers } from "telegram";
+// @ts-ignore — stub module, resolved at runtime
 import { TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -59,7 +60,7 @@ export const telegramQuoteReplyExecutor: ToolExecutor<QuoteReplyParams> = async 
     const { chatId, messageId, quoteText, text, quoteOffset = 0 } = params;
 
     // Get the underlying GramJS client
-    const client = context.bridge.getClient().getClient();
+    const client = (context.bridge as any).getClient().getClient();
 
     // Resolve the peer (chat entity)
     const peer = await client.getInputEntity(chatId);

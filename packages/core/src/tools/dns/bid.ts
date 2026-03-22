@@ -29,7 +29,7 @@ export const dnsBidTool: Tool = {
 };
 export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain } = params;
@@ -95,7 +95,9 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
       }
     }
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -103,7 +105,7 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
       };
     }
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -113,10 +115,10 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const contract = client.open(wallet);
 
-    await withTxLock(async () => {
+    await withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await contract.getSeqno();
 
       // Send bid (just TON, no body needed for bids - op=0 is implicit)
@@ -141,8 +143,8 @@ export const dnsBidExecutor: ToolExecutor<DnsBidParams> = async (
         domain: fullDomain,
         amount: `${amount} TON`,
         nftAddress,
-        from: walletData.address,
-        message: `Bid placed on ${fullDomain}: ${amount} TON\n  From: ${walletData.address}\n  NFT: ${nftAddress}\n  Transaction sent (check status in a few seconds)`,
+        from: walletData.wallet.address.toString({ bounceable: false }),
+        message: `Bid placed on ${fullDomain}: ${amount} TON\n  From: ${walletData.wallet.address.toString({ bounceable: false })}\n  NFT: ${nftAddress}\n  Transaction sent (check status in a few seconds)`,
       },
     };
   } catch (error) {

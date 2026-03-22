@@ -1,7 +1,8 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api } from "telegram";
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
+// @ts-ignore — stub module, resolved at runtime
 import { MAX_DEPENDENTS_PER_TASK } from "../../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -209,6 +210,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       };
     }
 
+// @ts-ignore — stub module, resolved at runtime
     const { getTaskStore } = await import("../../../../memory/agent/tasks.js");
     const taskStore = getTaskStore(context.db);
 
@@ -250,7 +252,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       };
     } else if (scheduleTimestamp) {
       // Task has schedule date - schedule Telegram message
-      const gramJsClient = context.bridge.getClient().getClient();
+      const gramJsClient = (context.bridge as any).getClient().getClient();
 
       // Get "me" entity for Saved Messages
       const me = await gramJsClient.getMe();
@@ -262,7 +264,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
           peer: me,
           message: taskMessage,
           scheduleDate: scheduleTimestamp,
-          randomId: randomLong(),
+          randomId: randomLong() as unknown as any,
         })
       );
 

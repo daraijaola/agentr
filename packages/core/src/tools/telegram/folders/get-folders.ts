@@ -25,7 +25,7 @@ export const telegramGetFoldersExecutor: ToolExecutor<{}> = async (
 ): Promise<ToolResult> => {
   try {
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get dialog filters (folders)
     // GetDialogFilters returns messages.DialogFilters { filters: [] } (not a plain array)

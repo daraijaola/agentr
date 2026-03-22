@@ -31,7 +31,7 @@ export const dnsStartAuctionTool: Tool = {
 };
 export const dnsStartAuctionExecutor: ToolExecutor<DnsStartAuctionParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain } = params;
@@ -54,7 +54,9 @@ export const dnsStartAuctionExecutor: ToolExecutor<DnsStartAuctionParams> = asyn
       };
     }
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -62,7 +64,7 @@ export const dnsStartAuctionExecutor: ToolExecutor<DnsStartAuctionParams> = asyn
       };
     }
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -72,10 +74,10 @@ export const dnsStartAuctionExecutor: ToolExecutor<DnsStartAuctionParams> = asyn
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const contract = client.open(wallet);
 
-    await withTxLock(async () => {
+    await withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await contract.getSeqno();
 
       // Build message body: op=0, domain as UTF-8 string
@@ -106,8 +108,8 @@ export const dnsStartAuctionExecutor: ToolExecutor<DnsStartAuctionParams> = asyn
         domain: `${domain}.ton`,
         amount: `${amount} TON`,
         collection: DNS_COLLECTION,
-        from: walletData.address,
-        message: `Auction started for ${domain}.ton with ${amount} TON\n  From: ${walletData.address}\n  Collection: ${DNS_COLLECTION}\n  Transaction sent (check status in a few seconds)`,
+        from: walletData.wallet.address.toString({ bounceable: false }),
+        message: `Auction started for ${domain}.ton with ${amount} TON\n  From: ${walletData.wallet.address.toString({ bounceable: false })}\n  Collection: ${DNS_COLLECTION}\n  Transaction sent (check status in a few seconds)`,
       },
     };
   } catch (error) {

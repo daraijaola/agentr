@@ -27,7 +27,7 @@ export const telegramGetScheduledMessagesExecutor: ToolExecutor<
 > = async (params, context): Promise<ToolResult> => {
   try {
     const { chatId } = params;
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
     const entity = await gramJsClient.getEntity(chatId);
 
     const result = await gramJsClient.invoke(

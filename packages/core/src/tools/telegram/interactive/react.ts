@@ -47,7 +47,7 @@ export const telegramReactExecutor: ToolExecutor<ReactParams> = async (
     const { chatId, messageId, emoji } = params;
 
     // Send reaction via Telegram bridge
-    await context.bridge.sendReaction(chatId, messageId, emoji);
+    await (context.bridge as any).sendReaction(chatId, messageId, emoji);
 
     return {
       success: true,

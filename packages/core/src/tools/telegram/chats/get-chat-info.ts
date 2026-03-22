@@ -40,7 +40,7 @@ export const telegramGetChatInfoExecutor: ToolExecutor<GetChatInfoParams> = asyn
     const { chatId } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Resolve entity first
     let entity;

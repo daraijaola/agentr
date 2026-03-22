@@ -46,7 +46,7 @@ export const telegramCheckUsernameExecutor: ToolExecutor<CheckUsernameParams> = 
       };
     }
 
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     try {
       // Try to resolve the username

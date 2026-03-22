@@ -56,7 +56,7 @@ interface NftItem {
 
 export const nftListExecutor: ToolExecutor<NftListParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const address = params.address || ((context as Record<string, unknown>)["walletAddress"] as string | undefined);

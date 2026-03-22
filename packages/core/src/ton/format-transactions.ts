@@ -1,7 +1,5 @@
-export function formatTransactions(txs: unknown[]): string {
-  if (!txs?.length) return 'No transactions found.'
-  return txs.map((tx: unknown, i) => {
-    const t = tx as Record<string, unknown>
-    return `${i + 1}. ${JSON.stringify(t)}`
-  }).join('\n')
+export function formatTransactions(txs: unknown[]): string { return JSON.stringify(txs, null, 2) }
+export function formatTransaction(tx: unknown): string { return JSON.stringify(tx, null, 2) }
+export function formatAmount(amount: bigint, decimals = 9): string {
+  return (Number(amount) / 10 ** decimals).toFixed(4)
 }

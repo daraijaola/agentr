@@ -42,12 +42,14 @@ export const jettonSendTool: Tool = {
 };
 export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { jetton_address, to, amount, comment } = params;
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic as string[]
+    if (!mnemonic?.length) return { success: false, error: "No wallet mnemonic" }
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -66,7 +68,7 @@ export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
 
     // Get sender's jetton wallet address from TonAPI
     const jettonsResponse = await tonapiFetch(
-      `/accounts/${encodeURIComponent(walletData.address)}/jettons`
+      `/accounts/${encodeURIComponent(walletData.wallet.address.toString({ bounceable: false }))}/jettons`
     );
 
     if (!jettonsResponse.ok) {
@@ -132,14 +134,14 @@ export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
       .storeUint(0, 64) // query_id
       .storeCoins(amountInUnits) // jetton amount
       .storeAddress(Address.parse(to)) // destination
-      .storeAddress(Address.parse(walletData.address)) // response_destination (excess returns here)
+      .storeAddress(Address.parse(walletData.wallet.address.toString({ bounceable: false }))) // response_destination (excess returns here)
       .storeBit(false) // no custom_payload
       .storeCoins(comment ? toNano("0.01") : BigInt(1)) // forward_ton_amount (for notification)
       .storeBit(comment ? 1 : 0) // forward_payload: Either tag (0=inline, 1=ref)
       .storeRef(comment ? forwardPayload : beginCell().endCell()) // forward_payload
       .endCell();
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic as string[]);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -148,10 +150,10 @@ export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const walletContract = client.open(wallet);
 
-    return withTxLock(async () => {
+    return withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await walletContract.getSeqno();
 
       // Send transfer to our jetton wallet (NOT to recipient!)
@@ -176,7 +178,7 @@ export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
           jettonAddress: jetton_address,
           amount: amount.toString(),
           to,
-          from: walletData.address,
+          from: walletData.wallet.address.toString({ bounceable: false }),
           comment: comment || null,
           message: `Sent ${amount} ${symbol} to ${to}${comment ? ` (${comment})` : ""}\n  Transaction sent (check balance in ~30 seconds)`,
         },

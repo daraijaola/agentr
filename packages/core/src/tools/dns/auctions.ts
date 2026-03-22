@@ -24,7 +24,7 @@ export const dnsAuctionsTool: Tool = {
 };
 export const dnsAuctionsExecutor: ToolExecutor<DnsAuctionsParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { limit = 20 } = params;

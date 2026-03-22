@@ -30,7 +30,7 @@ function estimateMinPrice(length: number): string {
 }
 export const dnsCheckExecutor: ToolExecutor<DnsCheckParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain } = params;

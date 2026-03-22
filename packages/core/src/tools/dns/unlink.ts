@@ -31,7 +31,7 @@ export const dnsUnlinkTool: Tool = {
 };
 export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     let { domain } = params;
@@ -40,7 +40,9 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
     domain = domain.toLowerCase().replace(/\.ton$/, "");
     const fullDomain = `${domain}.ton`;
 
-    const walletData = loadWallet();
+    const mnemonic = (context as any).mnemonic
+    if (!mnemonic) throw new Error("No mnemonic")
+    const walletData = await loadWallet(mnemonic);
     if (!walletData) {
       return {
         success: false,
@@ -87,7 +89,7 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
 
     // Normalize addresses for comparison
     const ownerNormalized = Address.parse(ownerAddress).toString();
-    const agentNormalized = Address.parse(walletData.address).toString();
+    const agentNormalized = Address.parse(walletData.wallet.address.toString({ bounceable: false })).toString();
 
     if (ownerNormalized !== agentNormalized) {
       return {
@@ -96,7 +98,7 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
       };
     }
 
-    const keyPair = await getKeyPair();
+    const keyPair = await getKeyPair((context as any).mnemonic);
     if (!keyPair) {
       return { success: false, error: "Wallet key derivation failed." };
     }
@@ -106,10 +108,10 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
       publicKey: keyPair.publicKey,
     });
 
-    const client = await getCachedTonClient();
+    const client = getCachedTonClient();
     const contract = client.open(wallet);
 
-    await withTxLock(async () => {
+    await withTxLock(((context as any).tenantId ?? "global") + ":tx", async () => {
       const seqno = await contract.getSeqno();
 
       // Build change_dns_record message body WITHOUT value cell (triggers deletion)
@@ -142,7 +144,7 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
       data: {
         domain: fullDomain,
         nftAddress,
-        from: walletData.address,
+        from: walletData.wallet.address.toString({ bounceable: false }),
         message: `Unlinked wallet from ${fullDomain}\n  NFT: ${nftAddress}\n  Transaction sent (changes apply in a few seconds)`,
       },
     };

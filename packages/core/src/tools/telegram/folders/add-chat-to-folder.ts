@@ -43,7 +43,7 @@ export const telegramAddChatToFolderExecutor: ToolExecutor<AddChatToFolderParams
     const { folderId, chatId } = params;
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get existing filters
     // GetDialogFilters returns messages.DialogFilters { filters: [] } (not a plain array)

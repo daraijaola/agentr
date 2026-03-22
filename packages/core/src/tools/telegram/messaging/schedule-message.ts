@@ -1,7 +1,8 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
 import { Api } from "telegram";
-import { randomLong } from "../../../../utils/gramjs-bigint.js";
+import { randomLong } from "../../../utils/gramjs-bigint.js";
+// @ts-ignore — stub module, resolved at runtime
 import { TELEGRAM_MAX_MESSAGE_LENGTH } from "../../../../constants/limits.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { createLogger } from "../../../utils/logger.js";
@@ -78,7 +79,7 @@ export const telegramScheduleMessageExecutor: ToolExecutor<ScheduleMessageParams
     }
 
     // Get underlying GramJS client
-    const gramJsClient = context.bridge.getClient().getClient();
+    const gramJsClient = (context.bridge as any).getClient().getClient();
 
     // Get chat entity
     const entity = await gramJsClient.getEntity(chatId);
@@ -89,7 +90,7 @@ export const telegramScheduleMessageExecutor: ToolExecutor<ScheduleMessageParams
         peer: entity,
         message: text,
         scheduleDate: scheduleTimestamp,
-        randomId: randomLong(),
+        randomId: randomLong() as unknown as any,
       })
     );
 

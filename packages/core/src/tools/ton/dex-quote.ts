@@ -227,7 +227,7 @@ export const dexQuoteExecutor: ToolExecutor<DexQuoteParams> = async (
     const { from_asset, to_asset, amount, slippage = 0.01 } = params;
 
     // Initialize TON client for DeDust
-    const tonClient = await getCachedTonClient();
+    const tonClient = getCachedTonClient();
 
     const [stonfiQuote, dedustQuote] = await Promise.all([
       getStonfiQuote(from_asset, to_asset, amount, slippage),

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
-import { fetchWithTimeout } from "../../../utils/fetch.js";
+import { fetchWithTimeout } from "../../utils/fetch.js";
 import { STONFI_API_BASE_URL } from "../../constants/api-endpoints.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
@@ -44,7 +44,7 @@ export const stonfiSearchTool: Tool = {
 };
 export const stonfiSearchExecutor: ToolExecutor<JettonSearchParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { query, limit = 10 } = params;

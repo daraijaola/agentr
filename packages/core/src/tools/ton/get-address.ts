@@ -13,7 +13,7 @@ export const tonGetAddressTool: Tool = {
 };
 export const tonGetAddressExecutor: ToolExecutor<{}> = async (
   _params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const address = (context as Record<string, unknown>)["walletAddress"] as string | undefined;

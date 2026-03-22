@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import { DEDUST_API_URL } from "./constants.js";
-import { fetchWithTimeout } from "../../../utils/fetch.js";
+import { fetchWithTimeout } from "../../utils/fetch.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
 
@@ -37,7 +37,7 @@ export const dedustPricesTool: Tool = {
 };
 export const dedustPricesExecutor: ToolExecutor<DedustPricesParams> = async (
   params,
-  _context
+  context
 ): Promise<ToolResult> => {
   try {
     const { symbols } = params;
