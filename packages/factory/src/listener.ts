@@ -1,9 +1,8 @@
 import type { AgentRuntime } from '@agentr/core'
 import { MessageDebouncer } from './debouncer.js'
 import type { TelegramUserClient } from '@agentr/core'
-// @ts-ignore
-// @ts-ignore
 import { agentFactory } from './factory.js'
+// @ts-ignore
 import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 
 const TYPING_DELAY_MS = 500
