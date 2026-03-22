@@ -7,3 +7,5 @@ export const MAX_WRITE_SIZE = 512 * 1024
 export const MAX_READ_SIZE = 1024 * 1024
 export const MAX_WORKSPACE_SIZE = 500 * 1024 * 1024
 export const MAX_DEPENDENTS_PER_TASK = 10
+
+export const TELEGRAM_MAX_MESSAGE_LENGTH = 4096
