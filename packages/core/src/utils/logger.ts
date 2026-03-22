@@ -91,7 +91,7 @@ function resolveLevel(): LogLevel {
 // ── Build pino multistream ────────────────────────────────────────────
 const webUIStream = new WebUILogStream();
 
-const usePretty = process.env.AGENTR_LOG_PRETTY !== "false";
+const usePretty = process.env.AGENTR_LOG_PRETTY === "true";
 
 const stdoutStream = usePretty
   ? pino.transport({
