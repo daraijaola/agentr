@@ -225,7 +225,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       }
     }
 
-    const task = taskStore.createTask({
+    const taskId = await taskStore.create(context.db as any, {
       description,
       priority: priority ?? 0,
       createdBy: "agent",
@@ -243,7 +243,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       return {
         success: true,
         data: {
-          taskId: task.id,
+          taskId: taskId,
           dependsOn,
           message: `Task created: "${description}" (will execute when ${dependsOn.length} parent task(s) complete)`,
         },
@@ -255,7 +255,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       // Get "me" entity for Saved Messages
       const me = await gramJsClient.getMe();
 
-      const taskMessage = `[TASK:${task.id}] ${description}`;
+      const taskMessage = `[TASK:${taskId}] ${description}`;
 
       const result = await gramJsClient.invoke(
         new Api.messages.SendMessage({
@@ -279,7 +279,7 @@ export const telegramCreateScheduledTaskExecutor: ToolExecutor<CreateScheduledTa
       return {
         success: true,
         data: {
-          taskId: task.id,
+          taskId: taskId,
           scheduledFor: new Date(scheduleTimestamp * 1000).toISOString(),
           scheduledMessageId,
           message: `Task scheduled: "${description}" at ${new Date(scheduleTimestamp * 1000).toLocaleString()}`,
