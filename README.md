@@ -52,7 +52,7 @@ Agent:
 ├── workspace_write  → writes HTML/JS to your private sandbox
 ├── code_execute     → installs dependencies
 ├── process_start    → deploys via PM2
-└── "Your tracker is live at http://46.101.74.170:8081"
+└── "Your tracker is live at http://your-server:8081"
 ```
 
 ---
