@@ -1,4 +1,4 @@
-// Adapted from Teleton (MIT)
+// MIT Licensed
 export async function withFloodRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
