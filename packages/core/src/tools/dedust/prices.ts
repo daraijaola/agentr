@@ -47,7 +47,7 @@ export const dedustPricesExecutor: ToolExecutor<DedustPricesParams> = async (
       throw new Error(`DeDust API error: ${response.status} ${response.statusText}`);
     }
 
-    let prices: PriceEntry[] = await response.json();
+    let prices: PriceEntry[] = await response.json() as any;
 
     // Filter by symbols if provided
     if (symbols && symbols.length > 0) {

@@ -47,7 +47,7 @@ export const jettonHistoryExecutor: ToolExecutor<JettonHistoryParams> = async (
     let holdersCount = 0;
 
     if (infoResponse.ok) {
-      const infoData = await infoResponse.json();
+      const infoData = await infoResponse.json() as any;
       symbol = infoData.metadata?.symbol || symbol;
       name = infoData.metadata?.name || name;
       holdersCount = infoData.holders_count || 0;
@@ -60,7 +60,7 @@ export const jettonHistoryExecutor: ToolExecutor<JettonHistoryParams> = async (
     let change30d: string | null = null;
 
     if (ratesResponse.ok) {
-      const ratesData = await ratesResponse.json();
+      const ratesData = await ratesResponse.json() as any;
       const rateInfo = ratesData.rates?.[jetton_address];
       if (rateInfo) {
         priceUSD = rateInfo.prices?.USD || null;
@@ -76,7 +76,7 @@ export const jettonHistoryExecutor: ToolExecutor<JettonHistoryParams> = async (
     let marketCap: string | null = null;
 
     if (geckoResponse.ok) {
-      const geckoData = await geckoResponse.json();
+      const geckoData = await geckoResponse.json() as any;
       const attrs = geckoData.data?.attributes;
       if (attrs) {
         if (attrs.volume_usd?.h24) {

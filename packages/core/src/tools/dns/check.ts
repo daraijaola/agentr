@@ -80,7 +80,7 @@ export const dnsCheckExecutor: ToolExecutor<DnsCheckParams> = async (
       };
     }
 
-    const dnsInfo = await dnsInfoResponse.json();
+    const dnsInfo = await dnsInfoResponse.json() as any;
 
     // Case 2: Domain exists with owner - OWNED
     if (dnsInfo.item?.owner?.address) {
@@ -106,7 +106,7 @@ export const dnsCheckExecutor: ToolExecutor<DnsCheckParams> = async (
     const auctionsResponse = await tonapiFetch(`/dns/auctions?tld=ton`);
 
     if (auctionsResponse.ok) {
-      const auctions = await auctionsResponse.json();
+      const auctions = await auctionsResponse.json() as any;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TON DNS API response is untyped
       const auction = auctions.data?.find((a: any) => a.domain === fullDomain);
 

@@ -52,7 +52,7 @@ export const jettonHoldersExecutor: ToolExecutor<JettonHoldersParams> = async (
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const addresses = data.addresses || [];
 
     let decimals = 9;
@@ -60,7 +60,7 @@ export const jettonHoldersExecutor: ToolExecutor<JettonHoldersParams> = async (
     try {
       const infoResponse = await tonapiFetch(`/jettons/${jetton_address}`);
       if (infoResponse.ok) {
-        const infoData = await infoResponse.json();
+        const infoData = await infoResponse.json() as any;
         decimals = parseInt(infoData.metadata?.decimals || "9");
         symbol = infoData.metadata?.symbol || symbol;
       }

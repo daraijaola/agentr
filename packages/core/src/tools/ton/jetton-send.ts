@@ -78,7 +78,7 @@ export const jettonSendExecutor: ToolExecutor<JettonSendParams> = async (
       };
     }
 
-    const jettonsData = await jettonsResponse.json();
+    const jettonsData = await jettonsResponse.json() as any;
 
     // Find the jetton in our balances (safe: skip entries with malformed addresses)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TON API response is untyped

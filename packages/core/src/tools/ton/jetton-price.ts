@@ -40,7 +40,7 @@ export const jettonPriceExecutor: ToolExecutor<JettonPriceParams> = async (
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const rateData = data.rates?.[jetton_address];
 
     if (!rateData) {
@@ -69,7 +69,7 @@ export const jettonPriceExecutor: ToolExecutor<JettonPriceParams> = async (
     try {
       const infoResponse = await tonapiFetch(`/jettons/${jetton_address}`);
       if (infoResponse.ok) {
-        const infoData = await infoResponse.json();
+        const infoData = await infoResponse.json() as any;
         symbol = infoData.metadata?.symbol || symbol;
         name = infoData.metadata?.name || name;
       }

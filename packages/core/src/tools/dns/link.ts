@@ -90,7 +90,7 @@ export const dnsLinkExecutor: ToolExecutor<DnsLinkParams> = async (
       };
     }
 
-    const dnsInfo = await dnsResponse.json();
+    const dnsInfo = await dnsResponse.json() as any;
 
     // Get NFT address
     const nftAddress = dnsInfo.item?.address;

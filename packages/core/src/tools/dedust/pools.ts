@@ -81,7 +81,7 @@ export const dedustPoolsExecutor: ToolExecutor<DedustPoolsParams> = async (
       throw new Error(`DeDust API error: ${response.status} ${response.statusText}`);
     }
 
-    const pools: DedustPoolResponse[] = await response.json();
+    const pools: DedustPoolResponse[] = await response.json() as any;
 
     // Filter pools
     let filteredPools = pools;

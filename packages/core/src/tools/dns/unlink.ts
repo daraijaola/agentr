@@ -67,7 +67,7 @@ export const dnsUnlinkExecutor: ToolExecutor<DnsUnlinkParams> = async (
       };
     }
 
-    const dnsInfo = await dnsResponse.json();
+    const dnsInfo = await dnsResponse.json() as any;
 
     // Get NFT address
     const nftAddress = dnsInfo.item?.address;

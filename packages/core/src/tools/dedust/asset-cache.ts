@@ -34,7 +34,7 @@ export async function getAssetList(): Promise<DedustAsset[]> {
       throw new Error(`Failed to fetch asset list: ${response.status}`);
     }
 
-    cachedAssets = await response.json();
+    cachedAssets = await response.json() as any;
     cacheTimestamp = Date.now();
     return cachedAssets;
   } catch (error) {

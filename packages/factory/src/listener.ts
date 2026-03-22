@@ -1,7 +1,9 @@
 import type { AgentRuntime } from '@agentr/core'
 import { MessageDebouncer } from './debouncer.js'
 import type { TelegramUserClient } from '@agentr/core'
-import type { NewMessageEvent } from 'telegram/events/NewMessage'
+// @ts-ignore
+// @ts-ignore
+import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 
 const TYPING_DELAY_MS = 500
 const processingMessages = new Set<string>()
