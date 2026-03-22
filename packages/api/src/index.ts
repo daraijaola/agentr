@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
+import { authMiddleware } from './middleware/auth.js'
 import { healthRoutes } from './routes/health.js'
 import { agentFactory } from '@agentr/factory'
 import { cors } from 'hono/cors'
@@ -33,6 +34,7 @@ app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
+app.use('/agent/*', authMiddleware)
 app.route('/agent', agentRoutes)
 
 app.onError((err, c) => {

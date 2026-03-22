@@ -3,6 +3,7 @@ import { MessageDebouncer } from './debouncer.js'
 import type { TelegramUserClient } from '@agentr/core'
 // @ts-ignore
 // @ts-ignore
+import { agentFactory } from './factory.js'
 import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 
 const TYPING_DELAY_MS = 500
@@ -62,7 +63,7 @@ export function attachMessageListener(
         // DM policy filter
         if (isPrivate) {
           try {
-            const tenant = await this.db.getTenant(tenantId)
+            const tenant = await agentFactory.getDb().getTenant(tenantId)
             const policy = tenant?.dm_policy ?? 'contacts'
             if (policy === 'manual') {
               // Get sender's username from the message sender
