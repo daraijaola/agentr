@@ -6,8 +6,8 @@ import {
   type ImageContent,
   type TextContent,
 } from "@mariozechner/pi-ai";
-import { getProviderModel, getEffectiveApiKey } from "../../../client.js";
-import { getProviderMetadata, type SupportedProvider } from "../../../../config/providers.js";
+import { getProviderModel, getEffectiveApiKey } from "../../../llm/client.js";
+import { getProviderMetadata, type SupportedProvider } from "../../../config/providers.js";
 import { readFileSync, existsSync } from "fs";
 import { extname } from "path";
 import type { Tool, ToolExecutor, ToolResult } from "../../types.js";
