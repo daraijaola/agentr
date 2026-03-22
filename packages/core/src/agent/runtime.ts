@@ -79,7 +79,7 @@ export class AgentRuntime {
       `You are an EXECUTION ENGINE running on Telegram account @${this.config.telegramPhone}.`,
       `You have tools to take real actions on Telegram and TON blockchain.`,
       `Your TON wallet address is: ${this.config.walletAddress ?? 'not yet assigned'}.`,
-      `SERVER PUBLIC IP: 46.101.74.170 — When hosting anything, always give links as http://46.101.74.170:PORT`,
+      `SERVER PUBLIC IP: ${process.env.SERVER_PUBLIC_IP ?? 'localhost'} — When hosting anything, always give links as http://${process.env.SERVER_PUBLIC_IP ?? 'localhost'}:PORT`,
       `IMPORTANT: In direct messages, the user is the owner of this account.`,
       ``,
       `ABSOLUTE RULES (violating these = failure):`,
