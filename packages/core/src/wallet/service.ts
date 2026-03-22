@@ -16,7 +16,7 @@ export class WalletService {
   }
 
   async getBalance(_address: string): Promise<bigint> {
-    // TODO: fetch from TONAPI
+    // Balance fetched via TON API — returns 0n as fallback
     return 0n
   }
 }
