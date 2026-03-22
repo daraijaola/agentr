@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { bridgeManager } from '@agentr/core'
+import { telethonRequestOtp, telethonVerifyOtp, telethonVerify2FA } from '../telethon-bridge.js'
 import { randomUUID } from 'crypto'
 import { agentFactory } from '@agentr/factory'
 
@@ -28,7 +28,7 @@ authRoutes.post(
         const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenantId + '.session')
         if (existsSync(sf)) { unlinkSync(sf); console.log('[Auth] Cleared stale session for', tenantId) }
       } catch {}
-      const { phoneCodeHash } = await bridgeManager.requestOtp(tenantId, phone)
+      const { phoneCodeHash } = await telethonRequestOtp(tenantId, phone)
       return c.json({ success: true, tenantId, phoneCodeHash, phone, existing: isExisting })
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500)
@@ -47,7 +47,7 @@ authRoutes.post(
   async (c) => {
     const { tenantId, phone, phoneCodeHash, code } = c.req.valid('json')
     try {
-      const ok = await bridgeManager.verifyOtp(tenantId, phoneCodeHash, code)
+      const ok = await telethonVerifyOtp(tenantId, phone, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
       await agentFactory.provision(tenantId, phone)
       return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
@@ -71,7 +71,7 @@ authRoutes.post(
   async (c) => {
     const { tenantId, phone, password } = c.req.valid('json')
     try {
-      const ok = await bridgeManager.verify2FA(tenantId, password)
+      const ok = await telethonVerify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
       await agentFactory.provision(tenantId, phone)
       return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
