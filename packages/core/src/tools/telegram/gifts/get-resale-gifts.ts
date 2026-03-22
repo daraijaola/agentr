@@ -10,6 +10,7 @@ const log = createLogger("Tools");
  * Parameters for getting resale gifts
  */
 interface GetResaleGiftsParams {
+  giftId: string;
   limit?: number;
   sortByPrice?: boolean;
 }
@@ -23,6 +24,7 @@ export const telegramGetResaleGiftsTool: Tool = {
     "Browse collectible gifts listed for resale from a specific collection. Each collection (e.g. 'Pepe Plush') has a numeric ID — pass it as giftId. Get collection IDs from telegram_get_available_gifts. Returns individual listings with slugs for purchasing.",
   category: "data-bearing",
   parameters: Type.Object({
+    giftId: Type.String({
       description:
         "The numeric collection ID (base gift type ID) to browse resale listings for. Get it from telegram_get_available_gifts.",
     }),
