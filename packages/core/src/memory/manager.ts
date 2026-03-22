@@ -15,7 +15,7 @@ function ensureDir(tenantId: string): void {
 export class MemoryManager {
   private tenantId: string
 
-  constructor(tenantId: string) {
+  constructor(tenantId = 'default') {
     this.tenantId = tenantId
   }
 
@@ -43,7 +43,7 @@ export class MemoryManager {
     const content = readFileSync(path, 'utf-8')
     const regex = new RegExp(`^## ${key}\\n([\\s\\S]*?)(?=^## |$)`, 'm')
     const match = content.match(regex)
-    return match ? match[1].trim() : undefined
+    return match ? match[1]?.trim() : undefined
   }
 
   async getAll(): Promise<string> {

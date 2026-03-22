@@ -187,15 +187,13 @@ agentr/
 | LLM multi-provider — Claude, Kimi, GPT-4o | ✅ Live |
 | Agent Swarm — parallel sub-agents | ✅ Live |
 | CI pipeline + Docker | ✅ Live |
-| TON Connect payments + credit top-up | 🔧 In Progress |
-| Agent Marketplace | 🔧 In Progress |
+| TON Connect payments + credit top-up | ✅ Live |
+| Agent Marketplace | ✅ Live |
 
 ---
 
 ## Roadmap
 
-- [ ] TON payment verification for real-time credit top-ups
-- [ ] Agent Marketplace — publish and earn from community agents
 - [ ] Agent-to-agent communication and task delegation
 - [ ] Swarm v2 — persistent state and handoff between sub-agents
 - [ ] MCP server support

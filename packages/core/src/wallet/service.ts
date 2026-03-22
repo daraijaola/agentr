@@ -18,7 +18,6 @@ export class WalletService {
   async getBalance(address: string): Promise<bigint> {
     try {
       const apiKey = process.env['TONAPI_KEY'] ?? ''
-      const endpoint = process.env['TON_ENDPOINT'] ?? 'https://toncenter.com/api/v2/jsonRPC'
       const url = `https://toncenter.com/api/v2/getAddressBalance?address=${encodeURIComponent(address)}`
       const res = await fetch(url, {
         headers: apiKey ? { 'X-API-Key': apiKey } : {}
@@ -32,7 +31,7 @@ export class WalletService {
     }
   }
 
-  async getIncomingTransactions(address: string, sinceHash?: string): Promise<{hash: string; amount: bigint; from: string; timestamp: number}[]> {
+  async getIncomingTransactions(address: string): Promise<{ hash: string; amount: bigint; from: string; timestamp: number }[]> {
     try {
       const apiKey = process.env['TONAPI_KEY'] ?? ''
       const url = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(address)}&limit=20`
@@ -40,16 +39,23 @@ export class WalletService {
         headers: apiKey ? { 'X-API-Key': apiKey } : {}
       })
       if (!res.ok) return []
-      const data = await res.json() as { ok: boolean; result: any[] }
+      const data = await res.json() as { ok: boolean; result: unknown[] }
       if (!data.ok) return []
-      return data.result
-        .filter((tx: any) => tx.in_msg?.value && tx.in_msg.value !== '0')
-        .map((tx: any) => ({
-          hash: tx.transaction_id?.hash ?? '',
-          amount: BigInt(tx.in_msg.value),
-          from: tx.in_msg.source ?? '',
-          timestamp: tx.utime,
-        }))
+      return (data.result as Record<string, unknown>[])
+        .filter((tx) => {
+          const inMsg = tx['in_msg'] as Record<string, unknown> | undefined
+          return inMsg?.['value'] && inMsg['value'] !== '0'
+        })
+        .map((tx) => {
+          const inMsg = tx['in_msg'] as Record<string, unknown>
+          const txId = tx['transaction_id'] as Record<string, unknown> | undefined
+          return {
+            hash: (txId?.['hash'] as string) ?? '',
+            amount: BigInt((inMsg['value'] as string)),
+            from: (inMsg['source'] as string) ?? '',
+            timestamp: tx['utime'] as number,
+          }
+        })
     } catch {
       return []
     }
