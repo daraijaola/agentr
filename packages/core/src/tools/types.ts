@@ -11,7 +11,7 @@ export interface ToolResult {
   error?: string
 }
 
-export type ToolExecutor<T extends Record<string, unknown> = Record<string, unknown>> = (
+export type ToolExecutor<T = Record<string, unknown>> = (
   params: T,
   context: {
     tenantId: string
@@ -23,12 +23,13 @@ export type ToolExecutor<T extends Record<string, unknown> = Record<string, unkn
     db?: unknown
     senderId?: number
     isGroup?: boolean
+    [key: string]: unknown
   }
 ) => Promise<ToolResult>
 
 export interface ToolEntry {
   tool: Tool
-  executor: ToolExecutor
+  executor: ToolExecutor<any>
   scope?: 'dm-only' | 'all' | 'group-only' | 'always'
 }
 
