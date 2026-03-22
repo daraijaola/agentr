@@ -1,21 +1,64 @@
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
+
+const SESSIONS_ROOT = process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions'
+
+function getMemoryPath(tenantId: string): string {
+  return join(SESSIONS_ROOT, tenantId, 'MEMORY.md')
+}
+
+function ensureDir(tenantId: string): void {
+  const dir = join(SESSIONS_ROOT, tenantId)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+}
+
 export class MemoryManager {
-  private store = new Map<string, string>()
+  private tenantId: string
+
+  constructor(tenantId: string) {
+    this.tenantId = tenantId
+  }
 
   async init(): Promise<void> {
-    // In-memory store initialised
+    ensureDir(this.tenantId)
   }
 
   async set(key: string, value: string): Promise<void> {
-    this.store.set(key, value)
+    ensureDir(this.tenantId)
+    const path = getMemoryPath(this.tenantId)
+    let content = existsSync(path) ? readFileSync(path, 'utf-8') : ''
+    const regex = new RegExp(`^## ${key}\\n[\\s\\S]*?(?=^## |$)`, 'm')
+    const entry = `## ${key}\n${value}\n`
+    if (regex.test(content)) {
+      content = content.replace(regex, entry)
+    } else {
+      content = content + '\n' + entry
+    }
+    writeFileSync(path, content.trim() + '\n', 'utf-8')
   }
 
   async get(key: string): Promise<string | undefined> {
-    return this.store.get(key)
+    const path = getMemoryPath(this.tenantId)
+    if (!existsSync(path)) return undefined
+    const content = readFileSync(path, 'utf-8')
+    const regex = new RegExp(`^## ${key}\\n([\\s\\S]*?)(?=^## |$)`, 'm')
+    const match = content.match(regex)
+    return match ? match[1].trim() : undefined
+  }
+
+  async getAll(): Promise<string> {
+    const path = getMemoryPath(this.tenantId)
+    if (!existsSync(path)) return ''
+    return readFileSync(path, 'utf-8')
   }
 
   async search(query: string): Promise<string[]> {
-    return Array.from(this.store.values()).filter(v =>
-      v.toLowerCase().includes(query.toLowerCase())
-    )
+    const path = getMemoryPath(this.tenantId)
+    if (!existsSync(path)) return []
+    const content = readFileSync(path, 'utf-8')
+    const lower = query.toLowerCase()
+    return content
+      .split('\n')
+      .filter(line => line.toLowerCase().includes(lower))
   }
 }
