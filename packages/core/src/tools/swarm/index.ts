@@ -54,15 +54,19 @@ const AGENT_TOOLS = [
     },
   },
   {
-    name: "code_execute",
-    description: "Execute a bash command or script",
-    input_schema: {
-      type: "object",
-      properties: {
-        command: { type: "string", description: "Bash command to execute" },
-      },
-      required: ["command"],
-    },
+    name: "exec_run",
+    description: "Execute any bash command on the server. Use to start bots with pm2, install deps, run scripts.",
+    input_schema: { type: "object", properties: { command: { type: "string", description: "Bash command" }, timeout: { type: "number", description: "Timeout seconds" } }, required: ["command"] },
+  },
+  {
+    name: "exec_install",
+    description: "Install packages using apt, pip, npm, or docker pull.",
+    input_schema: { type: "object", properties: { manager: { type: "string", enum: ["apt","pip","npm","docker"] }, packages: { type: "string" } }, required: ["manager","packages"] },
+  },
+  {
+    name: "exec_service",
+    description: "Manage systemd services — start, stop, restart, status.",
+    input_schema: { type: "object", properties: { action: { type: "string", enum: ["start","stop","restart","status","enable","disable"] }, name: { type: "string" } }, required: ["action","name"] },
   },
 ]
 

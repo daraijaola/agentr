@@ -13,7 +13,7 @@ module.exports = {
         TELEGRAM_API_ID: 10213775,
         TELEGRAM_API_HASH: '10177b03e1db0f6d99e2e2f3f8ed9450',
         SESSIONS_PATH: '/root/agentr/sessions',
-        ANTHROPIC_API_KEY: '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',
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
         API_SECRET: '79d4bd2362e8c3755e04d3b0163dafc05c537fd924e6ae9ba655b782b3312970',
         AGENTR_LOG_PRETTY: 'false',
         LLM_PROVIDER: 'anthropic',
