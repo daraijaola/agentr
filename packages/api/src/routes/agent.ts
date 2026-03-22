@@ -230,7 +230,7 @@ agentRoutes.get('/workspace/:tenantId', async (c) => {
   try {
     const { readdirSync, existsSync, writeFileSync, mkdirSync, readFileSync } = await import('fs')
     const { join } = await import('path')
-    const dir = join('/root/agentr/workspaces', tenantId)
+    const dir = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId)
     mkdirSync(dir, { recursive: true })
 
     const CORE: Record<string, string> = {
@@ -385,7 +385,7 @@ agentRoutes.get('/workspace/:tenantId/:filename', async (c) => {
   try {
     const { readFileSync, existsSync } = await import('fs')
     const { join } = await import('path')
-    const fp = join('/root/agentr/workspaces', tenantId, filename)
+    const fp = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId, filename)
     if (!existsSync(fp)) return c.json({ content: '' })
     const content = readFileSync(fp, 'utf-8')
     return c.json({ content })
@@ -402,7 +402,7 @@ agentRoutes.post('/workspace/:tenantId/:filename',
     try {
       const { writeFileSync, mkdirSync } = await import('fs')
       const { join } = await import('path')
-      const dir = join('/root/agentr/workspaces', tenantId)
+      const dir = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId)
       mkdirSync(dir, { recursive: true })
       writeFileSync(join(dir, filename), content, 'utf-8')
       return c.json({ success: true })
@@ -467,7 +467,7 @@ agentRoutes.post('/marketplace/deploy',
       // Write soul/identity/strategy to workspace
       const { writeFileSync, mkdirSync } = await import('fs')
       const { join } = await import('path')
-      const dir = join('/root/agentr/workspaces', tenantId)
+      const dir = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId)
       mkdirSync(dir, { recursive: true })
       if (agent.soul) writeFileSync(join(dir, 'SOUL.md'), agent.soul)
       if (agent.identity) writeFileSync(join(dir, 'IDENTITY.md'), agent.identity)
