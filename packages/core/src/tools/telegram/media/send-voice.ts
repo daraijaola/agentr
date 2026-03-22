@@ -169,7 +169,7 @@ export const telegramSendVoiceExecutor: ToolExecutor<SendVoiceParams> = async (
       audioPath = ttsResult.filePath;
       generatedFile = audioPath; // Mark for cleanup
       usedVoice = ttsResult.voice;
-      usedProvider = ttsResult.provider;
+      usedProvider = ttsResult.provider as typeof ttsProvider;
     }
 
     if (!audioPath) {
