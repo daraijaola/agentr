@@ -58,7 +58,7 @@ export class LLMClient {
     const messages: ChatMessage[] = []
     if (options.systemPrompt) messages.push({ role: 'system', content: options.systemPrompt })
     messages.push(...options.messages)
-    const cleanMessages = messages.map(m => { const { reasoning_content, ...rest } = m as Record<string, unknown>; void reasoning_content; return rest })
+    const cleanMessages = messages.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as ChatMessage })
 
     // Anthropic needs different message format
     const anthropicMessages = provider === 'anthropic'
@@ -156,7 +156,7 @@ export class LLMClient {
         return { id: tc.id, name: tc.function.name, input }
       })
       const assistantMsg: ChatMessage = { role: 'assistant', content: text || null, ...(rawTC.length > 0 ? { tool_calls: rawTC } : {}) }
-      return { text, toolCalls, messages: [...cleanMessages, assistantMsg] }
+      return { text, toolCalls, messages: [...cleanMessages as ChatMessage[], assistantMsg] }
     }
 
     // OpenAI / Moonshot response format
@@ -172,7 +172,7 @@ export class LLMClient {
       return { id: tc.id, name: tc.function.name, input }
     })
     const assistantMsg: ChatMessage = { role: 'assistant', content: text || null, ...(rawTC.length > 0 ? { tool_calls: rawTC } : {}) }
-    return { text, toolCalls, messages: [...cleanMessages, assistantMsg] }
+    return { text, toolCalls, messages: [...cleanMessages as ChatMessage[], assistantMsg] }
   }
 
   private async chatCodex(model: string, messages: Record<string, unknown>[], options: ChatOptions): Promise<ChatResponse> {

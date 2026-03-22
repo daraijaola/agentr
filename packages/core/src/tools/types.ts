@@ -2,6 +2,7 @@ export interface Tool {
   name: string
   description: string
   parameters: Record<string, unknown>
+  category?: string
 }
 
 export interface ToolResult {
@@ -10,13 +11,23 @@ export interface ToolResult {
   error?: string
 }
 
-export type ToolExecutor<T = Record<string, unknown>> = (
+export type ToolExecutor<T extends Record<string, unknown> = Record<string, unknown>> = (
   params: T,
-  context: { tenantId: string; chatId?: string; walletAddress?: string }
+  context: {
+    tenantId: string
+    chatId?: string
+    walletAddress?: string
+    mnemonic?: string[]
+    bridge?: unknown
+    config?: unknown
+    db?: unknown
+    senderId?: number
+    isGroup?: boolean
+  }
 ) => Promise<ToolResult>
 
 export interface ToolEntry {
   tool: Tool
   executor: ToolExecutor
-  scope?: 'dm-only' | 'all'
+  scope?: 'dm-only' | 'all' | 'group-only' | 'always'
 }

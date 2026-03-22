@@ -4,7 +4,7 @@ export class TelegramBridge {
   private client: TelegramUserClient
 
   constructor(private sessionPath: string) {
-    this.client = new TelegramUserClient(sessionPath)
+    this.client = new TelegramUserClient({ tenantId: sessionPath, sessionPath })
   }
 
   async requestOtp(phone: string) {
