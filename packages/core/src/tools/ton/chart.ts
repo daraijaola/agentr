@@ -82,7 +82,7 @@ export const tonChartExecutor: ToolExecutor<ChartParams> = async (
     const rawPoints: [number, number][] = data.points;
 
     // Points come in reverse chronological order — reverse to chronological
-    const sorted = [...rawPoints].sort((a, b) => a[0]! - b[0]!);
+    const sorted = [...rawPoints].sort((a, b) => (a[0] ?? 0) - (b[0] ?? 0));
 
     const points = sorted.map(([ts, price]) => ({
       timestamp: ts,
@@ -91,19 +91,19 @@ export const tonChartExecutor: ToolExecutor<ChartParams> = async (
     }));
 
     const prices = points.map((p) => p.price);
-    const startPrice! = prices[0]!;
-    const currentPrice! = prices[prices.length - 1];
+    const startPrice = (prices[0] ?? 0);
+    const currentPrice = prices[prices.length - 1];
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const changeAbsolute = currentPrice! - startPrice!;
-    const changePercent = startPrice! !== 0 ? (changeAbsolute / startPrice!) * 100 : 0;
+    const changeAbsolute = (currentPrice ?? 0) - (startPrice ?? 0);
+    const changePercent = (startPrice ?? 0) !== 0 ? (changeAbsolute / (startPrice ?? 0)) * 100 : 0;
 
     const minIdx = prices.indexOf(minPrice);
     const maxIdx = prices.indexOf(maxPrice);
 
     const stats = {
-      currentPrice!,
-      startPrice!,
+      currentPrice: (currentPrice ?? 0),
+      startPrice: (startPrice ?? 0),
       minPrice,
       maxPrice,
       changePercent: Math.round(changePercent * 100) / 100,
@@ -114,7 +114,7 @@ export const tonChartExecutor: ToolExecutor<ChartParams> = async (
 
     const direction = changePercent >= 0 ? "+" : "";
     const tokenLabel = token === "ton" ? "TON" : token;
-    const message = `${tokenLabel} price over ${period}: $${currentPrice!.toFixed(4)} (${direction}${stats.changePercent}%). Low: $${minPrice.toFixed(4)}, High: $${maxPrice.toFixed(4)}. ${points.length} data points.`;
+    const message = `${tokenLabel} price over ${period}: $${(currentPrice ?? 0).toFixed(4)} (${direction}${stats.changePercent}%). Low: $${minPrice.toFixed(4)}, High: $${maxPrice.toFixed(4)}. ${points.length} data points.`;
 
     return {
       success: true,
