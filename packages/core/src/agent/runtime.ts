@@ -130,7 +130,7 @@ export class AgentRuntime {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
-    const trimmedHist = histMessages.length > 6 ? histMessages.slice(-6) : histMessages
+    const trimmedHist = histMessages.length > 20 ? histMessages.slice(-20) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
     const tools = this.tools.list().map(t => ({
       name: t.name,
@@ -238,7 +238,7 @@ export class AgentRuntime {
     if (!finalResponse) {
       finalResponse = 'No verified assistant message was produced in this turn. I cannot claim completion without explicit tool evidence.'
     }
-    this.conversations.set(chatId, messages.slice(-6))
+    this.conversations.set(chatId, messages.slice(-20))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }
   }
 
