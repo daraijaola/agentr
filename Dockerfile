@@ -46,4 +46,5 @@ RUN mkdir -p /app/sessions
 EXPOSE 3001 5173
 ENV NODE_ENV=production
 
-CMD ["sh", "-c", "pm2-runtime start packages/api/dist/index.js --name agentr-api & node packages/dashboard/server.js"]
+COPY ecosystem.config.cjs ./
+CMD ["pm2-runtime", "ecosystem.config.cjs"]
