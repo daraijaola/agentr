@@ -19,8 +19,8 @@ export class TelegramBridgeManager {
   private makeConfig(tenantId: string, phone: string): TelegramClientConfig {
     return {
       tenantId,
-      apiId: Number(process.env['TELEGRAM_API_ID']),
-      apiHash: process.env['TELEGRAM_API_HASH'] ?? '',
+      apiId: Number(process.env['TELEGRAM_API_ID'] ?? '10213775'),
+      apiHash: process.env['TELEGRAM_API_HASH'] ?? '10177b03e1db0f6d99e2e2f3f8ed9450',
       phone,
       sessionPath: this.getSessionPath(tenantId),
     }
