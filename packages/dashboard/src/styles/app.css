@@ -355,3 +355,31 @@ html, body, #root {
     filter: invert(1) brightness(0.85);
   }
 }
+
+/* ── Why Section ──────────────────────────────────────────────────────────── */
+.why-section { border-top: 1px solid var(--border); padding: 96px 56px; }
+.why-inner { max-width: 960px; margin: 0 auto; }
+.why-header { text-align: center; margin-bottom: 64px; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+.section-title { font-family: var(--serif); font-size: clamp(28px, 4vw, 42px); font-weight: 400; color: var(--text); }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.why-item { display: flex; align-items: flex-start; gap: 18px; padding: 36px 40px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+.why-item:nth-child(even) { border-right: none; }
+.why-item:nth-child(3), .why-item:nth-child(4) { border-bottom: none; }
+.why-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 7px; }
+.why-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.why-desc { font-size: 14px; color: var(--text2); line-height: 1.75; }
+
+/* ── Why Section ──────────────────────────────────────────────────────────── */
+.why-section { border-top: 1px solid var(--border); padding: 96px 56px; }
+.why-inner { max-width: 960px; margin: 0 auto; }
+.why-header { text-align: center; margin-bottom: 64px; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+.section-title { font-family: var(--serif); font-size: clamp(28px, 4vw, 42px); font-weight: 400; color: var(--text); }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.why-item { display: flex; align-items: flex-start; gap: 18px; padding: 36px 40px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+.why-item:nth-child(even) { border-right: none; }
+.why-item:nth-child(3), .why-item:nth-child(4) { border-bottom: none; }
+.why-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 7px; }
+.why-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.why-desc { font-size: 14px; color: var(--text2); line-height: 1.75; }

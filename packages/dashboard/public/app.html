@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AGENTR — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg-page:     #F5F1EB;
+  --bg-surface:  #FAF8F4;
+  --bg-card:     #FFFFFF;
+  --bg-hover:    #EDE7DC;
+  --warm-100:    #F5F1EB;
+  --warm-200:    #EDE7DC;
+  --warm-300:    #DED6C8;
+  --warm-400:    #C8BFB0;
+  --text-primary:   #1A1916;
+  --text-secondary: #6B6860;
+  --text-muted:     #9C9A94;
+  --border-subtle:  rgba(26,25,22,0.10);
+  --border-medium:  rgba(26,25,22,0.18);
+  --border-strong:  rgba(26,25,22,0.30);
+  --accent:      #0098EA;
+  --accent-d:    #007EC5;
+  --accent-tint: #EBF6FE;
+  --accent-mid:  #A8D8F5;
+  --ok:          #16a34a;
+  --ok-bg:       #f0fdf4;
+  --ok-bdr:      #bbf7d0;
+  --err:         #dc2626;
+  --err-bg:      #fef2f2;
+  --warn:        #b45309;
+  --warn-bg:     #fffbeb;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans:  'DM Sans', system-ui, sans-serif;
+}
+
+html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page); color:var(--text-primary); -webkit-font-smoothing:antialiased; }
+
+/* ─── SHARED ─────────────────────────────────────────────── */
+.screen { display:none; }
+.screen.active { display:flex; }
+
+@keyframes fadeup { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes blink  { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes spin   { to{transform:rotate(360deg)} }
+
+.fadeup { animation: fadeup .45s ease both; }
+
+/* ─── BUTTONS ────────────────────────────────────────────── */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  font-family:var(--font-sans); font-weight:500; cursor:pointer;
+  border:none; border-radius:999px; transition:opacity .15s, background .15s;
+  text-decoration:none;
+}
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+.btn-dark  { background:var(--text-primary); color:var(--bg-card); font-size:14px; padding:11px 22px; }
+.btn-dark:hover:not(:disabled) { opacity:.83; }
+.btn-ghost { background:transparent; color:var(--text-secondary); border:0.5px solid var(--border-medium); font-size:14px; padding:10px 20px; }
+.btn-ghost:hover:not(:disabled) { background:var(--warm-200); color:var(--text-primary); }
+.btn-accent { background:var(--accent); color:#fff; font-size:14px; padding:11px 22px; }
+.btn-accent:hover:not(:disabled) { background:var(--accent-d); }
+.btn-accent-tint { background:var(--accent-tint); color:var(--accent); font-size:13px; padding:8px 16px; }
+.btn-accent-tint:hover:not(:disabled) { background:var(--accent-mid); }
+.btn-sm { font-size:12px; padding:7px 14px; }
+.btn-full { width:100%; }
+
+/* ─── FIELDS ─────────────────────────────────────────────── */
+.field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field-label { font-size:12px; font-weight:500; color:var(--text-secondary); letter-spacing:.01em; }
+.field-input {
+  width:100%; background:var(--bg-surface);
+  border:0.5px solid var(--border-medium); border-radius:8px;
+  color:var(--text-primary); font-family:var(--font-sans); font-size:14px;
+  padding:11px 14px; outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.field-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,152,234,.12); }
+.field-input::placeholder { color:var(--text-muted); }
+
+.err-msg { background:var(--err-bg); border:0.5px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:13px; color:var(--err); margin-top:8px; }
+.hint-msg { font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.6; }
+
+/* ─── CARDS ──────────────────────────────────────────────── */
+.card {
+  background:var(--bg-card); border:0.5px solid var(--border-subtle);
+  border-radius:12px; padding:1.5rem 1.75rem;
+}
+.card-surface {
+  background:var(--bg-surface); border:0.5px solid var(--border-subtle);
+  border-radius:12px; padding:1.5rem 1.75rem;
+}
+
+/* ─── SECTION LABEL ──────────────────────────────────────── */
+.section-label {
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-muted); display:flex; align-items:center; gap:12px;
+  margin-bottom:1.25rem;
+}
+.section-label::after { content:''; flex:1; height:.5px; background:var(--border-subtle); }
+
+/* ─── AUTH SCREENS ───────────────────────────────────────── */
+.auth-page {
+  min-height:100vh; flex-direction:column; align-items:center;
+  justify-content:center; background:var(--bg-page); padding:24px;
+}
+.auth-card {
+  width:100%; max-width:400px;
+  background:var(--bg-card); border:0.5px solid var(--border-subtle);
+  border-radius:16px; padding:2.5rem;
+}
+.auth-logo { font-size:15px; font-weight:500; letter-spacing:.06em; margin-bottom:2rem; color:var(--text-primary); }
+.auth-logo em { font-style:normal; color:var(--accent); }
+.auth-title { font-family:var(--font-serif); font-size:26px; font-weight:400; margin-bottom:.4rem; line-height:1.2; }
+.auth-sub { font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:1.75rem; }
+.back-link { display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--text-muted); background:none; border:none; cursor:pointer; font-family:var(--font-sans); padding:0; margin-bottom:1.5rem; }
+.back-link:hover { color:var(--text-primary); }
+
+/* ─── PHONE SCREEN ───────────────────────────────────────── */
+#screen-phone .auth-card,
+#screen-otp .auth-card,
+#screen-twofa .auth-card { animation:fadeup .4s ease; }
+
+/* ─── PROVISIONING ───────────────────────────────────────── */
+.prov-list { display:flex; flex-direction:column; margin:1.75rem 0; }
+.prov-row {
+  display:flex; align-items:center; gap:14px;
+  padding:12px 0; border-bottom:.5px solid var(--border-subtle);
+  font-size:14px; color:var(--text-muted); transition:color .4s;
+}
+.prov-row:last-child { border-bottom:none; }
+.prov-row.done  { color:var(--ok); }
+.prov-row.active { color:var(--text-primary); font-weight:500; }
+.prov-ic { width:18px; text-align:center; font-size:12px; flex-shrink:0; }
+.prov-spinner {
+  width:12px; height:12px; border-radius:50%;
+  border:1.5px solid var(--accent-mid); border-top-color:var(--accent);
+  animation:spin .7s linear infinite; flex-shrink:0;
+}
+
+/* ─── SETUP ──────────────────────────────────────────────── */
+#screen-setup .auth-card { max-width:460px; animation:fadeup .4s ease; }
+.radio-group { display:flex; flex-direction:column; gap:8px; }
+.radio-opt {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 14px; border-radius:8px;
+  border:0.5px solid var(--border-medium); cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.radio-opt:hover { background:var(--warm-100); }
+.radio-opt.selected { border-color:var(--accent); background:var(--accent-tint); }
+.radio-circle {
+  width:16px; height:16px; border-radius:50%; flex-shrink:0; margin-top:2px;
+  border:1.5px solid var(--border-medium); transition:all .15s;
+}
+.radio-opt.selected .radio-circle { border-color:var(--accent); background:var(--accent); }
+.radio-label { font-size:13px; font-weight:500; color:var(--text-primary); }
+.radio-desc  { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+
+/* ─── PRICING ────────────────────────────────────────────── */
+#screen-pricing {
+  min-height:100vh; flex-direction:column; align-items:center;
+  background:var(--bg-page); padding:48px 24px;
+}
+.pricing-inner { width:100%; max-width:820px; animation:fadeup .4s ease; }
+.pricing-head { margin-bottom:2.5rem; }
+.pricing-title { font-family:var(--font-serif); font-size:32px; font-weight:400; margin-bottom:.5rem; }
+.pricing-sub   { font-size:15px; color:var(--text-secondary); line-height:1.7; }
+.plans-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border-subtle); border:.5px solid var(--border-subtle); border-radius:16px; overflow:hidden; }
+.plan { background:var(--bg-card); padding:1.75rem 1.5rem; display:flex; flex-direction:column; }
+.plan.popular { background:var(--text-primary); }
+.plan-badge { font-size:10px; letter-spacing:.1em; text-transform:uppercase; background:var(--accent-tint); color:var(--accent); padding:3px 9px; border-radius:999px; width:fit-content; margin-bottom:.75rem; }
+.plan-name    { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.75rem; }
+.plan.popular .plan-name { color:rgba(255,255,255,.45); }
+.plan-price   { font-family:var(--font-serif); font-size:32px; font-weight:400; line-height:1; }
+.plan.popular .plan-price { color:#fff; }
+.plan-period  { font-size:12px; color:var(--text-muted); margin-bottom:1.25rem; }
+.plan.popular .plan-period { color:rgba(255,255,255,.35); }
+.plan-divider { height:.5px; background:var(--border-subtle); margin:1rem 0; }
+.plan.popular .plan-divider { background:rgba(255,255,255,.1); }
+.plan-feats   { flex:1; display:flex; flex-direction:column; gap:7px; margin-bottom:1.5rem; }
+.plan-feat    { display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--text-secondary); }
+.plan.popular .plan-feat { color:rgba(255,255,255,.65); }
+.plan-check   { color:var(--accent); flex-shrink:0; margin-top:1px; }
+.plan.popular .plan-check { color:var(--accent-mid); }
+.plan-note    { font-size:11px; color:var(--accent); margin-bottom:.5rem; }
+.plan-btn     { border:none; border-radius:999px; padding:10px; font-size:13px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:opacity .15s, background .15s; }
+.plan-btn-muted   { background:var(--warm-200); color:var(--text-primary); }
+.plan-btn-muted:hover { background:var(--warm-300); }
+.plan-btn-popular { background:#fff; color:var(--text-primary); }
+.plan-btn-popular:hover { opacity:.9; }
+
+/* ─── LIVE DASHBOARD ─────────────────────────────────────── */
+#screen-live {
+  min-height:100vh; flex-direction:column;
+  background:var(--bg-page);
+}
+.topbar {
+  height:56px; background:var(--bg-card);
+  border-bottom:.5px solid var(--border-subtle);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1.5rem; flex-shrink:0; z-index:50; position:sticky; top:0;
+}
+.topbar-logo { font-size:15px; font-weight:500; letter-spacing:.06em; color:var(--text-primary); }
+.topbar-logo em { font-style:normal; color:var(--accent); }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.status-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--ok-bg); border:.5px solid var(--ok-bdr);
+  color:var(--ok); font-size:12px; font-weight:500;
+  padding:4px 12px; border-radius:999px;
+}
+.status-dot { width:5px; height:5px; border-radius:50%; background:var(--ok); animation:blink 2s infinite; }
+.credits-pill {
+  font-size:12px; font-weight:500; color:var(--text-secondary);
+  background:var(--bg-page); border:.5px solid var(--border-subtle);
+  padding:4px 12px; border-radius:999px;
+}
+.tg-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--accent); color:#fff;
+  font-family:var(--font-sans); font-size:12px; font-weight:500;
+  padding:7px 14px; border-radius:999px; text-decoration:none;
+}
+.tg-btn:hover { background:var(--accent-d); }
+.disc-btn {
+  font-family:var(--font-sans); font-size:12px; color:var(--text-muted);
+  background:none; border:none; cursor:pointer; padding:6px 10px; border-radius:999px;
+}
+.disc-btn:hover { color:var(--err); background:var(--err-bg); }
+
+.dashboard-body { display:flex; flex:1; overflow:hidden; }
+
+/* ─── SIDEBAR ────────────────────────────────────────────── */
+.sidebar {
+  width:200px; flex-shrink:0;
+  background:var(--bg-surface); border-right:.5px solid var(--border-subtle);
+  padding:1.25rem 0; display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.sb-label {
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-muted); padding:0 1rem .75rem; margin-top:.5rem;
+}
+.sb-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 1rem; font-size:13px; color:var(--text-secondary);
+  cursor:pointer; border-left:2px solid transparent;
+  transition:all .12s;
+}
+.sb-item:hover { color:var(--text-primary); background:var(--warm-200); }
+.sb-item.active { color:var(--accent); border-left-color:var(--accent); background:var(--accent-tint); }
+.sb-item.locked { opacity:.5; cursor:not-allowed; }
+.sb-item.locked:hover { color:var(--text-secondary); background:transparent; }
+.sb-soon { font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); background:var(--warm-200); padding:2px 6px; border-radius:4px; }
+
+/* ─── MAIN AREA ──────────────────────────────────────────── */
+.main { flex:1; overflow-y:auto; padding:2rem 2.5rem; }
+.tab-pane { display:none; animation:fadeup .3s ease; }
+.tab-pane.active { display:block; }
+
+/* ─── OVERVIEW TAB ───────────────────────────────────────── */
+.overview-greeting { font-family:var(--font-serif); font-size:28px; font-weight:400; margin-bottom:.25rem; }
+.overview-sub { font-size:14px; color:var(--text-secondary); margin-bottom:2rem; }
+
+.info-card {
+  background:var(--bg-card); border:.5px solid var(--border-subtle); border-radius:12px;
+  padding:1.5rem 1.75rem; margin-bottom:1.25rem;
+}
+.info-label {
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:1rem;
+}
+.wallet-row { display:flex; align-items:center; gap:12px; }
+.wallet-addr {
+  font-family:monospace; font-size:13px; color:var(--text-secondary);
+  background:var(--bg-surface); border:.5px solid var(--border-subtle);
+  border-radius:6px; padding:8px 12px; flex:1;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.copy-btn {
+  background:var(--warm-200); color:var(--text-primary); border:none;
+  border-radius:999px; font-size:12px; font-weight:500;
+  font-family:var(--font-sans); cursor:pointer; padding:7px 14px;
+  transition:background .15s; flex-shrink:0;
+}
+.copy-btn:hover { background:var(--warm-300); }
+.copy-btn.ok { background:var(--ok-bg); color:var(--ok); }
+
+.provider-grid { display:flex; flex-direction:column; gap:8px; }
+.prov-card {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 14px; border-radius:8px;
+  border:.5px solid var(--border-subtle); cursor:pointer;
+  transition:border-color .15s, background .15s; position:relative;
+}
+.prov-card:hover:not(.locked) { border-color:var(--border-medium); background:var(--warm-100); }
+.prov-card.active { border-color:var(--accent); background:var(--accent-tint); }
+.prov-card.locked { opacity:.5; cursor:not-allowed; }
+.prov-img { width:32px; height:32px; background:var(--warm-200); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+.prov-img img { width:100%; height:100%; object-fit:contain; padding:4px; }
+.prov-name  { font-size:14px; font-weight:500; }
+.prov-sub   { font-size:12px; color:var(--text-muted); }
+.prov-dot   { width:7px; height:7px; border-radius:50%; background:var(--accent); position:absolute; right:14px; }
+.prov-badge { font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); background:var(--warm-200); padding:2px 7px; border-radius:4px; position:absolute; right:12px; }
+
+/* ─── WORKSPACE TAB ──────────────────────────────────────── */
+.workspace-wrap { display:grid; grid-template-columns:200px 1fr; gap:0; border:.5px solid var(--border-subtle); border-radius:12px; overflow:hidden; height:calc(100vh - 160px); min-height:500px; }
+.ws-files { background:var(--bg-surface); border-right:.5px solid var(--border-subtle); overflow-y:auto; }
+.ws-files-header { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); padding:1rem 1rem .75rem; border-bottom:.5px solid var(--border-subtle); }
+.ws-file-item {
+  padding:9px 14px; font-size:13px; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  color:var(--text-secondary); border-left:2px solid transparent;
+  transition:all .12s;
+}
+.ws-file-item:hover { background:var(--warm-200); color:var(--text-primary); }
+.ws-file-item.active { color:var(--accent); border-left-color:var(--accent); background:var(--accent-tint); }
+.ws-core-badge { font-size:10px; color:var(--text-muted); flex-shrink:0; }
+.ws-editor { display:flex; flex-direction:column; background:var(--bg-card); }
+.ws-editor-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.75rem 1.25rem; border-bottom:.5px solid var(--border-subtle);
+  background:var(--bg-surface);
+}
+.ws-filename { font-size:13px; font-weight:500; color:var(--text-primary); font-family:monospace; }
+.ws-actions { display:flex; gap:8px; }
+.ws-save-btn {
+  background:var(--text-primary); color:var(--bg-card); border:none;
+  border-radius:999px; font-size:12px; font-weight:500;
+  font-family:var(--font-sans); cursor:pointer; padding:6px 14px;
+  transition:opacity .15s;
+}
+.ws-save-btn:hover { opacity:.82; }
+.ws-save-btn.saved { background:var(--ok); }
+.ws-refresh-btn {
+  background:transparent; border:.5px solid var(--border-medium);
+  border-radius:999px; font-size:12px; font-family:var(--font-sans);
+  cursor:pointer; padding:6px 12px; color:var(--text-secondary);
+  transition:background .15s;
+}
+.ws-refresh-btn:hover { background:var(--warm-200); }
+.ws-textarea {
+  flex:1; border:none; resize:none; outline:none;
+  font-family:'JetBrains Mono', monospace; font-size:13px;
+  line-height:1.7; padding:1.25rem; background:var(--bg-card);
+  color:var(--text-primary);
+}
+.ws-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:14px; }
+
+/* ─── MARKETPLACE TAB ────────────────────────────────────── */
+.mp-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; }
+.mp-title { font-family:var(--font-serif); font-size:24px; font-weight:400; margin-bottom:.3rem; }
+.mp-sub { font-size:13px; color:var(--text-secondary); }
+.mp-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+.mp-filter {
+  font-family:var(--font-sans); font-size:13px; padding:6px 14px;
+  border-radius:999px; border:.5px solid var(--border-medium);
+  cursor:pointer; background:var(--bg-card); color:var(--text-secondary);
+  transition:all .12s;
+}
+.mp-filter:hover { background:var(--warm-100); color:var(--text-primary); }
+.mp-filter.active { background:var(--text-primary); color:var(--bg-card); border-color:var(--text-primary); }
+.mp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+.mp-card {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:12px; padding:1.25rem 1.5rem;
+  display:flex; flex-direction:column; gap:10px;
+  transition:border-color .15s;
+}
+.mp-card:hover { border-color:var(--border-medium); }
+.mp-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.mp-card-name { font-size:14px; font-weight:500; margin-bottom:4px; }
+.mp-card-cat { font-size:11px; color:var(--text-muted); background:var(--warm-200); padding:2px 8px; border-radius:4px; }
+.mp-official { font-size:10px; background:var(--accent-tint); color:var(--accent); padding:2px 7px; border-radius:4px; margin-left:6px; }
+.mp-stats { font-size:12px; color:var(--text-muted); text-align:right; flex-shrink:0; line-height:1.6; }
+.mp-desc { font-size:13px; color:var(--text-secondary); line-height:1.6; flex:1; }
+.mp-footer { display:flex; align-items:center; justify-content:space-between; }
+.mp-creator { font-size:12px; color:var(--text-muted); }
+.mp-deploy-btn {
+  background:var(--accent); color:#fff; border:none;
+  border-radius:999px; font-size:12px; font-weight:500;
+  font-family:var(--font-sans); cursor:pointer; padding:7px 16px;
+  transition:background .15s;
+}
+.mp-deploy-btn:hover { background:var(--accent-d); }
+.mp-deploy-btn.done { background:var(--ok); }
+
+/* ─── CREDITS TAB ────────────────────────────────────────── */
+.credits-stats { display:grid; grid-template-columns:repeat(3,1fr); background:var(--bg-card); border:.5px solid var(--border-subtle); border-radius:12px; overflow:hidden; margin-bottom:1.25rem; }
+.credits-stat { padding:1.25rem 1.5rem; }
+.credits-stat + .credits-stat { border-left:.5px solid var(--border-subtle); }
+.credits-stat-label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.5rem; }
+.credits-stat-val { font-family:var(--font-serif); font-size:32px; font-weight:400; line-height:1; margin-bottom:.25rem; }
+.credits-stat-sub  { font-size:12px; color:var(--text-muted); }
+.credits-bar-wrap { background:var(--bg-card); border:.5px solid var(--border-subtle); border-radius:12px; padding:1.25rem 1.5rem; margin-bottom:1.25rem; }
+.credits-bar-track { background:var(--warm-200); border-radius:999px; height:6px; overflow:hidden; margin:8px 0 6px; }
+.credits-bar-fill  { height:100%; border-radius:999px; background:var(--accent); transition:width .5s ease; }
+.credits-bar-foot  { display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); }
+.topup-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1rem; }
+.topup-card {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:10px; padding:1.25rem; text-align:center; cursor:pointer;
+  transition:border-color .15s;
+}
+.topup-card:hover { border-color:var(--accent); }
+.topup-price  { font-family:var(--font-serif); font-size:28px; font-weight:400; color:var(--accent); }
+.topup-credits { font-size:13px; font-weight:500; margin-top:4px; }
+.topup-ton    { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.costs-table  { display:flex; flex-direction:column; }
+.costs-row    { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:.5px solid var(--border-subtle); }
+.costs-row:last-child { border-bottom:none; }
+.costs-action { font-size:13px; font-weight:500; }
+.costs-note   { font-size:12px; color:var(--text-muted); margin-left:8px; }
+.costs-val    { font-size:13px; color:var(--accent); font-weight:500; }
+.tx-list      { display:flex; flex-direction:column; gap:8px; }
+.tx-item {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:8px; padding:12px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.tx-desc  { font-size:13px; font-weight:500; }
+.tx-meta  { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.tx-amount { font-size:14px; font-weight:500; }
+.tx-pos { color:var(--ok); }
+.tx-neg { color:var(--err); }
+
+/* ─── BOTS TAB ───────────────────────────────────────────── */
+.bots-list { display:flex; flex-direction:column; gap:8px; }
+.bot-card {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:10px; padding:1rem 1.25rem;
+}
+.bot-card-row { display:flex; align-items:center; gap:12px; }
+.bot-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.bot-status-dot.online  { background:var(--ok); }
+.bot-status-dot.stopped { background:var(--text-muted); }
+.bot-name  { font-size:14px; font-weight:500; flex:1; }
+.bot-pid   { font-size:12px; color:var(--text-muted); font-family:monospace; }
+.bot-actions { display:flex; gap:8px; }
+.bot-action-btn {
+  font-family:var(--font-sans); font-size:12px; padding:5px 12px;
+  border-radius:999px; border:.5px solid var(--border-medium);
+  background:transparent; cursor:pointer; color:var(--text-secondary);
+  transition:background .12s, color .12s;
+}
+.bot-action-btn:hover { background:var(--warm-200); color:var(--text-primary); }
+.bot-action-btn.danger:hover { background:var(--err-bg); color:var(--err); border-color:var(--err); }
+.bot-logs {
+  margin-top:10px; padding:10px 12px;
+  background:var(--text-primary); border-radius:8px;
+  font-family:monospace; font-size:12px; color:#a8d8f5;
+  line-height:1.6; max-height:160px; overflow-y:auto;
+  white-space:pre-wrap;
+}
+.bots-empty { padding:3rem; text-align:center; color:var(--text-secondary); }
+.bots-empty-title { font-family:var(--font-serif); font-size:20px; font-weight:400; margin-bottom:.5rem; }
+.bots-empty-sub { font-size:13px; line-height:1.6; }
+
+/* ─── ACTIVITY TAB ───────────────────────────────────────── */
+.activity-list { display:flex; flex-direction:column; gap:10px; }
+.activity-item {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:10px; padding:1.25rem 1.5rem;
+  display:flex; flex-direction:column; gap:8px;
+}
+.activity-user   { font-size:14px; font-weight:500; }
+.activity-reply  { font-size:13px; color:var(--text-secondary); line-height:1.65; }
+.activity-tools  { display:flex; gap:6px; flex-wrap:wrap; }
+.activity-tool   { font-size:11px; font-family:monospace; background:var(--warm-200); color:var(--text-secondary); padding:2px 8px; border-radius:4px; }
+.activity-time   { font-size:11px; color:var(--text-muted); }
+.activity-empty  { padding:3rem; text-align:center; color:var(--text-secondary); font-size:14px; }
+
+/* ─── DEV / MARKETPLACE FORMS ────────────────────────────── */
+.dev-form-page { max-width:460px; animation:fadeup .3s ease; }
+.dev-form-title { font-family:var(--font-serif); font-size:26px; font-weight:400; margin-bottom:.4rem; }
+.dev-form-sub { font-size:14px; color:var(--text-secondary); margin-bottom:1.75rem; line-height:1.6; }
+.cat-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.cat-chip {
+  font-family:var(--font-sans); font-size:12px; padding:5px 13px;
+  border-radius:999px; border:.5px solid var(--border-medium);
+  cursor:pointer; background:transparent; color:var(--text-secondary);
+  transition:all .12s;
+}
+.cat-chip:hover { background:var(--warm-200); color:var(--text-primary); }
+.cat-chip.selected { background:var(--text-primary); color:var(--bg-card); border-color:var(--text-primary); }
+.dev-dash { max-width:680px; animation:fadeup .3s ease; }
+.dev-dash-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+.dev-dash-title { font-family:var(--font-serif); font-size:26px; font-weight:400; }
+.dev-dash-sub { font-size:13px; color:var(--text-secondary); margin-top:.25rem; }
+.dev-earnings {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:12px; padding:1.5rem; display:flex;
+  align-items:center; justify-content:space-between; margin-bottom:1.25rem;
+}
+.dev-earnings-val { font-family:var(--font-serif); font-size:40px; font-weight:400; color:var(--accent); }
+.dev-earnings-label { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.25rem; }
+.dev-earnings-sub { font-size:12px; color:var(--text-muted); margin-top:.25rem; }
+.pending-banner { background:var(--warn-bg); border:.5px solid #fde68a; border-radius:8px; padding:12px 16px; font-size:13px; color:var(--warn); margin-bottom:1.25rem; line-height:1.6; }
+.dev-agent-item {
+  background:var(--bg-card); border:.5px solid var(--border-subtle);
+  border-radius:8px; padding:12px 16px;
+  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.dev-agent-name { font-size:14px; font-weight:500; flex:1; }
+.dev-agent-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.dev-status-live { font-size:11px; background:var(--ok-bg); color:var(--ok); padding:3px 10px; border-radius:999px; border:.5px solid var(--ok-bdr); }
+.dev-status-review { font-size:11px; background:var(--warm-200); color:var(--text-muted); padding:3px 10px; border-radius:999px; }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width:860px) {
+  .sidebar { display:none; }
+  .plans-grid { grid-template-columns:repeat(2,1fr); }
+  .credits-stats { grid-template-columns:1fr; }
+  .credits-stat + .credits-stat { border-left:none; border-top:.5px solid var(--border-subtle); }
+  .topup-grid { grid-template-columns:repeat(3,1fr); }
+  .main { padding:1.25rem 1rem; }
+}
+
+@media (max-width:540px) {
+  .auth-card { padding:1.75rem; }
+  .plans-grid { grid-template-columns:1fr; }
+  .workspace-wrap { grid-template-columns:1fr; }
+  .topup-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     PHONE SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-phone" class="screen active auth-page fadeup">
+  <div class="auth-card">
+    <div class="auth-logo">AGENT<em>R</em></div>
+    <h1 class="auth-title">Connect Telegram</h1>
+    <p class="auth-sub">Enter your phone number to activate your personal AI agent on your Telegram account.</p>
+    <div class="field">
+      <label class="field-label">Phone number</label>
+      <input class="field-input" id="phone-input" type="tel" placeholder="+1 234 567 8900" autocomplete="tel"/>
+    </div>
+    <button class="btn btn-dark btn-full" onclick="goOtp()">Send code →</button>
+    <div id="phone-error" class="err-msg" style="display:none"></div>
+    <p class="hint-msg">We'll send a verification code to your Telegram app. No passwords required.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     OTP SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-otp" class="screen auth-page">
+  <div class="auth-card fadeup">
+    <div class="auth-logo">AGENT<em>R</em></div>
+    <button class="back-link" onclick="show('phone')">← Back</button>
+    <h1 class="auth-title">Check Telegram</h1>
+    <p class="auth-sub" id="otp-sub">Enter the code sent to your Telegram app.</p>
+    <div class="field">
+      <label class="field-label">Verification code</label>
+      <input class="field-input" id="otp-input" type="text" placeholder="12345" maxlength="5" inputmode="numeric"/>
+    </div>
+    <button class="btn btn-dark btn-full" onclick="goSetup()">Confirm →</button>
+    <div id="otp-error" class="err-msg" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     2FA SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-twofa" class="screen auth-page">
+  <div class="auth-card fadeup">
+    <div class="auth-logo">AGENT<em>R</em></div>
+    <h1 class="auth-title">Two-step verification</h1>
+    <p class="auth-sub">Enter your Telegram cloud password to continue.</p>
+    <div class="field">
+      <label class="field-label">Password</label>
+      <input class="field-input" id="twofa-input" type="password" placeholder="Your Telegram password"/>
+    </div>
+    <button class="btn btn-dark btn-full" onclick="goSetupFrom2FA()">Continue →</button>
+    <div id="twofa-error" class="err-msg" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SETUP SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">AGENT<em>R</em></div>
+    <h1 class="auth-title">Set up your agent</h1>
+    <p class="auth-sub">Personalise your agent before it goes live.</p>
+
+    <div class="field">
+      <label class="field-label">What should your agent call you?</label>
+      <input class="field-input" id="owner-name" type="text" placeholder="e.g. Mike, Boss, Alex" maxlength="32"/>
+    </div>
+    <div class="field">
+      <label class="field-label">Give your agent a name <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+      <input class="field-input" id="agent-name" type="text" placeholder="e.g. Nova, Rex, Axiom" maxlength="32"/>
+    </div>
+    <div class="field">
+      <label class="field-label">Who can trigger your agent?</label>
+      <div class="radio-group" id="dm-policy">
+        <div class="radio-opt selected" data-value="contacts" onclick="selectDmPolicy(this)">
+          <div class="radio-circle"></div>
+          <div><div class="radio-label">Contacts only</div><div class="radio-desc">Only people saved in your contacts</div></div>
+        </div>
+        <div class="radio-opt" data-value="everyone" onclick="selectDmPolicy(this)">
+          <div class="radio-circle"></div>
+          <div><div class="radio-label">Everyone</div><div class="radio-desc">Any incoming DM triggers the agent</div></div>
+        </div>
+        <div class="radio-opt" data-value="manual" onclick="selectDmPolicy(this)">
+          <div class="radio-circle"></div>
+          <div><div class="radio-label">Manual only</div><div class="radio-desc">Only activates when you message it yourself</div></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-dark btn-full" style="margin-top:.5rem" onclick="goPricing()">Continue →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PRICING SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-pricing" class="screen">
+  <div class="pricing-inner">
+    <div style="margin-bottom:1.5rem"><button class="back-link" onclick="show('setup')">← Back</button></div>
+    <div class="pricing-head">
+      <p class="section-label">Plans</p>
+      <h1 class="pricing-title">Start free. Scale when ready.</h1>
+      <p class="pricing-sub">Pay with TON Connect. No credit card required to try.</p>
+    </div>
+    <div class="plans-grid">
+      <!-- Free -->
+      <div class="plan">
+        <div class="plan-name">Free Trial</div>
+        <div class="plan-price">$0</div>
+        <div class="plan-period">/ 1 day</div>
+        <div class="plan-note">No credit card required.</div>
+        <div class="plan-divider"></div>
+        <div class="plan-feats">
+          <div class="plan-feat"><span class="plan-check">✓</span> 24hr full access</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Claude AI (limited)</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> TON wallet included</div>
+        </div>
+        <button class="plan-btn plan-btn-muted" onclick="goProvisioning()">Start free</button>
+      </div>
+      <!-- Starter -->
+      <div class="plan">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">$15</div>
+        <div class="plan-period">/ month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-feats">
+          <div class="plan-feat"><span class="plan-check">✓</span> 7,500 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> All AI models</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Bots &amp; Mini Apps</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> TON payments</div>
+        </div>
+        <button class="plan-btn plan-btn-muted" onclick="goProvisioning()">Pay with TON</button>
+      </div>
+      <!-- Pro (popular) -->
+      <div class="plan popular">
+        <div class="plan-badge">Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$29</div>
+        <div class="plan-period">/ month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-feats">
+          <div class="plan-feat"><span class="plan-check">✓</span> 20,000 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> All AI models</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Sub-agents (soon)</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> TON Sites &amp; DNS</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Marketplace</div>
+        </div>
+        <button class="plan-btn plan-btn-popular" onclick="goProvisioning()">Pay with TON</button>
+      </div>
+      <!-- Elite -->
+      <div class="plan">
+        <div class="plan-name">Elite</div>
+        <div class="plan-price">$49</div>
+        <div class="plan-period">/ month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-feats">
+          <div class="plan-feat"><span class="plan-check">✓</span> 40,000 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Priority model access</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Swarm mode</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Publish &amp; earn 75%</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> Dedicated support</div>
+        </div>
+        <button class="plan-btn plan-btn-muted" onclick="goProvisioning()">Pay with TON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PROVISIONING SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="screen-provisioning" class="screen auth-page">
+  <div class="auth-card fadeup">
+    <div class="auth-logo">AGENT<em>R</em></div>
+    <h1 class="auth-title">Setting things up</h1>
+    <p class="auth-sub">Give us a moment — we're getting your agent ready.</p>
+    <div class="prov-list" id="prov-list">
+      <div class="prov-row active" id="prov-0"><div class="prov-spinner"></div> Setting up your TON wallet</div>
+      <div class="prov-row" id="prov-1"><div class="prov-ic">·</div> Connecting to Telegram</div>
+      <div class="prov-row" id="prov-2"><div class="prov-ic">·</div> Loading your agent</div>
+      <div class="prov-row" id="prov-3"><div class="prov-ic">·</div> Preparing workspace</div>
+      <div class="prov-row" id="prov-4"><div class="prov-ic">·</div> Ready</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     LIVE DASHBOARD
+═══════════════════════════════════════════════════ -->
+<div id="screen-live" class="screen">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="topbar-logo">AGENT<em>R</em></span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-badge"><div class="status-dot"></div> Active</div>
+      <div class="credits-pill" id="credits-pill">8,240 credits</div>
+      <a class="tg-btn" id="tg-link" href="#" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Open in Telegram
+      </a>
+      <button class="disc-btn" onclick="disconnect()">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="dashboard-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-label">Navigation</div>
+      <div class="sb-item active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
+      <div class="sb-item" data-tab="workspace" onclick="switchTab('workspace',this)">Workspace</div>
+      <div class="sb-item" data-tab="marketplace" onclick="switchTab('marketplace',this)">Marketplace</div>
+      <div class="sb-item" data-tab="activity" onclick="switchTab('activity',this)">Activity</div>
+      <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this)">Bots &amp; Processes</div>
+      <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this)">Credits</div>
+      <div class="sb-label" style="margin-top:.5rem">Coming soon</div>
+      <div class="sb-item locked">Mini Apps <span class="sb-soon">Soon</span></div>
+      <div class="sb-item locked">TON Sites <span class="sb-soon">Soon</span></div>
+      <div class="sb-item locked">Sub-agents <span class="sb-soon">Soon</span></div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- OVERVIEW -->
+      <div class="tab-pane active" id="tab-overview">
+        <h1 class="overview-greeting" id="overview-greeting">Hey, your agent is live.</h1>
+        <p class="overview-sub" id="overview-sub">@theagent_r1 is online and ready on Telegram.</p>
+
+        <!-- Wallet -->
+        <div class="info-card">
+          <div class="info-label">TON Wallet</div>
+          <div class="wallet-row">
+            <div class="wallet-addr" id="wallet-addr">UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M</div>
+            <button class="copy-btn" id="copy-btn" onclick="copyWallet()">Copy</button>
+          </div>
+        </div>
+
+        <!-- AI Model -->
+        <div class="info-card">
+          <div class="info-label">AI Model</div>
+          <div class="provider-grid">
+            <div class="prov-card active" onclick="selectProvider(this,'claude')">
+              <div class="prov-img"><img src="/claude.webp" alt="Claude" onerror="this.parentNode.innerHTML='C'"/></div>
+              <div><div class="prov-name">Claude</div><div class="prov-sub">Exceptional reasoning</div></div>
+              <div class="prov-dot"></div>
+            </div>
+            <div class="prov-card locked">
+              <div class="prov-img"><img src="/openai.webp" alt="GPT-4o" onerror="this.parentNode.innerHTML='G'"/></div>
+              <div><div class="prov-name">GPT-4o</div><div class="prov-sub">OpenAI, full API</div></div>
+              <div class="prov-badge">Soon</div>
+            </div>
+            <div class="prov-card locked">
+              <div class="prov-img"><img src="/gemini.webp" alt="Gemini" onerror="this.parentNode.innerHTML='G'"/></div>
+              <div><div class="prov-name">Gemini</div><div class="prov-sub">Multimodal intelligence</div></div>
+              <div class="prov-badge">Soon</div>
+            </div>
+            <div class="prov-card locked">
+              <div class="prov-img"><img src="/kimi.webp" alt="Kimi" onerror="this.parentNode.innerHTML='K'"/></div>
+              <div><div class="prov-name">Kimi</div><div class="prov-sub">Fast and capable</div></div>
+              <div class="prov-badge">Soon</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKSPACE -->
+      <div class="tab-pane" id="tab-workspace">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <div>
+            <p class="section-label">Agent files</p>
+          </div>
+        </div>
+        <div class="workspace-wrap">
+          <div class="ws-files">
+            <div class="ws-files-header">Files</div>
+            <div id="ws-file-list">
+              <div style="padding:1rem;font-size:13px;color:var(--text-muted)">Loading files…</div>
+            </div>
+          </div>
+          <div class="ws-editor" id="ws-editor">
+            <div class="ws-empty">Select a file to view or edit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MARKETPLACE -->
+      <div class="tab-pane" id="tab-marketplace">
+        <div id="mp-browse">
+          <div class="mp-header">
+            <div>
+              <h2 class="mp-title">Marketplace</h2>
+              <p class="mp-sub">Deploy community-built agent configurations to your account in one click.</p>
+            </div>
+            <button class="btn btn-accent-tint" onclick="showDevLogin()">I'm a developer →</button>
+          </div>
+          <div class="mp-filters" id="mp-filters">
+            <button class="mp-filter active" onclick="filterMarket('All',this)">All</button>
+            <button class="mp-filter" onclick="filterMarket('TON/DeFi',this)">TON/DeFi</button>
+            <button class="mp-filter" onclick="filterMarket('Commerce',this)">Commerce</button>
+            <button class="mp-filter" onclick="filterMarket('Productivity',this)">Productivity</button>
+            <button class="mp-filter" onclick="filterMarket('Utility',this)">Utility</button>
+          </div>
+          <div class="mp-grid" id="mp-grid">
+            <div style="font-size:13px;color:var(--text-muted);grid-column:1/-1;padding:2rem 0">Loading agents…</div>
+          </div>
+        </div>
+        <div id="mp-dev-login" class="dev-form-page" style="display:none">
+          <button class="back-link" onclick="showMpBrowse()">← Back</button>
+          <h2 class="dev-form-title">Developer login</h2>
+          <p class="dev-form-sub">Sign in to manage your published agents and earnings.</p>
+          <div class="card">
+            <div class="field"><label class="field-label">Email</label><input class="field-input" id="dev-email" type="email" placeholder="you@example.com"/></div>
+            <div class="field"><label class="field-label">Password</label><input class="field-input" id="dev-pass" type="password" placeholder="••••••••"/></div>
+            <div id="dev-login-err" class="err-msg" style="display:none"></div>
+            <button class="btn btn-dark btn-full" style="margin-top:.5rem" onclick="handleDevLogin()">Sign in</button>
+            <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:1rem">No account? <button style="background:none;border:none;font-family:var(--font-sans);font-size:13px;color:var(--accent);cursor:pointer" onclick="showDevRegister()">Register as developer</button></p>
+          </div>
+        </div>
+        <div id="mp-dev-register" class="dev-form-page" style="display:none">
+          <button class="back-link" onclick="showDevLogin()">← Back</button>
+          <h2 class="dev-form-title">Create dev account</h2>
+          <p class="dev-form-sub">Build agents, publish them, earn 75% of every credit spent on your work.</p>
+          <div class="card">
+            <div class="field"><label class="field-label">Full name</label><input class="field-input" id="reg-name" placeholder="Your name"/></div>
+            <div class="field"><label class="field-label">Email</label><input class="field-input" id="reg-email" type="email" placeholder="you@example.com"/></div>
+            <div class="field"><label class="field-label">Password</label><input class="field-input" id="reg-pass" type="password" placeholder="At least 6 characters"/></div>
+            <div class="field"><label class="field-label">Telegram username</label><input class="field-input" id="reg-tg" placeholder="@yourhandle"/></div>
+            <div class="field"><label class="field-label">TON wallet (for earnings)</label><input class="field-input" id="reg-wallet" placeholder="UQ…"/></div>
+            <div class="field">
+              <label class="field-label">Your specialty</label>
+              <div class="cat-chips">
+                <button class="cat-chip" onclick="toggleCat(this,'TON/DeFi')">TON/DeFi</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Commerce')">Commerce</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Productivity')">Productivity</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Utility')">Utility</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Entertainment')">Entertainment</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Education')">Education</button>
+              </div>
+            </div>
+            <div id="dev-reg-err" class="err-msg" style="display:none"></div>
+            <button class="btn btn-dark btn-full" style="margin-top:.5rem" onclick="handleDevRegister()">Create account</button>
+          </div>
+        </div>
+        <div id="mp-dev-dash" class="dev-dash" style="display:none">
+          <div class="dev-dash-header">
+            <div>
+              <h2 class="dev-dash-title">Dev Dashboard</h2>
+              <p class="dev-dash-sub" id="dev-dash-sub">Welcome back</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-accent btn-sm" onclick="showDevSubmit()">Submit agent</button>
+              <button class="btn btn-ghost btn-sm" onclick="devSignOut()">Sign out</button>
+            </div>
+          </div>
+          <div class="dev-earnings">
+            <div>
+              <div class="dev-earnings-label">Total earnings</div>
+              <div class="dev-earnings-val" id="dev-earnings-val">0</div>
+              <div class="dev-earnings-sub">credits · $0.00 USD equiv.</div>
+            </div>
+            <button class="btn btn-dark btn-sm" id="withdraw-btn" onclick="handleWithdraw()">Withdraw to TON</button>
+          </div>
+          <div id="pending-banner" class="pending-banner" style="display:none">
+            Your account is pending review. Agents you submit will appear in the marketplace once approved (usually within 48 hours).
+          </div>
+          <p class="section-label">Your agents</p>
+          <div id="dev-agents-list"><div style="font-size:13px;color:var(--text-muted)">No agents yet. Submit your first agent to start earning.</div></div>
+        </div>
+        <div id="mp-dev-submit" class="dev-form-page" style="display:none">
+          <button class="back-link" onclick="showDevDash()">← Back</button>
+          <h2 class="dev-form-title">Submit an agent</h2>
+          <p class="dev-form-sub">The AGENTR team reviews all submissions within 48 hours.</p>
+          <div class="card">
+            <div class="field"><label class="field-label">Agent name</label><input class="field-input" id="sub-name" placeholder="e.g. TON Price Tracker"/></div>
+            <div class="field"><label class="field-label">Description</label><input class="field-input" id="sub-desc" placeholder="What does this agent do? Be specific."/></div>
+            <div class="field">
+              <label class="field-label">Category</label>
+              <div class="cat-chips">
+                <button class="cat-chip" onclick="toggleCat(this,'TON/DeFi')">TON/DeFi</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Commerce')">Commerce</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Productivity')">Productivity</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Utility')">Utility</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Entertainment')">Entertainment</button>
+                <button class="cat-chip" onclick="toggleCat(this,'Education')">Education</button>
+              </div>
+            </div>
+            <div class="field"><label class="field-label">GitHub repository</label><input class="field-input" id="sub-github" placeholder="https://github.com/yourname/your-agent"/></div>
+            <div class="field"><label class="field-label">Test Telegram account</label><input class="field-input" id="sub-tg" placeholder="@username"/></div>
+            <div id="sub-err" class="err-msg" style="display:none"></div>
+            <button class="btn btn-dark btn-full" style="margin-top:.5rem" onclick="handleSubmitAgent()">Submit for review</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="tab-pane" id="tab-activity">
+        <p class="section-label">Recent tasks</p>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:1.5rem">Tasks your agent has completed recently.</p>
+        <div id="activity-body">
+          <div style="font-size:13px;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- BOTS -->
+      <div class="tab-pane" id="tab-bots">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+          <p class="section-label" style="margin-bottom:0;flex:1">Bots &amp; Processes</p>
+          <button class="btn btn-ghost btn-sm" onclick="loadBots()">Refresh</button>
+        </div>
+        <div id="bots-body">
+          <div style="font-size:13px;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- CREDITS -->
+      <div class="tab-pane" id="tab-credits">
+        <p class="section-label">Credits &amp; billing</p>
+        <div class="credits-stats" id="credits-stats">
+          <div class="credits-stat">
+            <div class="credits-stat-label">Balance</div>
+            <div class="credits-stat-val" style="color:var(--accent)" id="cred-balance">—</div>
+            <div class="credits-stat-sub">credits remaining</div>
+          </div>
+          <div class="credits-stat">
+            <div class="credits-stat-label">Used this month</div>
+            <div class="credits-stat-val" id="cred-used">—</div>
+            <div class="credits-stat-sub">credits consumed</div>
+          </div>
+          <div class="credits-stat">
+            <div class="credits-stat-label">Added total</div>
+            <div class="credits-stat-val" style="color:var(--ok)" id="cred-added">—</div>
+            <div class="credits-stat-sub">credits received</div>
+          </div>
+        </div>
+
+        <div class="credits-bar-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:500">Credit balance</span>
+            <span style="font-size:12px;color:var(--text-muted)" id="cred-pct">—</span>
+          </div>
+          <div class="credits-bar-track"><div class="credits-bar-fill" id="cred-bar" style="width:0%"></div></div>
+          <div class="credits-bar-foot"><span>0</span><span>100,000 total</span></div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="info-label">Top up credits</div>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1.25rem">Pay with TON. Credits are added after payment confirms.</p>
+          <div class="topup-grid">
+            <div class="topup-card" onclick="handleTopup(5,5500,'3.8')">
+              <div class="topup-price">$5</div>
+              <div class="topup-credits">5,500 credits</div>
+              <div class="topup-ton">3.8 TON</div>
+            </div>
+            <div class="topup-card" onclick="handleTopup(10,12000,'7.5')">
+              <div class="topup-price">$10</div>
+              <div class="topup-credits">12,000 credits</div>
+              <div class="topup-ton">7.5 TON</div>
+            </div>
+            <div class="topup-card" onclick="handleTopup(25,32000,'18.8')">
+              <div class="topup-price">$25</div>
+              <div class="topup-credits">32,000 credits</div>
+              <div class="topup-ton">18.8 TON</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="info-label">Credit costs</div>
+          <div class="costs-table">
+            <div class="costs-row"><div><span class="costs-action">Message (Claude)</span><span class="costs-note">~$0.013</span></div><span class="costs-val">13 credits</span></div>
+            <div class="costs-row"><div><span class="costs-action">Message (GPT-4o)</span><span class="costs-note">~$0.009</span></div><span class="costs-val">9 credits</span></div>
+            <div class="costs-row"><div><span class="costs-action">Message (Gemini)</span><span class="costs-note">~$0.008</span></div><span class="costs-val">8 credits</span></div>
+            <div class="costs-row"><div><span class="costs-action">Message (Kimi)</span><span class="costs-note">~$0.003</span></div><span class="costs-val">3 credits</span></div>
+            <div class="costs-row"><div><span class="costs-action">Tool call</span><span class="costs-note">free tier</span></div><span class="costs-val">1 credit</span></div>
+            <div class="costs-row"><div><span class="costs-action">Bot deployment</span><span class="costs-note">one-time</span></div><span class="costs-val">10 credits</span></div>
+          </div>
+        </div>
+
+        <p class="section-label">Transaction history</p>
+        <div id="tx-list"><div style="font-size:13px;color:var(--text-muted)">Loading…</div></div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /dashboard-body -->
+</div><!-- /screen-live -->
+
+<script>
+// ─── CONFIG ───────────────────────────────────────
+const API = '/api'  // proxied via nginx to localhost:3001
+
+// ─── STATE ────────────────────────────────────────
+let STATE = {
+  phone: '', tenantId: '', phoneCodeHash: '',
+  walletAddress: '', username: '', firstName: '',
+  provider: 'claude', devToken: '', dmPolicy: 'contacts'
+}
+
+// persist tenantId across page reloads
+const _saved = sessionStorage.getItem('agentr_tenant')
+if (_saved) { try { Object.assign(STATE, JSON.parse(_saved)) } catch {} }
+
+function saveState() { sessionStorage.setItem('agentr_tenant', JSON.stringify(STATE)) }
+
+// ─── SCREEN MANAGEMENT ───────────────────────────
+function show(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById('screen-' + name).classList.add('active')
+}
+
+// ─── AUTH FLOW ────────────────────────────────────
+async function goOtp() {
+  const phone = document.getElementById('phone-input').value.trim()
+  if (!phone) { showErr('phone-error','Please enter your phone number'); return }
+
+  const btn = document.querySelector('#screen-phone .btn-dark')
+  btn.textContent = 'Sending…'; btn.disabled = true
+
+  try {
+    // Check if phone is blocked first
+    const blockRes = await fetch(API + '/agent/check-phone', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    }).then(r => r.json())
+    if (blockRes.blocked) {
+      showErr('phone-error', 'This phone number has used the free trial. Please purchase a plan.')
+      btn.textContent = 'Send code →'; btn.disabled = false; return
+    }
+
+    const res = await fetch(API + '/auth/request-otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    }).then(r => r.json())
+
+    if (!res.success) { showErr('phone-error', res.error || 'Failed to send code'); btn.textContent = 'Send code →'; btn.disabled = false; return }
+
+    STATE.phone = phone
+    STATE.tenantId = res.tenantId
+    STATE.phoneCodeHash = res.phoneCodeHash
+    saveState()
+
+    document.getElementById('otp-sub').textContent = 'Enter the code sent to ' + phone + '.'
+    show('otp')
+  } catch(e) {
+    showErr('phone-error', 'Network error — is the server running?')
+  }
+  btn.textContent = 'Send code →'; btn.disabled = false
+}
+
+async function goSetup() {
+  const code = document.getElementById('otp-input').value.trim()
+  if (!code) { showErr('otp-error','Enter the verification code'); return }
+
+  const btn = document.querySelector('#screen-otp .btn-dark')
+  btn.textContent = 'Verifying…'; btn.disabled = true
+
+  try {
+    const res = await fetch(API + '/auth/verify-otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, phone: STATE.phone, phoneCodeHash: STATE.phoneCodeHash, code })
+    }).then(r => r.json())
+
+    if (res.error === '2FA_REQUIRED') { show('twofa'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
+    if (!res.success) { showErr('otp-error', res.error || 'Invalid code'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
+
+    show('setup')
+  } catch(e) { showErr('otp-error','Network error') }
+  btn.textContent = 'Confirm →'; btn.disabled = false
+}
+
+async function goSetupFrom2FA() {
+  const password = document.getElementById('twofa-input').value.trim()
+  if (!password) { showErr('twofa-error','Enter your password'); return }
+
+  const btn = document.querySelector('#screen-twofa .btn-dark')
+  btn.textContent = 'Verifying…'; btn.disabled = true
+
+  try {
+    const res = await fetch(API + '/auth/verify-2fa', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, phone: STATE.phone, password })
+    }).then(r => r.json())
+
+    if (!res.success) { showErr('twofa-error', res.error || 'Invalid password'); btn.textContent = 'Continue →'; btn.disabled = false; return }
+    show('setup')
+  } catch(e) { showErr('twofa-error','Network error') }
+  btn.textContent = 'Continue →'; btn.disabled = false
+}
+
+async function goPricing() {
+  const ownerName = document.getElementById('owner-name').value.trim()
+  const agentName = document.getElementById('agent-name').value.trim()
+
+  // Save setup to API
+  try {
+    await fetch(API + '/agent/setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, ownerName, agentName, dmPolicy: STATE.dmPolicy })
+    })
+  } catch(e) {}
+
+  STATE.firstName = ownerName
+  saveState()
+  show('pricing')
+}
+
+async function goProvisioning() {
+  show('provisioning')
+  // Start free trial
+  try {
+    await fetch(API + '/agent/start-trial', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId })
+    })
+  } catch(e) {}
+  runProv()
+}
+
+function runProv() {
+  const steps = [0,1,2,3,4]
+  let i = 0
+  function next() {
+    if (i > 0) {
+      const prev = document.getElementById('prov-' + (i-1))
+      prev.classList.remove('active'); prev.classList.add('done')
+      prev.querySelector('.prov-spinner, .prov-ic').outerHTML = '<div class="prov-ic">✓</div>'
+    }
+    if (i < steps.length) {
+      const cur = document.getElementById('prov-' + i)
+      cur.classList.add('active')
+      if (i < steps.length - 1) { cur.innerHTML = '<div class="prov-spinner"></div>' + cur.textContent.trim() }
+      i++
+      if (i <= steps.length) setTimeout(next, i < steps.length ? 900 : 600)
+    }
+    if (i === steps.length) { setTimeout(() => { goDashboard() }, 600) }
+  }
+  next()
+}
+
+async function goDashboard() {
+  show('live')
+
+  // Load live status from API
+  try {
+    const status = await fetch(API + '/agent/status/' + STATE.tenantId).then(r => r.json())
+    if (status.walletAddress) {
+      STATE.walletAddress = status.walletAddress
+      document.getElementById('wallet-addr').textContent = status.walletAddress
+    }
+    if (status.telegram) {
+      const name = status.telegram.firstName || STATE.firstName || 'your agent'
+      document.getElementById('overview-greeting').textContent = 'Hey, ' + name + '.'
+      document.getElementById('overview-sub').textContent = (status.telegram.username ? '@' + status.telegram.username : 'Your agent') + ' is online and ready on Telegram.'
+      if (status.telegram.username) {
+        document.getElementById('tg-link').href = 'https://t.me/' + status.telegram.username
+      }
+    } else if (STATE.firstName) {
+      document.getElementById('overview-greeting').textContent = 'Hey, ' + STATE.firstName + '.'
+    }
+  } catch(e) {}
+
+  loadWorkspace()
+  loadCredits()
+  loadActivity()
+  loadBots()
+  loadMarketplace()
+}
+
+async function disconnect() {
+  if (!confirm('Disconnect your agent? This will deprovision it.')) return
+  try {
+    await fetch(API + '/agent/' + STATE.tenantId, { method:'DELETE' })
+  } catch(e) {}
+  sessionStorage.removeItem('agentr_tenant')
+  STATE = { phone:'', tenantId:'', phoneCodeHash:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
+  show('phone')
+}
+
+function selectDmPolicy(el) {
+  document.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('selected'))
+  el.classList.add('selected')
+  STATE.dmPolicy = el.dataset.value
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id)
+  el.textContent = msg; el.style.display = 'block'
+  setTimeout(() => el.style.display = 'none', 5000)
+}
+
+// ─── TABS ─────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  if (el) el.classList.add('active')
+  document.getElementById('tab-' + name).classList.add('active')
+}
+
+// ─── OVERVIEW ─────────────────────────────────────
+function copyWallet() {
+  const addr = document.getElementById('wallet-addr').textContent
+  navigator.clipboard.writeText(addr).catch(() => {})
+  const btn = document.getElementById('copy-btn')
+  btn.textContent = 'Copied'; btn.classList.add('ok')
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok') }, 2000)
+}
+
+async function selectProvider(el, id) {
+  if (el.classList.contains('locked')) return
+  document.querySelectorAll('.prov-card').forEach(c => c.classList.remove('active'))
+  el.classList.add('active')
+  STATE.provider = id
+  try {
+    await fetch(API + '/agent/provider', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, provider: id })
+    })
+  } catch(e) {}
+}
+
+// ─── WORKSPACE ────────────────────────────────────
+const CORE_FILES = ['SOUL.md','IDENTITY.md','STRATEGY.md','SECURITY.md','USER.md','MEMORY.md']
+let wsFiles = [], wsActive = null, wsContent = ''
+
+async function loadWorkspace() {
+  try {
+    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId).then(r => r.json())
+    wsFiles = res.files || []
+    renderFileList()
+    if (wsFiles.length) openFile(wsFiles[0])
+  } catch(e) {
+    document.getElementById('ws-file-list').innerHTML = '<div style="padding:1rem;font-size:13px;color:var(--text-muted)">Failed to load files.</div>'
+  }
+}
+
+function renderFileList() {
+  const list = document.getElementById('ws-file-list')
+  list.innerHTML = wsFiles.map(f => `
+    <div class="ws-file-item ${f === wsActive ? 'active' : ''}" onclick="openFile('${f}')">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f}</span>
+      ${CORE_FILES.includes(f) ? '<span class="ws-core-badge">core</span>' : ''}
+    </div>
+  `).join('')
+}
+
+async function openFile(name) {
+  wsActive = name
+  renderFileList()
+  const editor = document.getElementById('ws-editor')
+  editor.innerHTML = `<div style="padding:2rem;font-size:13px;color:var(--text-muted)">Loading…</div>`
+  try {
+    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId + '/' + encodeURIComponent(name)).then(r => r.json())
+    wsContent = res.content || ''
+    editor.innerHTML = `
+      <div class="ws-editor-head">
+        <span class="ws-filename">${name}</span>
+        <div class="ws-actions">
+          <button class="ws-save-btn" id="ws-save" onclick="saveFile()">Save</button>
+          <button class="ws-refresh-btn" onclick="loadWorkspace()">Refresh</button>
+        </div>
+      </div>
+      <textarea class="ws-textarea" id="ws-textarea" oninput="wsContent=this.value">${wsContent}</textarea>
+    `
+  } catch(e) {
+    editor.innerHTML = `<div style="padding:2rem;font-size:13px;color:var(--err)">Failed to load file.</div>`
+  }
+}
+
+async function saveFile() {
+  const btn = document.getElementById('ws-save')
+  btn.textContent = 'Saving…'; btn.disabled = true
+  try {
+    await fetch(API + '/agent/workspace/' + STATE.tenantId + '/' + encodeURIComponent(wsActive), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ content: document.getElementById('ws-textarea').value })
+    })
+    btn.textContent = 'Saved'; btn.classList.add('saved')
+    setTimeout(() => { btn.textContent = 'Save'; btn.classList.remove('saved'); btn.disabled = false }, 2000)
+  } catch(e) {
+    btn.textContent = 'Error'; btn.disabled = false
+    setTimeout(() => btn.textContent = 'Save', 2000)
+  }
+}
+
+// ─── MARKETPLACE ──────────────────────────────────
+let mpFilter = 'All', mpAgents = []
+
+async function loadMarketplace() {
+  try {
+    const res = await fetch(API + '/agent/marketplace').then(r => r.json())
+    mpAgents = res.agents && res.agents.length ? res.agents : [
+    { id:'1', name:'TON Price Alert Bot', category:'TON/DeFi', description:'Monitors TON, BTC and ETH prices. Sends Telegram alerts when your targets are hit.', rating:4.9, installs:1240, creator_name:'Community', verified:false },
+    { id:'2', name:'STON.fi Trader', category:'TON/DeFi', description:'Execute swaps on STON.fi directly from Telegram. Set slippage, monitor liquidity pools.', rating:4.7, installs:880, creator_name:'Community', verified:false },
+    { id:'3', name:'Telegram Shop', category:'Commerce', description:'Full e-commerce bot: product catalogue, cart, TON payment checkout, order management.', rating:4.8, installs:560, creator_name:'Community', verified:false },
+    { id:'4', name:'Meeting Notes', category:'Productivity', description:'Join Telegram voice chats, transcribe them, and send a structured summary to your DM.', rating:4.6, installs:340, creator_name:'Community', verified:false },
+    { id:'5', name:'Domain Sniper', category:'Utility', description:'Watches .ton domain auctions. Bids automatically when a domain meets your criteria and price.', rating:4.5, installs:210, creator_name:'Community', verified:false },
+    { id:'6', name:'DeDust LP Manager', category:'TON/DeFi', description:'Add and remove liquidity from DeDust pools, monitor yields, and receive fee summaries daily.', rating:4.4, installs:190, creator_name:'Community', verified:false },
+  ]
+  renderMarketplace()
+}
+
+function renderMarketplace() {
+  const filtered = mpFilter === 'All' ? mpAgents : mpAgents.filter(a => a.category === mpFilter)
+  const grid = document.getElementById('mp-grid')
+  if (!filtered.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:3rem 0;text-align:center;font-size:14px;color:var(--text-muted)">No agents in this category yet.</div>'; return }
+  grid.innerHTML = filtered.map(a => `
+    <div class="mp-card">
+      <div class="mp-card-top">
+        <div>
+          <div class="mp-card-name">${a.name}${a.verified ? '<span class="mp-official">Official</span>' : ''}</div>
+          <div class="mp-card-cat">${a.category}</div>
+        </div>
+        <div class="mp-stats">${a.rating} ★<br/>${Number(a.installs).toLocaleString()} installs</div>
+      </div>
+      <div class="mp-desc">${a.description}</div>
+      <div class="mp-footer">
+        <span class="mp-creator">by ${a.creator_name}</span>
+        <button class="mp-deploy-btn" id="deploy-${a.id}" onclick="deployAgent('${a.id}',this)">Deploy</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+function filterMarket(cat, el) {
+  mpFilter = cat
+  document.querySelectorAll('.mp-filter').forEach(f => f.classList.remove('active'))
+  el.classList.add('active')
+  renderMarketplace()
+}
+
+async function deployAgent(id, btn) {
+  btn.textContent = 'Deploying…'; btn.disabled = true
+  try {
+    const res = await fetch(API + '/agent/marketplace/deploy', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, agentId: id })
+    }).then(r => r.json())
+    if (res.success) {
+      btn.textContent = 'Deployed!'; btn.classList.add('done')
+      setTimeout(() => { btn.textContent = 'Deploy'; btn.classList.remove('done'); btn.disabled = false }, 3000)
+    } else {
+      btn.textContent = 'Failed'; btn.disabled = false
+      setTimeout(() => btn.textContent = 'Deploy', 2000)
+    }
+  } catch(e) { btn.textContent = 'Error'; btn.disabled = false; setTimeout(() => btn.textContent = 'Deploy', 2000) }
+}
+
+// ─── MARKETPLACE DEV VIEWS ─────────────────────────
+function showMpBrowse() { hideAllMpViews(); document.getElementById('mp-browse').style.display = 'block' }
+function showDevLogin()  { hideAllMpViews(); document.getElementById('mp-dev-login').style.display = 'block' }
+function showDevRegister(){ hideAllMpViews(); document.getElementById('mp-dev-register').style.display = 'block' }
+function showDevDash()   { hideAllMpViews(); document.getElementById('mp-dev-dash').style.display = 'block' }
+function showDevSubmit() { hideAllMpViews(); document.getElementById('mp-dev-submit').style.display = 'block' }
+function hideAllMpViews(){
+  ['mp-browse','mp-dev-login','mp-dev-register','mp-dev-dash','mp-dev-submit'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display = 'none'
+  })
+}
+
+async function handleDevLogin() {
+  const email = document.getElementById('login-email').value.trim()
+  const pass  = document.getElementById('login-pass').value.trim()
+  const errEl = document.getElementById('dev-login-err')
+  errEl.style.display = 'none'
+  try {
+    const res = await fetch(API + '/agent/dev/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    }).then(r => r.json())
+    if (!res.success) { errEl.textContent = res.error || 'Login failed'; errEl.style.display = 'block'; return }
+    STATE.devToken = res.token
+    loadDevDash(res)
+    showDevDash()
+  } catch(e) { errEl.textContent = 'Network error'; errEl.style.display = 'block' }
+}
+
+function loadDevDash(data) {
+  document.getElementById('dev-dash-sub').textContent = 'Welcome back, ' + (data.name || '') 
+  document.getElementById('dev-earnings-val').textContent = Number(data.earnings || 0).toLocaleString()
+  if (!data.approved) document.getElementById('pending-banner').style.display = 'block'
+}
+
+async function handleDevRegister() {
+  const errEl = document.getElementById('dev-reg-err'); errEl.style.display = 'none'
+  const selected = document.querySelector('.cat-chips .cat-chip.selected')
+  const body = {
+    name: document.getElementById('reg-name').value.trim(),
+    email: document.getElementById('reg-email').value.trim(),
+    password: document.getElementById('reg-pass').value.trim(),
+    telegram: document.getElementById('reg-tg').value.trim(),
+    wallet: document.getElementById('reg-wallet').value.trim(),
+    category: selected ? selected.textContent : 'Utility',
+  }
+  try {
+    const res = await fetch(API + '/agent/dev/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).then(r => r.json())
+    if (!res.success) { errEl.textContent = res.error || 'Registration failed'; errEl.style.display = 'block'; return }
+    STATE.devToken = res.token
+    loadDevDash({ name: body.name, earnings: 0, approved: false })
+    showDevDash()
+  } catch(e) { errEl.textContent = 'Network error'; errEl.style.display = 'block' }
+}
+
+async function handleSubmitAgent() {
+  const errEl = document.getElementById('sub-err'); errEl.style.display = 'none'
+  const selected = document.querySelector('#mp-dev-submit .cat-chip.selected')
+  const body = {
+    token: STATE.devToken,
+    name: document.getElementById('sub-name').value.trim(),
+    description: document.getElementById('sub-desc').value.trim(),
+    category: selected ? selected.textContent : 'Utility',
+    github: document.getElementById('sub-github').value.trim(),
+    test_account: document.getElementById('sub-tg').value.trim(),
+  }
+  try {
+    const res = await fetch(API + '/agent/dev/submit-agent', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).then(r => r.json())
+    if (!res.success) { errEl.textContent = res.error || 'Submission failed'; errEl.style.display = 'block'; return }
+    showDevDash()
+  } catch(e) { errEl.textContent = 'Network error'; errEl.style.display = 'block' }
+}
+
+function devSignOut() { STATE.devToken = ''; showMpBrowse() }
+
+async function handleWithdraw() {
+  if (!STATE.devToken) return
+  try {
+    const res = await fetch(API + '/agent/dev/withdraw', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: STATE.devToken })
+    }).then(r => r.json())
+    if (res.success) alert('Withdrawal of ' + res.amount + ' credits requested to ' + res.wallet)
+    else alert(res.error || 'Withdrawal failed')
+  } catch(e) { alert('Network error') }
+}
+
+function toggleCat(el) {
+  document.querySelectorAll('.cat-chips .cat-chip').forEach(c => { if(c !== el) c.classList.remove('selected') })
+  el.classList.toggle('selected')
+}
+
+// ─── ACTIVITY ─────────────────────────────────────
+async function loadActivity() {
+  const body = document.getElementById('activity-body')
+  body.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Loading…</div>'
+  try {
+    const res = await fetch(API + '/agent/activity/' + STATE.tenantId).then(r => r.json())
+    const msgs = res.activity || []
+    body.innerHTML = msgs.length ? `<div class="activity-list">${msgs.map(m => `
+      <div class="activity-item">
+        <div class="activity-user">${m.userMessage}</div>
+        <div class="activity-reply">${m.reply || ''}</div>
+        ${m.toolCalls?.length ? `<div class="activity-tools">${m.toolCalls.map(t => `<span class="activity-tool">${t.name || t}</span>`).join('')}</div>` : ''}
+        <div class="activity-time">${new Date(m.createdAt).toLocaleString()}</div>
+      </div>
+    `).join('')}</div>` : '<div class="activity-empty">No activity yet. Message your agent on Telegram to get started.</div>'
+  } catch(e) {
+    body.innerHTML = '<div class="activity-empty">No activity yet. Message your agent on Telegram to get started.</div>'
+  }
+}
+
+// ─── BOTS ─────────────────────────────────────────
+async function loadBots() {
+  const body = document.getElementById('bots-body')
+  body.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Loading…</div>'
+  try {
+    const res = await fetch(API + '/agent/processes/' + STATE.tenantId).then(r => r.json())
+    const procs = res.processes || []
+    if (!procs.length) { body.innerHTML = `<div class="bots-empty"><div class="bots-empty-title">No bots running yet.</div><div class="bots-empty-sub">Message your agent on Telegram and ask it to create and deploy a bot.</div></div>`; return }
+    body.innerHTML = `<div class="bots-list">${procs.map(p => `
+      <div class="bot-card" id="bot-${p.name}">
+        <div class="bot-card-row">
+          <div class="bot-status-dot ${p.status === 'online' ? 'online' : 'stopped'}"></div>
+          <div class="bot-name">${p.name}</div>
+          ${p.pid ? `<div class="bot-pid">PID ${p.pid}</div>` : ''}
+          <div class="bot-actions">
+            <button class="bot-action-btn" onclick="toggleLogs('${p.name}')">Logs</button>
+            <button class="bot-action-btn danger" onclick="stopBot('${p.name}')">Stop</button>
+          </div>
+        </div>
+        <div class="bot-logs" id="logs-${p.name}" style="display:none">Loading logs…</div>
+      </div>
+    `).join('')}</div>`
+  } catch(e) {
+    body.innerHTML = '<div class="bots-empty"><div class="bots-empty-title">No bots running yet.</div></div>'
+  }
+}
+
+async function toggleLogs(name) {
+  const el = document.getElementById('logs-' + name)
+  if (el.style.display !== 'none') { el.style.display = 'none'; return }
+  el.style.display = 'block'; el.textContent = 'Loading…'
+  try {
+    const res = await fetch(API + '/agent/logs/' + STATE.tenantId + '/' + encodeURIComponent(name)).then(r => r.json())
+    el.textContent = res.logs || 'No logs.'
+  } catch(e) { el.textContent = 'Failed to load logs.' }
+}
+
+async function stopBot(name) {
+  if (!confirm('Stop ' + name + '?')) return
+  try {
+    await fetch(API + '/agent/process/stop', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tenantId: STATE.tenantId, name })
+    })
+    const dot = document.querySelector(`#bot-${name} .bot-status-dot`)
+    if (dot) { dot.classList.remove('online'); dot.classList.add('stopped') }
+  } catch(e) {}
+}
+
+// ─── CREDITS ──────────────────────────────────────
+async function loadCredits() {
+  try {
+    const data = await fetch(API + '/agent/credits-usage/' + STATE.tenantId).then(r => r.json())
+    const credits = data.credits || 0
+    document.getElementById('cred-balance').textContent = Number(credits).toLocaleString()
+    document.getElementById('cred-used').textContent = Number(data.totalUsed || 0).toLocaleString()
+    document.getElementById('cred-added').textContent = Number(data.totalAdded || 0).toLocaleString()
+    document.getElementById('credits-pill').textContent = Number(credits).toLocaleString() + ' credits'
+    const pct = Math.min(100, Math.round((credits / 100000) * 100))
+    document.getElementById('cred-pct').textContent = pct + '% remaining'
+    document.getElementById('cred-bar').style.width = pct + '%'
+    if (pct <= 20) document.getElementById('cred-bar').style.background = 'var(--err)'
+    const txs = data.transactions || []
+    document.getElementById('tx-list').innerHTML = txs.length ? `<div class="tx-list">${txs.map(tx => `
+      <div class="tx-item">
+        <div><div class="tx-desc">${tx.description || tx.type}</div><div class="tx-meta">${tx.model ? tx.model + ' · ' : ''}${new Date(tx.created_at).toLocaleString()}</div></div>
+        <span class="tx-amount ${tx.amount > 0 ? 'tx-pos' : 'tx-neg'}">${tx.amount > 0 ? '+' : ''}${tx.amount}</span>
+      </div>
+    `).join('')}</div>` : '<div style="font-size:13px;color:var(--text-muted)">No transactions yet.</div>'
+  } catch(e) {}
+}
+
+function handleTopup(usd, credits, ton) {
+  alert(`Top up ${credits.toLocaleString()} credits for ${ton} TON ($${usd}).\n\nTON Connect payment coming soon.`)
+}
+
+// ─── INIT ─────────────────────────────────────────
+// Auto-restore session if tenantId exists
+if (STATE.tenantId) { show('live'); goDashboard() }
+</script>
+</body>
+</html>

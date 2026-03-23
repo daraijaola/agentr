@@ -20,6 +20,11 @@ export function attachMessageListener(
     const combined = messages.join('\n')
     try { await tgClient.setTyping(chatId) } catch {}
     await new Promise(r => setTimeout(r, TYPING_DELAY_MS))
+    // Immediate ack for complex tasks
+    const isComplex = combined.length > 20 && /create|build|deploy|write|make|run|install|set up|webpage|bot/i.test(combined)
+    if (isComplex) {
+      try { await tgClient.sendMessage(chatId, '⚙️ On it! Give me a moment...') } catch {}
+    }
     const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
     if (!response.content) return
     const MAX_TG = 4000
