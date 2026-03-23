@@ -12,7 +12,7 @@ const URLS: Record<string, string> = {
   'openai-codex': 'https://chatgpt.com/backend-api/codex/responses'
 }
 const DEFAULTS: Record<string, string> = {
-  anthropic: 'claude-haiku-4-5-20251001',
+  anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
   moonshot: 'moonshot-v1-128k',
   'openai-codex': 'gpt-5.3-codex'
@@ -71,42 +71,65 @@ export class LLMClient {
 
     // Anthropic needs different message format
     const anthropicMessages: any[] = provider === 'anthropic'
-      ? cleanMessages
-          .filter((m: any) => m.role !== 'system')
-          .filter((m: any, i: number, arr: any[]) => {
-            if (m.role !== 'tool') return true
-            const prev = arr[i - 1]
-            return prev?.role === 'assistant' && (prev.tool_calls?.some((tc: any) => tc.id === m.tool_call_id) || (Array.isArray(prev.content) && prev.content.some((b: any) => b.type === 'tool_use' && b.id === m.tool_call_id)))
-          })
-          .map((m: any) => {
+      ? (() => {
+          const filtered: any[] = []
+          for (const m of cleanMessages) {
+            if (m.role === 'system') continue
+
             if (m.role === 'tool') {
-              return {
+              // Only include tool results that follow an assistant with matching tool_use
+              const prev = filtered[filtered.length - 1]
+              const hasMatch = prev?.role === 'assistant' && Array.isArray(prev.content) &&
+                prev.content.some((b: any) => b.type === 'tool_use' && b.id === m.tool_call_id)
+              if (!hasMatch) continue
+              filtered.push({
                 role: 'user',
-                content: [{ type: 'tool_result', tool_use_id: m.tool_call_id ?? m.id ?? 'unknown', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
-              }
+                content: [{ type: 'tool_result', tool_use_id: m.tool_call_id ?? 'unknown', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
+              })
+              continue
             }
+
             if (m.role === 'assistant' && m.tool_calls?.length) {
               const toolUseBlocks = m.tool_calls.map((tc: any) => ({
-                type: 'tool_use',
-                id: tc.id,
-                name: tc.function.name,
+                type: 'tool_use', id: tc.id, name: tc.function.name,
                 input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })()
               }))
               const textContent = typeof m.content === 'string' && m.content.trim() ? m.content.trim() : null
-              return {
-                role: 'assistant',
-                content: [
-                  ...(textContent ? [{ type: 'text', text: textContent }] : []),
-                  ...toolUseBlocks
-                ]
-              }
+              filtered.push({ role: 'assistant', content: [...(textContent ? [{ type: 'text', text: textContent }] : []), ...toolUseBlocks] })
+              continue
             }
+
             if (m.role === 'assistant') {
               const text = typeof m.content === 'string' ? m.content.trim() : ''
-              return { role: 'assistant', content: [{ type: 'text', text: text || ' ' }] }
+              if (!text) continue // skip empty assistant messages entirely
+              // Merge consecutive assistant messages
+              const prev = filtered[filtered.length - 1]
+              if (prev?.role === 'assistant') {
+                prev.content = [...(prev.content ?? []), { type: 'text', text }]
+              } else {
+                filtered.push({ role: 'assistant', content: [{ type: 'text', text }] })
+              }
+              continue
             }
-            return m
-          })
+
+            if (m.role === 'user') {
+              const text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+              // Merge consecutive user messages
+              const prev = filtered[filtered.length - 1]
+              if (prev?.role === 'user') {
+                prev.content = typeof prev.content === 'string'
+                  ? [{ type: 'text', text: prev.content }, { type: 'text', text }]
+                  : [...(Array.isArray(prev.content) ? prev.content : [{ type: 'text', text: String(prev.content) }]), { type: 'text', text }]
+              } else {
+                filtered.push({ role: 'user', content: text })
+              }
+              continue
+            }
+
+            filtered.push(m)
+          }
+          return filtered
+        })()
       : cleanMessages
 
     if (provider === 'openai-codex') {
@@ -117,7 +140,7 @@ export class LLMClient {
 
     const body: Record<string, unknown> = {
       model,
-      max_tokens: this.config.maxTokens ?? 512,
+      max_tokens: this.config.maxTokens ?? 4096,
       temperature: provider === 'moonshot' ? 1 : (this.config.temperature ?? 0.7),
       messages: anthropicMessages,
       ...(provider === 'anthropic' && options.systemPrompt ? {

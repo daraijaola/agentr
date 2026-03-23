@@ -20,9 +20,14 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@ston-fi/api",
       "better-sqlite3",
       "bufferutil",
+      "cpu-features",
+      "es5-ext",
       "esbuild",
+      "protobufjs",
+      "ssh2",
       "utf-8-validate"
     ]
   },

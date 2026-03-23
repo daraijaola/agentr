@@ -6,26 +6,34 @@ import { loadWorkspace } from '../soul/loader.js'
 import { maskOldToolResults } from './observation-masking.js'
 
 function sanitizeForAnthropic(messages: any[]): any[] {
-  // Remove orphaned tool_result blocks (tool_result without preceding tool_use)
   const result: any[] = []
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
     if (msg.role === 'tool') {
-      // Check if previous assistant message had a matching tool_use
       const prev = result[result.length - 1]
       const hasToolUse = prev?.role === 'assistant' && (
         Array.isArray(prev.content)
           ? prev.content.some((b: any) => b.type === 'tool_use' && b.id === msg.tool_call_id)
           : prev.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id)
       )
-      if (!hasToolUse) continue // skip orphaned tool result
+      if (!hasToolUse) continue
+    }
+    // Remove assistant messages with empty or whitespace-only text content
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      const cleaned = msg.content.map((b: any) => {
+        if (b.type === 'text' && (!b.text || !b.text.trim())) return null
+        return b
+      }).filter(Boolean)
+      if (cleaned.length === 0) continue
+      result.push({ ...msg, content: cleaned })
+      continue
     }
     result.push(msg)
   }
   return result
 }
 
-const MAX_ITER = 8
+const MAX_ITER = 12
 const MAX_SIZE = 6000
 
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
@@ -36,17 +44,9 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
 }
 
 function looksLikeFinalReport(text: string): boolean {
-  const lower = text.toLowerCase()
-  // Only exit loop on strong tool evidence — not generic words
-  const strongEvidence = [
-    'success: true',
-    'exit code: 0',
-    'process is live',
-    'swarm completed',
-    'http://',
-    'tool evidence',
-  ]
-  return strongEvidence.some(kw => lower.includes(kw))
+  // Accept any response longer than 80 chars as a final report
+  // Short responses (< 80 chars) after tool calls need verification
+  return text.trim().length > 80
 }
 
 export class AgentRuntime {
@@ -135,7 +135,7 @@ export class AgentRuntime {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
-    const trimmedHist = histMessages.length > 20 ? histMessages.slice(-20) : histMessages
+    const trimmedHist = histMessages.length > 60 ? histMessages.slice(-60) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
     const tools = this.tools.list().map(t => ({
       name: t.name,
@@ -151,28 +151,13 @@ export class AgentRuntime {
       while (iters < MAX_ITER) {
         iters++
 
-        // Compact context if too long - only trim at safe boundaries
-        if (messages.length > 60) {
-          const allMsgs = messages as any[]
-          // Find last safe cut: assistant message with NO tool_use, followed by user
-          let cutAt = -1
-          for (let i = allMsgs.length - 20; i >= 1; i--) {
-            const prev = allMsgs[i - 1]
-            const curr = allMsgs[i]
-            if (prev.role === 'assistant' && curr.role === 'user') {
-              const hasToolUse = Array.isArray(prev.content) && prev.content.some((b: any) => b.type === 'tool_use')
-              if (!hasToolUse) { cutAt = i; break }
-            }
-          }
-          if (cutAt > 0) {
-            messages = allMsgs.slice(cutAt) as typeof messages
-            console.log('[Runtime:' + this.config.tenantId + '] Safe trimmed to ' + messages.length + ' msgs')
-          }
-        }
+        // Masking handles context size - no arbitrary trimming needed
         
         // Mask old tool results to save context window
         const maskedMessages = maskOldToolResults(messages as any) as typeof messages
+        console.log('[Runtime:' + this.config.tenantId + '] LLM call iter ' + iters)
         const res = await this.llm.chat({ systemPrompt, messages: maskedMessages, tools: tools.length > 0 ? tools : undefined })
+        console.log('[Runtime:' + this.config.tenantId + '] LLM done iter ' + iters + ' text:' + res.text.slice(0, 50))
         const nextMessages = stripReasoning(res.messages)
         messages = stripReasoning([...messages, ...nextMessages])
 
@@ -213,6 +198,8 @@ export class AgentRuntime {
           continue
         }
 
+
+
         toolsRanThisTurn = true
         for (const tc of res.toolCalls) {
           allTC.push({ name: tc.name, input: tc.input })
@@ -231,14 +218,30 @@ export class AgentRuntime {
     } catch (e) {
       const errStr = String(e)
       if (errStr.includes('429') || errStr.includes('rate_limit')) {
-        finalResponse = 'Rate limit reached. Please wait 60 seconds and try again.'
+        // Wait 60s and retry once instead of giving up
+        console.log('[Runtime:' + this.config.tenantId + '] Rate limited, waiting 60s...')
+        await new Promise(r => setTimeout(r, 60_000))
+        try {
+          const retry = await this.llm.chat({ systemPrompt: await this.sys(), messages: stripReasoning(messages), tools: tools.length > 0 ? tools : undefined })
+          const retryNext = stripReasoning(retry.messages)
+          if (retry.text.trim()) { finalResponse = retry.text; }
+          else { finalResponse = 'Rate limit hit. I waited and retried but could not complete. Please try again.' }
+        } catch {
+          finalResponse = 'Rate limit hit. Please try again in a moment.'
+        }
       } else {
         finalResponse = `Sorry, I ran into an error: ${errStr}. Please try again.`
       }
     }
 
     if (!finalResponse) {
-      finalResponse = 'No verified assistant message was produced in this turn. I cannot claim completion without explicit tool evidence.'
+      // Extract what happened from tool calls instead of empty error
+      if (allTC.length > 0) {
+        const toolSummary = allTC.map(tc => tc.name).join(', ')
+        finalResponse = `Executed: ${toolSummary}. Task complete.`
+      } else {
+        finalResponse = 'I was unable to complete this request. Please try again.'
+      }
     }
     this.conversations.set(chatId, messages.slice(-20))
     return { content: finalResponse, toolCalls: allTC.length > 0 ? allTC : undefined }

@@ -269,50 +269,63 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       {/* ── LANDING ── */}
       {screen === 'landing' && (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', animation: 'fadeup 0.5s ease' }}>
+          {/* ── NAV ── */}
           <nav className="nav">
             <div className="logo">AGENT<em>R</em></div>
             <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
             <div className="nav-r">
               <button className="nav-link" onClick={tryRestoreSession}>Sign in</button>
               <TonConnectButton />
-              <button className="btn btn-dark" onClick={() => setScreen('phone')}>Get started</button>
+              <button className="btn btn-dark" onClick={() => setScreen('phone')}>Get started →</button>
             </div>
           </nav>
+
+          {/* ── HERO ── */}
           <div className="hero">
             <div className="hero-left">
-              <div className="hero-tag"><div className="tag-dot" />AI Agent Factory on TON</div>
-              <h1 className="hero-h1">Build your entire<br />TON ecosystem,<br /><em>through conversation.</em></h1>
-              <p className="hero-p">One master AI agent that lives on your Telegram account. It builds bots, deploys code, manages your TON wallet, and interacts with the blockchain — all through plain conversation.</p>
+              <div className="hero-tag"><div className="tag-dot" />Now live on TON Mainnet</div>
+              <h1 className="hero-h1">Your personal AI agent,<br />running <em>inside Telegram.</em></h1>
+              <p className="hero-p">Connect your Telegram account and get a 24/7 AI agent that builds bots, deploys code, manages your TON wallet, and executes tasks — all through plain conversation. No terminal. No code.</p>
               <div className="hero-actions">
-                <button className="btn btn-dark" onClick={() => setScreen('phone')}>Launch your agent</button>
+                <button className="btn btn-dark" onClick={() => setScreen('phone')} style={{ padding: '12px 28px', fontSize: 15 }}>Start for free →</button>
                 <button className="btn btn-outline" onClick={tryRestoreSession}>Sign in</button>
                 <a href="https://github.com/daraijaola/agentr" target="_blank" rel="noreferrer" className="btn btn-outline" style={{ textDecoration: 'none' }}>
                   <img src="/github.png" alt="GitHub" style={{ width: 15, height: 15, objectFit: 'contain' }} /> GitHub
                 </a>
               </div>
             </div>
-            <div className="hero-right">
-              <div className="hero-right-title">What your agent can build</div>
+
+            {/* ── HERO RIGHT: Feature cards ── */}
+            <div className="hero-right" style={{ padding: 0, overflow: 'hidden', gap: 0 }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+                <div className="hero-right-title">What your agent can do</div>
+              </div>
               {[
-                { title: 'Telegram Bots', desc: 'Full bots with commands, inline keyboards, and logic — deployed in seconds.' },
-                { title: 'Mini Apps', desc: 'Web apps that live inside Telegram, built and launched autonomously.' },
-                { title: 'TON Websites', desc: 'Decentralized sites on TON Storage, accessible via TON DNS.' },
-                { title: 'Sub-agents', desc: 'Specialized agents spawned for specific tasks, working under your master agent.' },
-                { title: 'Payment Flows', desc: 'TON payment gates, transaction monitoring, and wallet operations.' },
-                { title: 'TON DNS Domains', desc: 'Register and manage .ton domains directly from conversation.' },
-              ].map((c) => (
-                <div className="cap-item" key={c.title}>
-                  <div className="cap-dot" />
-                  <div className="cap-text">
-                    <div className="cap-title">{c.title}</div>
-                    <div className="cap-desc">{c.desc}</div>
+                { icon: 'BOT', title: 'Telegram Bots', desc: 'Deploy full bots with commands, keyboards, and logic — no code.' },
+                { icon: 'EXEC', title: 'Execute Code', desc: 'Runs bash, installs packages, manages processes with PM2.' },
+                { icon: 'TON', title: 'TON Payments', desc: 'Check wallets, send TON, monitor transactions autonomously.' },
+                { icon: 'WEB', title: 'Deploy Sites', desc: 'Spin up web apps and serve them live from your server.' },
+                { icon: 'DNS', title: 'TON DNS', desc: 'Register and manage .ton domains through conversation.' },
+                { icon: 'SWM', title: 'Swarm Agents', desc: 'Spawn specialized sub-agents for complex parallel tasks.' },
+              ].map((c, i) => (
+                <div key={c.title} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  padding: '14px 24px',
+                  borderBottom: i < 5 ? '1px solid var(--border)' : 'none',
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0, marginTop: 7 }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{c.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.desc}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* ── AI PROVIDERS ── */}
           <div className="ai-section">
-            <div className="ai-label">Powered by leading AI</div>
+            <div className="ai-label">Powered by leading AI models</div>
             <div className="ai-logos">
               {[{ src: '/claude.webp', name: 'Claude' }, { src: '/openai.webp', name: 'OpenAI' }, { src: '/gemini.webp', name: 'Gemini' }, { src: '/kimi.webp', name: 'Kimi' }].map((ai) => (
                 <div className="ai-logo-item" key={ai.name}>
@@ -322,27 +335,83 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               ))}
             </div>
           </div>
-          <div className="how-section">
-            <div className="how-inner">
-              {[
-                { num: '01', title: 'Connect your Telegram', desc: 'Sign in with your phone number. Your master agent activates on your Telegram account and starts listening immediately.' },
-                { num: '02', title: 'Describe what you want', desc: 'Tell your agent what to build in plain English. A payment bot. A mini app. A TON website. Anything.' },
-                { num: '03', title: 'Your ecosystem builds itself', desc: 'The agent writes code, deploys it, manages processes, handles TON payments, and reports back — all without you touching a terminal.' },
-              ].map((step) => (
-                <div className="how-col" key={step.num}>
-                  <div className="how-num">{step.num}</div>
-                  <div className="how-title">{step.title}</div>
-                  <div className="how-desc">{step.desc}</div>
-                </div>
-              ))}
+
+          {/* ── WHY AGENTR ── */}
+          <div className="why-section">
+            <div className="why-inner">
+              <div className="why-header">
+                <div className="section-label">Why AGENTR</div>
+                <div className="section-title">Different by design</div>
+              </div>
+              <div className="why-grid">
+                {[
+                  { title: 'Real account, not a bot', desc: 'Your agent acts as your actual Telegram account — it can message anyone, join groups, and operate like you.' },
+                  { title: 'Native TON integration', desc: 'Send payments, check balances, register .ton domains — all through conversation. No wallet app needed.' },
+                  { title: 'Full code execution', desc: 'It writes and runs real code on your server. Install packages, manage processes, deploy live apps.' },
+                  { title: 'Always online', desc: 'Your agent runs 24/7 on our infrastructure. Assign a task and forget it — results come back to you.' },
+                ].map((w) => (
+                  <div key={w.title} className="why-item">
+                    <span className="why-dot" />
+                    <div>
+                      <div className="why-title">{w.title}</div>
+                      <div className="why-desc">{w.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="footer">
-            <span>AGENTR — AI Agent Factory on TON</span>
-            <span>TON · Telegram</span>
+
+          {/* ── PRICING ── */}
+          <div style={{ borderTop: '1px solid var(--border)', padding: '72px 24px', background: 'var(--bg)' }}>
+            <div style={{ maxWidth: 860, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 48 }}>
+                <div style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px,4vw,40px)', fontWeight: 400, letterSpacing: '-0.5px', marginBottom: 10, color: 'var(--text)' }}>Simple, transparent pricing</div>
+                <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.6 }}>Start free for 24 hours. Upgrade when ready.</div>
+              </div>
+              <div className="plans-grid">
+                {[
+                  { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['24hr full access', 'Claude AI', 'TON wallet included', '63 tools available'] },
+                  { id: 'starter', name: 'Starter', price: '$15', period: '/mo', highlight: false, note: '', features: ['7,500 credits/mo', 'All AI models', 'Bot deployment', 'TON payments'] },
+                  { id: 'pro', name: 'Pro', price: '$29', period: '/mo', highlight: true, note: '', features: ['20,000 credits/mo', 'All AI models', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
+                  { id: 'elite', name: 'Elite', price: '$49', period: '/mo', highlight: false, note: '', features: ['40,000 credits/mo', 'Priority models', 'Publish agents & earn', 'Dedicated support'] },
+                ].map((plan) => (
+                  <div key={plan.id} className={`plan-card${plan.highlight ? ' highlight' : ''}`}>
+                    {plan.highlight && <div className="plan-badge">Most popular</div>}
+                    <div className="plan-name">{plan.name}</div>
+                    <div className="plan-price">{plan.price}</div>
+                    <div className="plan-period">{plan.period}</div>
+                    {plan.note && <div className="plan-note">{plan.note}</div>}
+                    <div className="plan-features" style={{ marginTop: 12 }}>
+                      {plan.features.map((f) => <div key={f} className="plan-feat"><span className="plan-check">✓</span>{f}</div>)}
+                    </div>
+                    <button
+                      style={{ width: '100%', padding: '11px 22px', borderRadius: 8, border: 'none', background: plan.highlight ? 'var(--blue)' : plan.id === 'free' ? 'var(--dark)' : 'var(--bg2)', color: plan.highlight ? '#fff' : plan.id === 'free' ? 'var(--bg)' : 'var(--text)', fontFamily: 'var(--f)', fontSize: 14, fontWeight: 500, cursor: 'pointer', marginTop: 'auto', paddingTop: 20 }}
+                      onClick={() => setScreen('phone')}>
+                      {plan.id === 'free' ? 'Start free →' : 'Get started →'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── FOOTER ── */}
+          <div style={{ borderTop: '1px solid var(--border)', padding: '32px 56px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div className="logo" style={{ fontSize: 15 }}>AGENT<em>R</em></div>
+              <div style={{ fontSize: 12, color: 'var(--text3)' }}>AI Agent Factory on TON · © 2026</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+              <a href="https://github.com/daraijaola/agentr" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>GitHub</a>
+              <a href="https://t.me/agentr_support" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Telegram</a>
+              <a href="https://ton.org" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Built on TON</a>
+              <button className="btn btn-dark" onClick={() => setScreen('phone')} style={{ fontSize: 13, padding: '8px 18px' }}>Launch agent →</button>
+            </div>
           </div>
         </div>
       )}
+
 
       {/* ── PHONE ── */}
       {screen === 'phone' && (
