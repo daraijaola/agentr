@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AGENTR — AI Agent Factory on TON</title>
+<title>AGENTR — AI Agent That Builds on Telegram & TON</title>
+<meta name="description" content="An autonomous AI agent that lives on your Telegram account. It writes code, deploys apps, manages your TON wallet, builds bots, and interacts with the blockchain — from plain conversation. No code." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
@@ -135,6 +136,7 @@ nav {
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
+  animation: pulse 2s infinite;
 }
 
 .hero-h1 {
@@ -890,6 +892,11 @@ footer {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
 .hero { animation: fadein 0.55s ease both; }
 .hero-right { animation: fadein 0.55s 0.1s ease both; }
 
@@ -939,10 +946,10 @@ footer {
   <div class="hero-left">
     <div class="hero-eyebrow">
       <div class="hero-eyebrow-dot"></div>
-      AI Agent Factory · Built on TON
+      Autonomous AI Agent · Telegram + TON
     </div>
-    <h1 class="hero-h1">Your entire TON<br />ecosystem, built<br /><em>through conversation.</em></h1>
-    <p class="hero-p">One autonomous AI agent that lives on your Telegram account. It writes and deploys code, manages your TON wallet, builds bots, and interacts with the blockchain — all from plain conversation. No code. No config.</p>
+    <h1 class="hero-h1">The AI agent that<br />runs on your Telegram<br /><em>and builds anything.</em></h1>
+    <p class="hero-p">Tell it what you want. It writes the code, deploys the app, manages your TON wallet, and builds Telegram bots — all without you touching a terminal. For builders, founders, and anyone who should be shipping instead of coding.</p>
     <div class="hero-actions">
       <a href="/app" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">Launch your agent <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <a href="/app" class="btn-secondary" style="text-decoration:none;">Sign in</a>
@@ -995,11 +1002,36 @@ footer {
   </div>
 </section>
 
+<!-- PROOF BAR -->
+<div style="background:var(--bg-card);border-top:0.5px solid var(--border-subtle);border-bottom:0.5px solid var(--border-subtle);padding:1.1rem 2.5rem;">
+  <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong style="color:var(--text-primary);font-weight:500;">No code required</strong> — describe it, it builds it
+    </div>
+    <div style="width:0.5px;height:18px;background:var(--border-subtle);"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong style="color:var(--text-primary);font-weight:500;">Live in under 60 seconds</strong> — sign in with Telegram
+    </div>
+    <div style="width:0.5px;height:18px;background:var(--border-subtle);"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong style="color:var(--text-primary);font-weight:500;">TON-native</strong> — wallet, DNS, swaps, payments built in
+    </div>
+    <div style="width:0.5px;height:18px;background:var(--border-subtle);"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong style="color:var(--text-primary);font-weight:500;">Open source</strong> — MIT licensed on GitHub
+    </div>
+  </div>
+</div>
+
 <!-- CAPABILITIES -->
 <section class="capabilities" id="capabilities">
   <div class="capabilities-inner">
     <p class="section-label">What your agent can do</p>
-    <h2 class="section-title">60+ tools. One conversation.</h2>
+    <h2 class="section-title">60+ tools. One conversation.<br /><span style="font-family:var(--font-sans);font-size:clamp(14px,1.8vw,18px);color:var(--text-secondary);font-weight:400;">Not an assistant. An operator.</span></h2>
     <div class="cap-grid">
 
       <div class="cap-cell">
@@ -1169,7 +1201,7 @@ footer {
     <p class="section-label">Pricing</p>
     <div class="pricing-head">
       <h2 class="section-title">Start free. Scale when ready.</h2>
-      <p style="font-size:15px;color:var(--text-secondary);line-height:1.75;max-width:480px;">Pay with TON via TON Connect. No credit card required to start your free trial.</p>
+      <p style="font-size:15px;color:var(--text-secondary);line-height:1.75;max-width:480px;">Pay with TON via TON Connect — decentralized, instant, no credit card. Free trial gives you full access for 24 hours.</p>
     </div>
     <div class="plans-grid">
 
@@ -1268,9 +1300,9 @@ footer {
 <!-- CTA STRIP -->
 <section class="cta-strip">
   <div class="cta-strip-inner">
-    <div class="cta-eyebrow">Get started in seconds</div>
-    <h2 class="cta-title">Your agent is waiting.<br /><em>Let it build.</em></h2>
-    <p class="cta-sub">Sign in with your Telegram number, pick a plan, and your agent is live — no config, no terminal, no code.</p>
+    <div class="cta-eyebrow">Free trial — no card needed</div>
+    <h2 class="cta-title">Stop describing ideas.<br /><em>Start shipping them.</em></h2>
+    <p class="cta-sub">Sign in with your Telegram number. Your agent activates in seconds — ready to build, deploy, and automate on your command.</p>
     <div class="cta-actions">
       <a href="/app" class="btn-cta-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">Launch your agent <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <a href="https://t.me/theagent_r1" target="_blank" class="btn-cta-ghost">
