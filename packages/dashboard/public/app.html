@@ -749,9 +749,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
       <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this)">Bots &amp; Processes</div>
       <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this)">Credits</div>
       <div class="sb-label" style="margin-top:.5rem">Coming soon</div>
-      <div class="sb-item locked">Mini Apps <span class="sb-soon">Soon</span></div>
-      <div class="sb-item locked">TON Sites <span class="sb-soon">Soon</span></div>
-      <div class="sb-item locked">Sub-agents <span class="sb-soon">Soon</span></div>
+
     </div>
 
     <!-- Main -->
@@ -1332,6 +1330,7 @@ async function loadMarketplace() {
     { id:'6', name:'DeDust LP Manager', category:'TON/DeFi', description:'Add and remove liquidity from DeDust pools, monitor yields, and receive fee summaries daily.', rating:4.4, installs:190, creator_name:'Community', verified:false },
   ]
   renderMarketplace()
+  } catch(e) { console.warn('marketplace load failed', e) }
 }
 
 function renderMarketplace() {
