@@ -31,7 +31,7 @@ const PROVISIONING_STEPS = [
 ]
 
 function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; tonAddress: string; tonWallet: any }) {
-  const [screen, setScreen] = useState<Screen>('landing')
+  const [screen, setScreen] = useState<Screen>('phone')
   const [agent, setAgent] = useState<AgentState | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -275,6 +275,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
             <div className="nav-r">
               <button className="nav-link" onClick={tryRestoreSession}>Sign in</button>
+              <a href="https://x.com/theagent_r" target="_blank" rel="noreferrer" className="nav-link" style={{ textDecoration: 'none' }}>X</a>
               <TonConnectButton />
               <button className="btn btn-dark" onClick={() => setScreen('phone')}>Get started →</button>
             </div>
@@ -291,6 +292,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                 <button className="btn btn-outline" onClick={tryRestoreSession}>Sign in</button>
                 <a href="https://github.com/daraijaola/agentr" target="_blank" rel="noreferrer" className="btn btn-outline" style={{ textDecoration: 'none' }}>
                   <img src="/github.png" alt="GitHub" style={{ width: 15, height: 15, objectFit: 'contain' }} /> GitHub
+                </a>
+                <a href="https://x.com/theagent_r" target="_blank" rel="noreferrer" className="btn btn-outline" style={{ textDecoration: 'none' }}>
+                  X @theagent_r
                 </a>
               </div>
             </div>
