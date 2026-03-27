@@ -1,6 +1,25 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
+
+// Load .env from repo root so API_PORT, SITES_PATH etc. are always available
+// even when PM2 starts this process without inheriting the shell environment
+try {
+  const envPath = path.resolve(__dirname, '../../.env')
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n')
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eq = trimmed.indexOf('=')
+      if (eq < 1) continue
+      const key = trimmed.slice(0, eq).trim()
+      const val = trimmed.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '')
+      if (!(key in process.env)) process.env[key] = val
+    }
+  }
+} catch {}
+
 const dist = path.join(__dirname, 'dist')
 const SITES_ROOT = process.env.SITES_PATH || '/var/www/agentr-sites'
 const API_PORT = parseInt(process.env.API_PORT || '3001', 10)
@@ -84,4 +103,4 @@ http.createServer((req, res) => {
 
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
   fs.createReadStream(path.join(dist, 'app.html')).pipe(res)
-}).listen(5173, '0.0.0.0', () => console.log('AGENTR running on :5173'))
+}).listen(5173, '0.0.0.0', () => console.log(`AGENTR dashboard running on :5173 → API proxy → :${API_PORT}`))
