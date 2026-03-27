@@ -199,6 +199,7 @@ export class AgentRuntime {
     }))
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
+    const toolUrls: string[] = []  // URLs returned by serve_static, dns_link, etc.
     const systemPrompt = await this.sys()
     let toolsRanThisTurn = false
 
@@ -260,6 +261,12 @@ export class AgentRuntime {
           let txt: string
           try {
             const result = await this.tools.execute(tc.name, tc.input)
+            // Capture URLs returned by URL-producing tools so they survive sanitization
+            if (result.success && result.data && typeof result.data === 'object') {
+              const d = result.data as Record<string, unknown>
+              const url = (d['url'] ?? d['link'] ?? d['publicUrl'] ?? '') as string
+              if (typeof url === 'string' && url.startsWith('https://')) toolUrls.push(url)
+            }
             txt = result.success
               ? this.trunc(JSON.stringify({ success: true, data: result.data ?? 'done' }))
               : this.trunc(JSON.stringify({ success: false, error: result.error ?? 'unknown_error' }))
@@ -290,9 +297,10 @@ export class AgentRuntime {
 
     if (!finalResponse) {
       // Extract what happened from tool calls instead of empty error
-      if (allTC.length > 0) {
-        const toolSummary = allTC.map(tc => tc.name).join(', ')
-        finalResponse = `Executed: ${toolSummary}. Task complete.`
+      if (toolUrls.length > 0) {
+        finalResponse = `Done! ${toolUrls[toolUrls.length - 1]}`
+      } else if (allTC.length > 0) {
+        finalResponse = `Done! Task complete.`
       } else {
         finalResponse = 'I was unable to complete this request. Please try again.'
       }
@@ -300,6 +308,14 @@ export class AgentRuntime {
 
     // Always sanitize — strip raw code/HTML that slipped into the reply
     finalResponse = sanitizeFinalResponse(finalResponse, allTC.map(tc => tc.name))
+
+    // If sanitizer wiped a URL the agent produced, restore it
+    if (toolUrls.length > 0) {
+      const latestUrl = toolUrls[toolUrls.length - 1]!
+      if (!finalResponse.includes(latestUrl)) {
+        finalResponse = finalResponse.trim() + '\n' + latestUrl
+      }
+    }
 
     const saved = messages.slice(-20)
     this.conversations.set(chatId, saved)
