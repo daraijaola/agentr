@@ -83,6 +83,7 @@ app.use('/agent/processes/*', authMiddleware)
 app.use('/agent/logs/*', authMiddleware)
 app.use('/agent/process/stop', authMiddleware)
 app.use('/agent/marketplace/deploy', authMiddleware)
+app.use('/agent/trial-expire/*', authMiddleware)
 
 // Protect DELETE /agent/:tenantId — prevents unauthenticated deprovisioning
 app.use('/agent/:tenantId', async (c, next) => {

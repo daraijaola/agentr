@@ -144,6 +144,7 @@ agentRoutes.post(
   })),
   async (c) => {
     const { tenantId, phone } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
 
     try {
       await agentFactory.provision(tenantId, phone)
@@ -204,22 +205,35 @@ agentRoutes.post(
   }
 )
 
-// GET /agent/trial-status/:tenantId - check if trial expired
+// GET /agent/trial-status/:tenantId - check if trial expired (public read-only)
+// Destructive cleanup is intentionally NOT triggered here — use POST /agent/trial-expire
 agentRoutes.get('/trial-status/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
   try {
     const db = agentFactory.getDb()
     const status = await db.getTrialStatus(tenantId)
-    if (status.expired) {
-      // Fire-and-forget — never block a GET on async side-effects
-      Promise.resolve().then(async () => {
-        try { await agentFactory.deprovision(tenantId) } catch {}
-        try { if (status.phone) await db.blockPhone(status.phone) } catch {}
-      })
-    }
     return c.json({ expired: status.expired, expiresAt: status.expiresAt })
   } catch {
     return c.json({ expired: false, expiresAt: null })
+  }
+})
+
+// POST /agent/trial-expire/:tenantId - trigger deprovisioning for an expired trial (requires auth)
+agentRoutes.post('/trial-expire/:tenantId', async (c) => {
+  const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
+  try {
+    const db = agentFactory.getDb()
+    const status = await db.getTrialStatus(tenantId)
+    if (!status.expired) return c.json({ success: false, error: 'Trial has not expired' }, 400)
+    // Fire-and-forget cleanup
+    Promise.resolve().then(async () => {
+      try { await agentFactory.deprovision(tenantId) } catch {}
+      try { if (status.phone) await db.blockPhone(status.phone) } catch {}
+    })
+    return c.json({ success: true })
+  } catch (err) {
+    return c.json({ success: false, error: safeError(err) }, 500)
   }
 })
 
@@ -242,6 +256,7 @@ agentRoutes.post(
 // GET /agent/processes/:tenantId
 agentRoutes.get('/processes/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const { execSync } = await import('child_process')
     const short = tenantId.split('-')[0]
@@ -660,6 +675,22 @@ agentRoutes.post('/dev/submit-agent',
   }
 )
 
+// POST /agent/dev/logout — rotate the static dev token, invalidating the old one
+agentRoutes.post('/dev/logout',
+  zValidator('json', z.object({ token: z.string() })),
+  async (c) => {
+    const { token } = c.req.valid('json')
+    try {
+      const db = agentFactory.getDb()
+      const rows = await db.query<any>('SELECT id FROM dev_accounts WHERE token = $1', [token])
+      if (!(rows as any[]).length) return c.json({ success: false, error: 'Invalid token' }, 401)
+      const newToken = randomBytes(32).toString('hex')
+      await db.query('UPDATE dev_accounts SET token = $1 WHERE token = $2', [newToken, token])
+      return c.json({ success: true, token: newToken })
+    } catch (err) { return c.json({ success: false, error: safeError(err) }, 500) }
+  }
+)
+
 // POST /agent/dev/withdraw
 agentRoutes.post('/dev/withdraw',
   zValidator('json', z.object({ token: z.string() })),
@@ -769,6 +800,7 @@ agentRoutes.post('/setup',
   })),
   async (c) => {
     const { tenantId, agentName, ownerName, ownerUsername, dmPolicy } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     try {
       const db = agentFactory.getDb()
       await db.query(
