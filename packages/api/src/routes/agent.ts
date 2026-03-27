@@ -547,6 +547,21 @@ agentRoutes.get('/credits-usage/:tenantId', async (c) => {
   } catch (err) { return c.json({ credits: 0, totalUsed: 0, totalAdded: 0, transactions: [] }) }
 })
 
+// POST /agent/topup/:tenantId - manually add credits (self-service or admin)
+agentRoutes.post('/topup/:tenantId',
+  zValidator('json', z.object({ amount: z.number().int().positive(), description: z.string().optional() })),
+  async (c) => {
+    const tenantId = c.req.param('tenantId')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
+    const { amount, description } = c.req.valid('json')
+    try {
+      const db = agentFactory.getDb()
+      const remaining = await db.addCredits(tenantId, amount, description ?? 'Manual top-up')
+      return c.json({ success: true, credits: remaining })
+    } catch (err) { return c.json({ success: false, error: String(err) }, 500) }
+  }
+)
+
 // GET /agent/marketplace - list all marketplace agents
 agentRoutes.get('/marketplace', async (c) => {
   try {
@@ -556,6 +571,7 @@ agentRoutes.get('/marketplace', async (c) => {
        FROM marketplace_agents WHERE active = true ORDER BY installs DESC`,
       []
     )
+    c.header('Cache-Control', 'no-store')
     return c.json({ agents: rows })
   } catch (err) { return c.json({ agents: [] }) }
 })
