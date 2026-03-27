@@ -54,14 +54,21 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
   // Remove fenced code blocks entirely
   t = t.replace(/```[\s\S]*?```/g, '').trim()
 
+  // Strip unparsed <function_calls> XML blocks (Claude native format that leaked through)
+  t = t.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
+  t = t.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim()
+
   // If response still looks like raw HTML/CSS (starts with tag or has many angle brackets)
   const htmlTagDensity = (t.match(/</g) ?? []).length
   const looksLikeHtml = /^<!DOCTYPE|^<html|^<head|^<body|^<style|^<script/i.test(t)
     || (htmlTagDensity > 8 && t.length > 300)
 
-  // If response looks like CSS (lots of { } with property: value patterns)
-  const looksLikeCss = (t.match(/\{[\s\S]*?\}/g) ?? []).length > 4
-    && /:\s*[^{;]+;/.test(t) && t.length > 300
+  // If response looks like CSS — catches @import, property:value blocks, selectors
+  const looksLikeCss = (
+    /^@import\s+url/i.test(t)
+    || /^[a-z\s*#.[\],:>~+]{1,80}\s*\{[\s\S]{20,}/m.test(t)
+    || ((t.match(/\{[\s\S]*?\}/g) ?? []).length > 4 && /:\s*[^{;]+;/.test(t))
+  ) && t.length > 200
 
   if (looksLikeHtml || looksLikeCss) {
     // Try to salvage any plain sentence before the code
