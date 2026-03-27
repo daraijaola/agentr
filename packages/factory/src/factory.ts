@@ -77,14 +77,8 @@ export class AgentFactory {
 
     // 1. Generate TON wallet
     const { address, mnemonic } = await this.wallet.generateWallet()
-    // Encrypt mnemonic with AES-256-GCM before storing
-    let mnemonicEnc: string
-    try {
-      mnemonicEnc = encryptMnemonic(mnemonic.join(' '))
-    } catch (e) {
-      console.warn('[AgentFactory] WALLET_ENCRYPTION_KEY not set, falling back to base64 (insecure):', e)
-      mnemonicEnc = Buffer.from(mnemonic.join(' ')).toString('base64')
-    }
+    // Encrypt mnemonic with AES-256-GCM before storing — no insecure fallback
+    const mnemonicEnc = encryptMnemonic(mnemonic.join(' '))
     console.log(`[AgentFactory] Wallet: ${address}`)
 
     // 2. Get Telegram user info — start gramjs bridge using Telethon-saved session
@@ -170,6 +164,35 @@ export class AgentFactory {
     return runtime
   }
 
+  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string }): Promise<void> {
+    const plan = tenant.plan ?? 'starter'
+    const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
+    const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
+    const me = tgClient.getMe()
+    const config: AgentConfig = {
+      tenantId: tenant.id,
+      userId: tenant.id,
+      telegramPhone: tenant.phone,
+      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
+      walletAddress: tenant.wallet_address,
+      plan: plan as AgentConfig['plan'],
+      provisionedAt,
+    }
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
+      deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
+    })
+    await registerMVPTools(runtime.tools, {
+      client: tgClient,
+      db: null as never,
+      chatId: me?.id.toString() ?? '',
+      tenantId: tenant.id,
+      walletAddress: tenant.wallet_address,
+    })
+    attachMessageListener(tenant.id, tgClient, runtime)
+    this.runtimes.set(tenant.id, runtime)
+    console.log(`[AgentFactory] Resumed: ${tenant.id}`)
+  }
+
   async resumeAll(): Promise<void> {
     const activeTenants = await this.db.query<{
       id: string
@@ -187,46 +210,24 @@ export class AgentFactory {
 
     console.log(`[AgentFactory] Resuming ${activeTenants.length} active agents...`)
 
-    for (const tenant of activeTenants) {
-      try {
-        const plan = tenant.plan ?? 'starter'
-        const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
-
-        const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
-        const me = tgClient.getMe()
-        const config: AgentConfig = {
-          tenantId: tenant.id,
-          userId: tenant.id,
-          telegramPhone: tenant.phone,
-          llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
-          walletAddress: tenant.wallet_address,
-          plan: plan as AgentConfig['plan'],
-          provisionedAt,
-        }
-        const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
-          deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
-        })
-        await registerMVPTools(runtime.tools, {
-          client: tgClient,
-          db: null as never,
-          chatId: me?.id.toString() ?? '',
-          tenantId: tenant.id,
-          walletAddress: tenant.wallet_address,
-        })
-        attachMessageListener(tenant.id, tgClient, runtime)
-        this.runtimes.set(tenant.id, runtime)
-        console.log(`[AgentFactory] Resumed: ${tenant.id}`)
-      } catch (err: any) {
-        const msg = String(err)
-        if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
-          console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
-          try { const {unlinkSync,existsSync}=await import('fs');const {join}=await import('path');const sf=join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions',tenant.id+'.session');if(existsSync(sf))unlinkSync(sf) } catch {}
-          await this.db.updateAgentStatus(tenant.id, 'error', msg)
-        } else {
-          console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
+    // Run in parallel with a concurrency limit of 5 to avoid exhausting DB / Telegram connections
+    const CONCURRENCY = 5
+    for (let i = 0; i < activeTenants.length; i += CONCURRENCY) {
+      const batch = activeTenants.slice(i, i + CONCURRENCY)
+      await Promise.allSettled(batch.map(async (tenant) => {
+        try {
+          await this.resumeOne(tenant)
+        } catch (err: any) {
+          const msg = String(err)
+          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
+            console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
+            try { const { unlinkSync, existsSync } = await import('fs'); const { join } = await import('path'); const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenant.id + '.session'); if (existsSync(sf)) unlinkSync(sf) } catch {}
+          } else {
+            console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
+          }
           await this.db.updateAgentStatus(tenant.id, 'error', msg)
         }
-      }
+      }))
     }
   }
 

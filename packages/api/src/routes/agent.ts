@@ -5,10 +5,25 @@ import { timingSafeEqual, randomBytes } from 'crypto'
 import { resolve as resolvePath } from 'path'
 import { bridgeManager } from '@agentr/core'
 import { agentFactory } from '@agentr/factory'
+import bcrypt from 'bcryptjs'
 
 export const agentRoutes = new Hono()
 
 const MAX_MESSAGE_BYTES = 100 * 1024 // 100 KB
+const DEV_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000 // 90 days
+
+// Verify the authenticated tenant owns the requested resource
+function requireOwnTenant(c: any, tenantId: string): boolean {
+  const authTenantId = c.get('tenantId') as string | undefined
+  return authTenantId === tenantId
+}
+
+// Sanitize error messages — don't expose internal stack traces to callers
+function safeError(err: unknown): string {
+  const msg = String(err)
+  if (msg.startsWith('Error: ')) return msg.slice(7)
+  return 'An unexpected error occurred'
+}
 
 // Allow only safe alphanumeric process names — prevents shell injection
 function sanitizeProcessName(name: string): string {
@@ -73,7 +88,6 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       telegram: isOnline ? {
         username: row.owner_username || null,
         firstName: row.owner_name || null,
-        phone: row.phone,
       } : null,
     })
   } catch {
@@ -198,14 +212,14 @@ agentRoutes.get('/trial-status/:tenantId', async (c) => {
     const db = agentFactory.getDb()
     const status = await db.getTrialStatus(tenantId)
     if (status.expired) {
-      // Deprovision and block
-      try {
-        await agentFactory.deprovision(tenantId)
-        if (status.phone) await db.blockPhone(status.phone)
-      } catch {}
+      // Fire-and-forget — never block a GET on async side-effects
+      Promise.resolve().then(async () => {
+        try { await agentFactory.deprovision(tenantId) } catch {}
+        try { if (status.phone) await db.blockPhone(status.phone) } catch {}
+      })
     }
     return c.json({ expired: status.expired, expiresAt: status.expiresAt })
-  } catch (err) {
+  } catch {
     return c.json({ expired: false, expiresAt: null })
   }
 })
@@ -245,6 +259,7 @@ agentRoutes.get('/processes/:tenantId', async (c) => {
 // GET /agent/logs/:tenantId/:name
 agentRoutes.get('/logs/:tenantId/:name', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   const name = c.req.param('name')
   try {
     const safeName = sanitizeProcessName(name)
@@ -275,6 +290,7 @@ agentRoutes.post('/process/stop',
 // GET /agent/activity/:tenantId
 agentRoutes.get('/activity/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
@@ -294,6 +310,7 @@ agentRoutes.get('/activity/:tenantId', async (c) => {
 // GET /agent/workspace/:tenantId - list files, seed core files if missing
 agentRoutes.get('/workspace/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const { readdirSync, existsSync, writeFileSync, mkdirSync, readFileSync } = await import('fs')
     const { join } = await import('path')
@@ -448,6 +465,7 @@ The agent writes here when:
 // GET /agent/workspace/:tenantId/:filename - read file
 agentRoutes.get('/workspace/:tenantId/:filename', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   const filename = c.req.param('filename')
   try {
     sanitizeFilename(filename)
@@ -465,6 +483,7 @@ agentRoutes.post('/workspace/:tenantId/:filename',
   zValidator('json', z.object({ content: z.string() })),
   async (c) => {
     const tenantId = c.req.param('tenantId')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
     const filename = c.req.param('filename')
     const { content } = c.req.valid('json')
     try {
@@ -482,6 +501,7 @@ agentRoutes.post('/workspace/:tenantId/:filename',
 // GET /agent/credits/:tenantId
 agentRoutes.get('/credits/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const db = agentFactory.getDb()
     const credits = await db.getCredits(tenantId)
@@ -492,6 +512,7 @@ agentRoutes.get('/credits/:tenantId', async (c) => {
 // GET /agent/credits-usage/:tenantId
 agentRoutes.get('/credits-usage/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const db = agentFactory.getDb()
     const credits = await db.getCredits(tenantId)
@@ -548,8 +569,6 @@ agentRoutes.post('/marketplace/deploy',
   }
 )
 
-import bcrypt from 'bcryptjs'
-
 // POST /agent/dev/register
 agentRoutes.post('/dev/register',
   zValidator('json', z.object({
@@ -567,10 +586,8 @@ agentRoutes.post('/dev/register',
       const db = agentFactory.getDb()
       const existing = await db.query('SELECT id FROM dev_accounts WHERE email = $1', [body.email])
       if ((existing as any[]).length > 0) return c.json({ success: false, error: 'Email already registered' }, 400)
-      const crypto = await import('crypto')
       const hash = await bcrypt.hash(body.password, 12)
-      const crypto2 = await import('crypto')
-      const token = crypto2.randomBytes(32).toString('hex')
+      const token = randomBytes(32).toString('hex')
       await db.query(
         'INSERT INTO dev_accounts (name, email, telegram_username, wallet_address, password_hash, token, category, bio, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [body.name, body.email, body.telegram, body.wallet, hash, token, body.category, body.bio ?? '', 'pending']
@@ -587,14 +604,13 @@ agentRoutes.post('/dev/login',
     const { email, password } = c.req.valid('json')
     try {
       const db = agentFactory.getDb()
-      const crypto = await import('crypto')
       const rows = await db.query<any>('SELECT id, name, token, approved, earnings_credits, password_hash FROM dev_accounts WHERE email = $1', [email])
       if (!(rows as any[]).length) return c.json({ success: false, error: 'Invalid email or password' }, 401)
       const dev = (rows as any[])[0]
       const validPassword = await bcrypt.compare(password, dev.password_hash)
       if (!validPassword) return c.json({ success: false, error: 'Invalid email or password' }, 401)
       return c.json({ success: true, token: dev.token, name: dev.name, approved: dev.approved, earnings: dev.earnings_credits, id: dev.id })
-    } catch (err) { return c.json({ success: false, error: String(err) }, 500) }
+    } catch (err) { return c.json({ success: false, error: safeError(err) }, 500) }
   }
 )
 
@@ -604,11 +620,15 @@ agentRoutes.get('/dev/profile/:token', async (c) => {
   try {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
-      'SELECT id, name, email, telegram_username, wallet_address, earnings_credits, approved, category, bio FROM dev_accounts WHERE token = $1',
+      'SELECT id, name, email, telegram_username, wallet_address, earnings_credits, approved, category, bio, created_at FROM dev_accounts WHERE token = $1',
       [token]
     )
     if (!(rows as any[]).length) return c.json({ success: false }, 404)
     const dev = (rows as any[])[0]
+    // Enforce 90-day dev token TTL
+    if (dev.created_at && Date.now() - new Date(dev.created_at).getTime() > DEV_TOKEN_TTL_MS) {
+      return c.json({ success: false, error: 'Dev token expired — please log in again' }, 401)
+    }
     const agents = await db.query<any>('SELECT id, name, category, installs, rating, active FROM marketplace_agents WHERE creator_id = $1', [dev.id])
     return c.json({ success: true, dev, agents })
   } catch { return c.json({ success: false }, 500) }
@@ -757,10 +777,11 @@ agentRoutes.post('/setup',
 // DELETE /agent/:tenantId � deprovision agent
 agentRoutes.delete('/:tenantId', async (c) => {
   const tenantId = c.req.param('tenantId')
+  if (!requireOwnTenant(c, tenantId)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     await agentFactory.deprovision(tenantId)
     return c.json({ success: true, message: 'Agent deprovisioned' })
   } catch (err) {
-    return c.json({ success: false, error: String(err) }, 500)
+    return c.json({ success: false, error: safeError(err) }, 500)
   }
 })

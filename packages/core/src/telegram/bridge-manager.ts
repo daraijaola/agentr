@@ -17,10 +17,15 @@ export class TelegramBridgeManager {
   }
 
   private makeConfig(tenantId: string, phone: string): TelegramClientConfig {
+    const apiId = process.env['TELEGRAM_API_ID']
+    const apiHash = process.env['TELEGRAM_API_HASH']
+    if (!apiId || !apiHash) {
+      throw new Error('TELEGRAM_API_ID and TELEGRAM_API_HASH environment variables are required')
+    }
     return {
       tenantId,
-      apiId: Number(process.env['TELEGRAM_API_ID'] ?? '10213775'),
-      apiHash: process.env['TELEGRAM_API_HASH'] ?? '10177b03e1db0f6d99e2e2f3f8ed9450',
+      apiId: Number(apiId),
+      apiHash,
       phone,
       sessionPath: this.getSessionPath(tenantId),
     }

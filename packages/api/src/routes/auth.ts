@@ -6,6 +6,25 @@ import { randomUUID } from 'crypto'
 import { agentFactory } from '@agentr/factory'
 import { signToken, getSecret } from '../middleware/auth.js'
 
+// Determine whether to provision a new agent or resume an existing one
+async function provisionOrResume(tenantId: string, phone: string): Promise<void> {
+  const rows = await agentFactory.getDb().query<any>(
+    `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at
+     FROM tenants t
+     JOIN agent_instances ai ON ai.tenant_id = t.id
+     WHERE t.id = $1 LIMIT 1`,
+    [tenantId]
+  )
+  if ((rows as any[]).length > 0) {
+    // Tenant already exists — resume the session, don't create a new wallet
+    const row = (rows as any[])[0]
+    await agentFactory.resumeOne(row)
+  } else {
+    // Brand-new tenant — full provision
+    await agentFactory.provision(tenantId, phone)
+  }
+}
+
 export const authRoutes = new Hono()
 
 authRoutes.post(
@@ -50,7 +69,7 @@ authRoutes.post(
     try {
       const ok = await telethonVerifyOtp(tenantId, phone, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
-      await agentFactory.provision(tenantId, phone)
+      await provisionOrResume(tenantId, phone)
       const token = signToken(tenantId, getSecret())
       return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {
@@ -75,7 +94,7 @@ authRoutes.post(
     try {
       const ok = await telethonVerify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
-      await agentFactory.provision(tenantId, phone)
+      await provisionOrResume(tenantId, phone)
       const token = signToken(tenantId, getSecret())
       return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {

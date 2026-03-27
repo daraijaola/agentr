@@ -59,7 +59,7 @@ export function validateWritePath(filePath: string, tenantId?: string): Validate
   if (!resolved.startsWith(root)) throw new WorkspaceSecurityError('Path traversal denied: ' + filePath)
   const ext = path.extname(resolved)
   const fname = path.basename(resolved)
-  const isDir = existsSync(resolved) && require('fs').lstatSync(resolved).isDirectory()
+  const isDir = existsSync(resolved) && lstatSync(resolved).isDirectory()
   return { absolutePath: resolved, relativePath: path.relative(root, resolved), exists: existsSync(resolved), extension: ext, filename: fname, isDirectory: isDir }
 }
 

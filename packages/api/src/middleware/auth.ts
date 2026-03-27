@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -20,7 +20,9 @@ function verifyToken(token: string, secret: string): { tenantId: string } | null
     const [payload, sig] = token.split('.')
     if (!payload || !sig) return null
     const expected = createHmac('sha256', secret).update(payload).digest('base64url')
-    if (expected !== sig) return null
+    const eBuf = Buffer.from(expected, 'utf8')
+    const sBuf = Buffer.from(sig, 'utf8')
+    if (eBuf.length !== sBuf.length || !timingSafeEqual(eBuf, sBuf)) return null
     const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { tenantId: string; iat: number }
     // Enforce 24-hour TTL
     if (!parsed.iat || Date.now() - parsed.iat > TOKEN_TTL_MS) return null
