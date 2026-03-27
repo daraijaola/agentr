@@ -5,7 +5,7 @@ import { join, basename } from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
 const PUBLIC_BASE = "https://agentr.online/sites"
-const SITES_ROOT = process.env["SITES_PATH"] ?? "/root/agentr/sites"
+const SITES_ROOT = process.env["SITES_PATH"] ?? "/var/www/agentr-sites"
 
 export const serveStaticTool: Tool = {
   name: "serve_static",
