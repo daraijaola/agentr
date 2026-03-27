@@ -3,6 +3,24 @@ const fs = require('fs')
 const path = require('path')
 const dist = path.join(__dirname, 'dist')
 const SITES_ROOT = process.env.SITES_PATH || '/var/www/agentr-sites'
+const API_PORT = parseInt(process.env.API_PORT || '3001', 10)
+
+// Proxy a request to the API server
+function proxyToApi(req, res) {
+  const opts = {
+    hostname: '127.0.0.1',
+    port: API_PORT,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${API_PORT}` },
+  }
+  const proxy = http.request(opts, (apiRes) => {
+    res.writeHead(apiRes.statusCode, apiRes.headers)
+    apiRes.pipe(res)
+  })
+  proxy.on('error', () => { res.writeHead(502); res.end('API unavailable') })
+  req.pipe(proxy)
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -19,6 +37,11 @@ const MIME = {
 
 http.createServer((req, res) => {
   const url = req.url.split('?')[0]
+
+  // Proxy API routes to the backend API server
+  if (url.startsWith('/agent/') || url.startsWith('/auth/') || url === '/health') {
+    return proxyToApi(req, res)
+  }
 
   if (url === '/' || url === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })

@@ -6,6 +6,26 @@ import { loadWorkspace } from '../soul/loader.js'
 import { maskOldToolResults } from './observation-masking.js'
 import { buildSystemPrompt } from './prompts/system.js'
 
+// Simple TTL cache for tool-free responses (cuts API credits on repeated queries)
+interface CacheEntry { response: string; expiry: number }
+const responseCache = new Map<string, CacheEntry>()
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+function getCached(key: string): string | null {
+  const entry = responseCache.get(key)
+  if (!entry) return null
+  if (Date.now() > entry.expiry) { responseCache.delete(key); return null }
+  return entry.response
+}
+function setCache(key: string, response: string): void {
+  // Evict old entries if cache gets large
+  if (responseCache.size > 500) {
+    const now = Date.now()
+    for (const [k, v] of responseCache) { if (now > v.expiry) responseCache.delete(k) }
+  }
+  responseCache.set(key, { response, expiry: Date.now() + CACHE_TTL_MS })
+}
+
 function sanitizeForAnthropic(messages: any[]): any[] {
   const result: any[] = []
   for (let i = 0; i < messages.length; i++) {
@@ -203,6 +223,17 @@ export class AgentRuntime {
     const systemPrompt = await this.sys()
     let toolsRanThisTurn = false
 
+    // Cache check — only for short messages with no prior tool context in history
+    const hasPriorTools = trimmedHist.some(m => m.role === 'tool')
+    if (!hasPriorTools && userMessage.length < 200) {
+      const cacheKey = `${chatId}:${userMessage.toLowerCase().trim()}`
+      const cached = getCached(cacheKey)
+      if (cached) {
+        console.log('[Runtime:' + this.config.tenantId + '] Cache hit for: ' + cacheKey.slice(0, 60))
+        return { content: cached }
+      }
+    }
+
     try {
       while (iters < MAX_ITER) {
         iters++
@@ -308,6 +339,12 @@ export class AgentRuntime {
 
     // Always sanitize — strip raw code/HTML that slipped into the reply
     finalResponse = sanitizeFinalResponse(finalResponse, allTC.map(tc => tc.name))
+
+    // Cache tool-free responses for repeated queries
+    if (allTC.length === 0 && !hasPriorTools && userMessage.length < 200 && finalResponse.length > 0) {
+      const cacheKey = `${chatId}:${userMessage.toLowerCase().trim()}`
+      setCache(cacheKey, finalResponse)
+    }
 
     // If sanitizer wiped a URL the agent produced, restore it
     if (toolUrls.length > 0) {

@@ -80,6 +80,15 @@ export const TOOL_NAMES = [
   `System: memory_write, memory_read, list_tools, run_test, swarm_execute`,
 ]
 
+export const AGENTR_KNOWLEDGE = [
+  `ABOUT AGENTR (your platform — know this well):`,
+  `AGENTR is an AI Agent Factory for TON blockchain and Telegram. It gives every user a personal AI agent that lives inside their own Telegram account — not a bot, but their actual account. The agent can read/send messages, manage groups, run code, deploy websites, trade on TON, send/receive TON/jettons, manage NFTs, register .ton domains, create and manage Telegram bots, and much more.`,
+  `AGENTR plans: Free Trial (1 day, all features), Starter ($15/mo), Pro ($29/mo), Elite ($49/mo). All plans include a dedicated TON wallet, 129 tools, Claude AI, and full Telegram account control.`,
+  `Key selling points: (1) Your agent uses YOUR Telegram account — no separate bot needed. (2) Autonomous TON wallet for crypto operations. (3) 129 tools covering all of Telegram + TON DeFi (DeDust, STON.fi). (4) Can deploy and run code/servers in its workspace. (5) Publishes websites to agentr.online/sites/.`,
+  `When users ask what you can do, give concrete examples from their actual context (e.g. "I can send messages to your contacts, manage your groups, trade TON, deploy websites, write and run code, register .ton domains..."). Keep it short and punchy.`,
+  `If a user asks how AGENTR works or what it costs, explain clearly and mention agentr.online for sign-up.`,
+]
+
 export const DOMAIN_FLOWS = [
   `Use memory_write to store durable facts in MEMORY.md when relevant.`,
   `WEBSITE FLOW: (1) workspace_write the HTML file, e.g. path="index.html". (2) Call serve_static with path="index.html" (or the folder name like "mysite/"). (3) The tool returns a public URL — send ONLY that URL to the user, nothing else for the link. Never invent a URL. Always say: "Your site is live at [URL from tool]. Want a custom .ton domain? I can register one — check availability with dns_check, then you fund my wallet and I handle the auction automatically."`,
@@ -99,6 +108,8 @@ export function buildSystemPrompt(
   const sections = [
     ...criticalOverrides(toolCount ?? 0),
     ...IDENTITY(phone, walletAddress, serverIp),
+    '',
+    ...AGENTR_KNOWLEDGE,
     '',
     ...ABSOLUTE_RULES,
     '',
