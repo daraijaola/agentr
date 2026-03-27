@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AGENTR Builder — AIR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F0F0E;
+  --bg-2:#1A1916;
+  --bg-3:#1F1E1C;
+  --bg-4:#252421;
+  --border:#2C2B28;
+  --border-2:#3A3935;
+  --text:#F0EFE8;
+  --text-2:#9B9890;
+  --text-3:#5A5852;
+  --accent:#0098EA;
+  --accent-2:#007ec4;
+  --accent-glow:rgba(0,152,234,0.12);
+  --green:#22c55e;
+  --green-dim:#166534;
+  --red:#f87171;
+  --yellow:#fbbf24;
+  --blue:#0098EA;
+  --radius:6px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --serif:'DM Serif Display',Georgia,serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5}
+
+/* ─── LAYOUT ─────────────────────────────────────── */
+#app{display:flex;height:100vh;width:100vw;overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{
+  width:240px;min-width:240px;height:100%;
+  background:var(--bg-2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  flex-shrink:0;
+}
+.sidebar-header{
+  padding:12px 14px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.logo-mark{
+  width:22px;height:22px;border-radius:5px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;font-family:var(--mono);
+  flex-shrink:0;
+}
+.logo-text{font-weight:600;font-size:13px;letter-spacing:-0.01em}
+.logo-badge{
+  margin-left:auto;font-size:9px;font-family:var(--mono);
+  background:rgba(0,152,234,0.12);color:#33b0f0;
+  border:1px solid rgba(0,152,234,0.3);
+  padding:1px 5px;border-radius:3px;letter-spacing:0.05em;
+}
+.sidebar-section{padding:8px 8px 4px;color:var(--text-3);font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.sidebar-new-btn{
+  display:flex;align-items:center;gap-6px;
+  margin:8px 8px 4px;
+  padding:7px 10px;border-radius:var(--radius);
+  background:var(--bg-3);border:1px solid var(--border);
+  color:var(--text-2);cursor:pointer;font-size:12px;font-family:var(--font);
+  gap:6px;transition:all 0.15s;
+}
+.sidebar-new-btn:hover{background:var(--bg-4);border-color:var(--border-2);color:var(--text)}
+.sidebar-new-btn svg{opacity:0.6}
+.thread-list{flex:1;overflow-y:auto;padding:4px 8px}
+.thread-item{
+  padding:7px 10px;border-radius:var(--radius);cursor:pointer;
+  color:var(--text-2);font-size:12px;
+  display:flex;align-items:center;gap:7px;
+  transition:all 0.1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border:1px solid transparent;
+}
+.thread-item:hover{background:var(--bg-3);color:var(--text)}
+.thread-item.active{background:var(--bg-4);color:var(--text);border-color:var(--border)}
+.thread-dot{width:6px;height:6px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+.thread-dot.green{background:var(--green)}
+.thread-dot.blue{background:var(--accent)}
+.thread-name{overflow:hidden;text-overflow:ellipsis;flex:1}
+.thread-time{font-size:10px;color:var(--text-3);flex-shrink:0;font-family:var(--mono)}
+.sidebar-footer{
+  padding:10px 8px;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+}
+.sidebar-footer-item{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 10px;border-radius:var(--radius);
+  color:var(--text-3);cursor:pointer;font-size:12px;
+  transition:all 0.1s;
+}
+.sidebar-footer-item:hover{background:var(--bg-3);color:var(--text-2)}
+.model-badge{
+  margin-left:auto;font-size:10px;font-family:var(--mono);
+  background:rgba(0,152,234,0.12);
+  color:#33b0f0;border:1px solid rgba(0,152,234,0.2);
+  padding:1px 6px;border-radius:3px;
+}
+
+/* MAIN CONTENT */
+#main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* TOP BAR */
+#topbar{
+  height:40px;min-height:40px;
+  background:var(--bg-2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:8px;
+}
+.topbar-project{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text-2);
+}
+.topbar-project svg{color:var(--text-3)}
+.topbar-sep{color:var(--border-2);margin:0 2px}
+.topbar-thread{color:var(--text);font-size:12px;font-weight:500}
+.topbar-spacer{flex:1}
+.topbar-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--radius);
+  background:var(--bg-3);border:1px solid var(--border);
+  color:var(--text-2);cursor:pointer;font-size:11px;font-family:var(--font);
+  transition:all 0.15s;
+}
+.topbar-btn:hover{background:var(--bg-4);color:var(--text);border-color:var(--border-2)}
+.topbar-btn.primary{
+  background:var(--accent);border-color:var(--accent-2);color:#fff;
+}
+.topbar-btn.primary:hover{background:var(--accent-2)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.idle{background:var(--text-3);box-shadow:none}
+.kbd{
+  font-size:10px;font-family:var(--mono);
+  background:var(--bg);border:1px solid var(--border);
+  padding:0 4px;border-radius:3px;color:var(--text-3);
+}
+
+/* SPLIT PANE */
+#workspace{flex:1;display:flex;overflow:hidden}
+
+/* CHAT PANEL */
+#chat-panel{
+  width:420px;min-width:320px;max-width:600px;
+  height:100%;display:flex;flex-direction:column;
+  border-right:1px solid var(--border);
+  background:var(--bg);
+  flex-shrink:0;
+}
+.chat-header{
+  height:36px;padding:0 12px;
+  display:flex;align-items:center;gap-8px;gap:8px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-2);
+  font-size:11px;color:var(--text-3);
+}
+.chat-header-tab{
+  padding:0 8px;height:100%;display:flex;align-items:center;
+  border-bottom:2px solid transparent;cursor:pointer;
+  font-size:11px;color:var(--text-3);transition:all 0.1s;
+}
+.chat-header-tab.active{border-bottom-color:var(--accent);color:var(--text)}
+.chat-header-tab:hover:not(.active){color:var(--text-2)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:12px}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-track{background:transparent}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+
+/* MESSAGES */
+.msg{display:flex;flex-direction:column;gap:4px;max-width:100%}
+.msg-header{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-3)}
+.msg-avatar{
+  width:18px;height:18px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;font-family:var(--mono);flex-shrink:0;
+}
+.msg-avatar.user{background:var(--bg-4);color:var(--text-2);border:1px solid var(--border)}
+.msg-avatar.ai{background:var(--accent);color:#fff}
+.msg-name{font-weight:500;font-size:11px}
+.msg-time{color:var(--text-3);font-family:var(--mono);font-size:10px;margin-left:auto}
+.msg-body{
+  padding:10px 12px;border-radius:var(--radius);
+  font-size:12px;line-height:1.6;
+  border:1px solid var(--border);background:var(--bg-2);
+  color:var(--text);
+}
+.msg.user .msg-body{background:var(--bg-3);border-color:var(--border-2)}
+.msg-body code{
+  font-family:var(--mono);font-size:11px;
+  background:var(--bg);border:1px solid var(--border);
+  padding:1px 4px;border-radius:3px;color:#33b0f0;
+}
+.msg-body pre{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px 12px;margin:8px 0;
+  overflow-x:auto;
+}
+.msg-body pre code{background:none;border:none;padding:0;color:var(--text-2)}
+
+/* TOOL CALL */
+.tool-call{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 10px;border-radius:var(--radius);
+  background:var(--bg);border:1px solid var(--border);
+  font-size:11px;font-family:var(--mono);color:var(--text-3);
+  margin:4px 0;
+}
+.tool-call svg{flex-shrink:0}
+.tool-call.done{border-color:var(--green-dim);color:var(--green)}
+.tool-call.running{border-color:rgba(59,130,246,0.3);color:var(--blue)}
+.tool-name{font-weight:500}
+.tool-args{color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+/* THINKING */
+.thinking{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;font-size:11px;color:var(--text-3);
+  font-family:var(--mono);
+}
+.thinking-dots{display:flex;gap:3px}
+.thinking-dots span{
+  width:4px;height:4px;border-radius:50%;background:var(--accent);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2){animation-delay:0.2s}
+.thinking-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes pulse{0%,80%,100%{opacity:0.3}40%{opacity:1}}
+
+/* COMPOSER */
+.composer{
+  border-top:1px solid var(--border);
+  background:var(--bg-2);padding:10px;
+}
+.composer-inner{
+  border:1px solid var(--border-2);border-radius:8px;
+  background:var(--bg);overflow:hidden;
+  transition:border-color 0.15s;
+}
+.composer-inner:focus-within{border-color:var(--accent)}
+.composer-toolbar{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 8px 0;
+}
+.composer-tool-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 7px;border-radius:4px;
+  background:var(--bg-3);border:1px solid var(--border);
+  color:var(--text-3);cursor:pointer;font-size:10px;font-family:var(--font);
+  transition:all 0.1s;
+}
+.composer-tool-btn:hover{background:var(--bg-4);color:var(--text-2);border-color:var(--border-2)}
+.composer-tool-btn.active{background:rgba(0,152,234,0.12);border-color:rgba(0,152,234,0.35);color:#33b0f0}
+textarea#composer-input{
+  width:100%;background:none;border:none;outline:none;
+  padding:8px 10px;font-size:12px;font-family:var(--font);
+  color:var(--text);resize:none;min-height:60px;max-height:160px;
+  line-height:1.5;
+}
+textarea#composer-input::placeholder{color:var(--text-3)}
+.composer-footer{
+  display:flex;align-items:center;padding:6px 8px 8px;gap:6px;
+}
+.model-selector{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:4px;
+  background:var(--bg-3);border:1px solid var(--border);
+  color:var(--text-2);cursor:pointer;font-size:10px;font-family:var(--mono);
+  transition:all 0.1s;
+}
+.model-selector:hover{border-color:var(--border-2);color:var(--text)}
+.model-selector .dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+.composer-spacer{flex:1}
+.send-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:5px;
+  background:var(--accent);border:none;
+  color:#fff;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:500;
+  transition:all 0.15s;
+}
+.send-btn:hover{background:var(--accent-2)}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.send-btn svg{width:12px;height:12px}
+
+/* CODE PANEL */
+#code-panel{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.code-header{
+  height:36px;padding:0 12px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-2);
+}
+.file-tab{
+  display:flex;align-items:center;gap:5px;
+  padding:0 10px;height:100%;
+  border-bottom:2px solid transparent;
+  cursor:pointer;font-size:11px;color:var(--text-3);
+  transition:all 0.1s;white-space:nowrap;
+}
+.file-tab.active{border-bottom-color:var(--accent);color:var(--text)}
+.file-tab:hover:not(.active){color:var(--text-2)}
+.file-tab .dot{width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.code-header-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.icon-btn{
+  width:26px;height:26px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--text-3);cursor:pointer;
+  transition:all 0.1s;
+}
+.icon-btn:hover{background:var(--bg-3);color:var(--text-2)}
+
+/* FILE TREE + CODE SPLIT */
+#code-workspace{flex:1;display:flex;overflow:hidden}
+#file-tree{
+  width:200px;min-width:160px;
+  border-right:1px solid var(--border);
+  background:var(--bg-2);overflow-y:auto;
+  flex-shrink:0;
+}
+#file-tree::-webkit-scrollbar{width:3px}
+#file-tree::-webkit-scrollbar-thumb{background:var(--border)}
+.tree-section{padding:6px 0 2px}
+.tree-label{
+  padding:4px 12px;font-size:10px;font-weight:600;
+  color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;
+}
+.tree-item{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 12px;font-size:11px;font-family:var(--mono);
+  color:var(--text-2);cursor:pointer;transition:all 0.1s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tree-item:hover{background:var(--bg-3);color:var(--text)}
+.tree-item.active{background:var(--bg-4);color:var(--text)}
+.tree-item.indent{padding-left:24px}
+.tree-item.indent2{padding-left:36px}
+.tree-item svg{flex-shrink:0;opacity:0.7}
+.tree-item .file-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.tree-item .file-dot.modified{background:var(--yellow)}
+.tree-item .file-dot.new{background:var(--green)}
+.tree-item .file-dot.deleted{background:var(--red)}
+
+/* EDITOR AREA */
+#editor-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.editor-tabs{
+  height:33px;display:flex;align-items:center;
+  border-bottom:1px solid var(--border);background:var(--bg-2);
+  overflow-x:auto;
+}
+.editor-tabs::-webkit-scrollbar{display:none}
+.editor-tab{
+  display:flex;align-items:center;gap:6px;
+  padding:0 12px;height:100%;min-width:max-content;
+  border-right:1px solid var(--border);border-bottom:2px solid transparent;
+  cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text-3);
+  transition:all 0.1s;
+}
+.editor-tab.active{border-bottom-color:var(--accent);color:var(--text);background:var(--bg)}
+.editor-tab:hover:not(.active){color:var(--text-2)}
+.editor-tab .close{opacity:0;margin-left:2px;font-size:13px;line-height:1}
+.editor-tab:hover .close{opacity:0.5}
+.editor-tab .close:hover{opacity:1}
+#editor{flex:1;overflow:auto;background:var(--bg);padding:16px 0}
+#editor::-webkit-scrollbar{width:6px;height:6px}
+#editor::-webkit-scrollbar-track{background:var(--bg)}
+#editor::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+.code-line{
+  display:flex;align-items:flex-start;
+  padding:0 16px;min-height:20px;font-size:12px;font-family:var(--mono);
+  line-height:1.6;
+}
+.code-line:hover{background:rgba(255,255,255,0.02)}
+.code-line.diff-add{background:rgba(34,197,94,0.06);border-left:2px solid var(--green)}
+.code-line.diff-del{background:rgba(239,68,68,0.06);border-left:2px solid var(--red);opacity:0.6}
+.line-num{
+  width:40px;min-width:40px;text-align:right;
+  color:var(--text-3);font-size:11px;margin-right:16px;
+  user-select:none;flex-shrink:0;
+}
+.line-code{flex:1;white-space:pre;overflow-x:visible}
+/* syntax */
+.kw{color:#33b0f0}.str{color:#86efac}.fn{color:#7dd3fc}.num{color:#fbbf24}
+.cmt{color:var(--text-3);font-style:italic}.ty{color:#93c5fd}.op{color:#6b7280}
+.var{color:var(--text)}.prop{color:#67e8f9}
+
+/* BOTTOM PANEL */
+#bottom-panel{
+  height:140px;min-height:100px;
+  border-top:1px solid var(--border);
+  background:var(--bg);display:flex;flex-direction:column;
+}
+.bottom-tabs{
+  height:30px;display:flex;align-items:center;
+  border-bottom:1px solid var(--border);background:var(--bg-2);
+  padding:0 4px;
+}
+.bottom-tab{
+  padding:0 10px;height:100%;display:flex;align-items:center;
+  font-size:11px;color:var(--text-3);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all 0.1s;
+}
+.bottom-tab.active{border-bottom-color:var(--accent);color:var(--text)}
+.bottom-tab:hover:not(.active){color:var(--text-2)}
+#terminal{
+  flex:1;overflow-y:auto;padding:8px 12px;
+  font-family:var(--mono);font-size:11px;
+}
+#terminal::-webkit-scrollbar{width:3px}
+#terminal::-webkit-scrollbar-thumb{background:var(--border)}
+.term-line{line-height:1.7;white-space:pre}
+.term-line .prompt{color:var(--accent)}
+.term-line .cmd{color:var(--text)}
+.term-line .out{color:var(--text-2)}
+.term-line .err{color:var(--red)}
+.term-line .ok{color:var(--green)}
+
+/* STATUS BAR */
+#statusbar{
+  height:22px;background:var(--accent);
+  display:flex;align-items:center;padding:0 10px;gap:12px;
+  font-size:10px;font-family:var(--mono);color:rgba(255,255,255,0.8);
+  flex-shrink:0;
+}
+.status-item{display:flex;align-items:center;gap:4px}
+.status-item svg{opacity:0.7}
+.status-sep{opacity:0.3;margin:0 2px}
+
+/* DIFF PANEL */
+.diff-summary{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;font-size:11px;font-family:var(--mono);
+  background:var(--bg-2);border-bottom:1px solid var(--border);
+}
+.diff-add-count{color:var(--green)}
+.diff-del-count{color:var(--red)}
+.diff-file{color:var(--text-2)}
+
+/* RESIZE HANDLE */
+.resize-handle{
+  width:4px;background:transparent;cursor:col-resize;
+  position:relative;flex-shrink:0;transition:background 0.1s;
+}
+.resize-handle:hover,.resize-handle.active{background:var(--accent)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+
+/* EMPTY STATE */
+.empty-state{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:12px;color:var(--text-3);
+}
+.empty-icon{
+  width:48px;height:48px;border-radius:12px;
+  background:var(--bg-3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0.6;
+}
+.empty-title{font-size:14px;font-weight:500;color:var(--text-2)}
+.empty-sub{font-size:12px;text-align:center;max-width:280px;line-height:1.6}
+.empty-shortcuts{
+  display:flex;flex-direction:column;gap:6px;margin-top:8px;
+}
+.shortcut-row{display:flex;align-items:center;gap:8px;font-size:11px}
+.shortcut-label{color:var(--text-3)}
+
+/* API KEY MODAL */
+#api-modal{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;
+}
+#api-modal.open{display:flex}
+.modal-box{
+  background:var(--bg-2);border:1px solid var(--border-2);
+  border-radius:10px;padding:24px;width:420px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.modal-title{font-size:15px;font-weight:600}
+.modal-sub{font-size:12px;color:var(--text-2);line-height:1.6}
+.modal-divider{display:flex;align-items:center;gap:10px;color:var(--text-3);font-size:11px}
+.modal-divider::before,.modal-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.model-option{
+  display:flex;align-items:center;gap:10px;
+  padding:12px;border-radius:var(--radius);
+  border:1px solid var(--border);cursor:pointer;transition:all 0.15s;
+}
+.model-option:hover{border-color:var(--accent);background:var(--accent-glow)}
+.model-option.selected{border-color:var(--accent);background:var(--accent-glow)}
+.model-option-icon{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;font-family:var(--mono);
+  flex-shrink:0;
+}
+.model-option-icon.air{background:var(--accent);color:#fff}
+.model-option-icon.claude{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff}
+.model-option-info{flex:1}
+.model-option-name{font-size:13px;font-weight:600}
+.model-option-desc{font-size:11px;color:var(--text-2);margin-top:2px}
+.model-option-tag{
+  font-size:9px;font-family:var(--mono);
+  padding:2px 6px;border-radius:3px;
+}
+.model-option-tag.free{background:rgba(0,152,234,0.12);color:#33b0f0;border:1px solid rgba(0,152,234,0.25)}
+.model-option-tag.key{background:rgba(251,191,36,0.15);color:var(--yellow);border:1px solid rgba(251,191,36,0.3)}
+.api-input{
+  padding:8px 10px;border-radius:var(--radius);
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);font-family:var(--mono);font-size:12px;width:100%;outline:none;
+  transition:border-color 0.15s;
+}
+.api-input:focus{border-color:var(--accent)}
+.api-input::placeholder{color:var(--text-3)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.btn{
+  padding:7px 14px;border-radius:var(--radius);
+  font-size:12px;font-family:var(--font);cursor:pointer;
+  border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);
+  transition:all 0.15s;
+}
+.btn:hover{background:var(--bg-4);color:var(--text)}
+.btn.primary{background:var(--accent);border-color:var(--accent-2);color:#fff}
+.btn.primary:hover{background:var(--accent-2)}
+
+/* STREAMING CURSOR */
+.cursor-blink{
+  display:inline-block;width:7px;height:13px;
+  background:var(--accent);vertical-align:middle;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* GLOW EFFECT */
+.glow{box-shadow:0 0 0 1px var(--accent),0 0 20px var(--accent-glow)}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark">A</div>
+      <span class="logo-text">AGENT<em style="font-style:normal;color:var(--accent)">R</em></span>
+      <span class="logo-badge">AIR</span>
+    </div>
+
+    <div style="padding:8px">
+      <button class="sidebar-new-btn" onclick="newThread()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New Thread
+        <span class="kbd" style="margin-left:auto">⌘K</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">Threads</div>
+    <div class="thread-list" id="thread-list">
+      <div class="thread-item active" onclick="selectThread(this,'TON Agent Setup')">
+        <div class="thread-dot green"></div>
+        <span class="thread-name">TON Agent Setup</span>
+        <span class="thread-time">now</span>
+      </div>
+      <div class="thread-item" onclick="selectThread(this,'Deploy Jetton Contract')">
+        <div class="thread-dot blue"></div>
+        <span class="thread-name">Deploy Jetton Contract</span>
+        <span class="thread-time">2m</span>
+      </div>
+      <div class="thread-item" onclick="selectThread(this,'Telegram Bot Webhook')">
+        <div class="thread-dot"></div>
+        <span class="thread-name">Telegram Bot Webhook</span>
+        <span class="thread-time">1h</span>
+      </div>
+      <div class="thread-item" onclick="selectThread(this,'TON Connect Integration')">
+        <div class="thread-dot"></div>
+        <span class="thread-name">TON Connect Integration</span>
+        <span class="thread-time">3h</span>
+      </div>
+      <div class="thread-item" onclick="selectThread(this,'GramJS MTProto Setup')">
+        <div class="thread-dot"></div>
+        <span class="thread-name">GramJS MTProto Setup</span>
+        <span class="thread-time">1d</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-item" onclick="openModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Model
+        <span class="model-badge" id="current-model-badge">AIR</span>
+      </div>
+      <div class="sidebar-footer-item">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        Settings
+      </div>
+      <div class="sidebar-footer-item">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Docs
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div class="topbar-project">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>my-ton-agent</span>
+        <span class="topbar-sep">/</span>
+        <span class="topbar-thread" id="topbar-thread">TON Agent Setup</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+        main
+      </div>
+      <div class="topbar-btn" id="status-btn">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Ready</span>
+      </div>
+      <div class="topbar-btn primary" onclick="runAgent()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run
+      </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div id="workspace">
+      <!-- CHAT PANEL -->
+      <div id="chat-panel">
+        <div class="chat-header">
+          <div class="chat-header-tab active">Chat</div>
+          <div class="chat-header-tab">Plan</div>
+          <div class="chat-header-tab">History</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--text-3);font-family:var(--mono)" id="model-label">AIR-7B</span>
+            <div class="icon-btn" title="Clear">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <!-- Welcome -->
+          <div class="msg">
+            <div class="msg-header">
+              <div class="msg-avatar ai">A</div>
+              <span class="msg-name">AIR</span>
+              <span class="msg-time">just now</span>
+            </div>
+            <div class="msg-body">
+              Welcome to <strong>AGENT<em style="font-style:normal;color:var(--accent)">R</em> Builder</strong>. I'm AI<em style="font-style:normal;color:var(--accent)">R</em> — your TON and Telegram specialized AI assistant.<br><br>
+              I can help you build, deploy, and manage AI agents on the TON ecosystem. Describe what you want to build and I'll write the code, deploy contracts, and set up your agent automatically.<br><br>
+              <span style="color:var(--text-3);font-size:11px">You're using the free <code>AIR-7B</code> model. Switch to Claude for more complex tasks.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="composer-inner">
+            <div class="composer-toolbar">
+              <button class="composer-tool-btn active" id="btn-ton">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                TON
+              </button>
+              <button class="composer-tool-btn" id="btn-telegram">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.66-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.14-.02.3-.04.42z"/></svg>
+                Telegram
+              </button>
+              <button class="composer-tool-btn" id="btn-mcp">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                MCP
+              </button>
+              <button class="composer-tool-btn" id="btn-wallet">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 3H8L4 7h16z"/><circle cx="17" cy="13" r="1"/></svg>
+                Wallet
+              </button>
+            </div>
+            <textarea id="composer-input" placeholder="Describe your agent or ask anything about TON / Telegram..." rows="3" onkeydown="handleKey(event)"></textarea>
+            <div class="composer-footer">
+              <div class="model-selector" onclick="openModal()">
+                <div class="dot"></div>
+                <span id="composer-model">AIR-7B</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <div class="composer-spacer"></div>
+              <span style="font-size:10px;color:var(--text-3);font-family:var(--mono)">⏎ send</span>
+              <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESIZE HANDLE -->
+      <div class="resize-handle" id="resize-handle"></div>
+
+      <!-- CODE PANEL -->
+      <div id="code-panel">
+        <div class="code-header">
+          <div class="file-tab active">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            agent.ts
+            <span class="dot"></span>
+          </div>
+          <div class="file-tab">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            wallet.ts
+          </div>
+          <div class="file-tab">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            .env
+          </div>
+          <div class="code-header-right">
+            <div class="icon-btn" title="Split">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>
+            </div>
+            <div class="icon-btn" title="Diff view">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="code-workspace">
+          <!-- FILE TREE -->
+          <div id="file-tree">
+            <div class="tree-section">
+              <div class="tree-label">Explorer</div>
+              <div class="tree-item" style="font-weight:600;color:var(--text)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color:#eab308"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                my-ton-agent
+              </div>
+              <div class="tree-item indent active">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                agent.ts
+                <div class="file-dot modified" style="margin-left:auto"></div>
+              </div>
+              <div class="tree-item indent">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                wallet.ts
+                <div class="file-dot new" style="margin-left:auto"></div>
+              </div>
+              <div class="tree-item indent">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                tools.ts
+              </div>
+              <div class="tree-item indent">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                .env
+              </div>
+              <div class="tree-item indent">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                package.json
+              </div>
+            </div>
+            <div class="tree-section">
+              <div class="tree-label">Changes</div>
+              <div class="tree-item indent" style="color:var(--yellow)">
+                <div class="file-dot modified"></div>
+                agent.ts
+              </div>
+              <div class="tree-item indent" style="color:var(--green)">
+                <div class="file-dot new"></div>
+                wallet.ts
+              </div>
+            </div>
+          </div>
+
+          <!-- EDITOR -->
+          <div id="editor-area">
+            <div class="diff-summary">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="diff-add-count">+24</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><path d="M5 12h14"/></svg>
+              <span class="diff-del-count">-3</span>
+              <span class="diff-file">agent.ts</span>
+            </div>
+            <div class="editor-tabs">
+              <div class="editor-tab active">
+                agent.ts
+                <span class="close">×</span>
+              </div>
+              <div class="editor-tab">
+                wallet.ts
+                <span class="close">×</span>
+              </div>
+            </div>
+            <div id="editor" id="editor"></div>
+          </div>
+        </div>
+
+        <!-- BOTTOM PANEL -->
+        <div id="bottom-panel">
+          <div class="bottom-tabs">
+            <div class="bottom-tab active">Terminal</div>
+            <div class="bottom-tab">Output</div>
+            <div class="bottom-tab">Problems</div>
+          </div>
+          <div id="terminal">
+            <div class="term-line"><span class="prompt">~/my-ton-agent $</span> <span class="cmd">npm install @ton/ton gramjs</span></div>
+            <div class="term-line"><span class="out">added 142 packages in 3.2s</span></div>
+            <div class="term-line"><span class="prompt">~/my-ton-agent $</span> <span class="cmd">npx ts-node agent.ts</span></div>
+            <div class="term-line"><span class="ok">✓ TON wallet connected: EQBa...f3k2</span></div>
+            <div class="term-line"><span class="ok">✓ Telegram MTProto initialized</span></div>
+            <div class="term-line"><span class="ok">✓ Agent running — 32 tools loaded</span></div>
+            <div class="term-line"><span class="prompt">~/my-ton-agent $</span> <span class="cursor-blink"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div id="statusbar">
+      <div class="status-item">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        TypeScript
+      </div>
+      <span class="status-sep">|</span>
+      <div class="status-item">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        TON Mainnet
+      </div>
+      <span class="status-sep">|</span>
+      <div class="status-item">Ln 14, Col 32</div>
+      <span class="status-sep">|</span>
+      <div class="status-item">UTF-8</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <div class="status-item" style="color:rgba(255,255,255,0.9)">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.66-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.14-.02.3-.04.42z"/></svg>
+          @alphaa_agent
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL MODAL -->
+<div id="api-modal">
+  <div class="modal-box">
+    <div class="modal-title">Choose Model</div>
+    <div class="modal-sub">Select which AI powers your builder session. AIR is free — no API key needed.</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="model-option selected" id="opt-air" onclick="selectModel('air')">
+        <div class="model-option-icon air">A</div>
+        <div class="model-option-info">
+          <div class="model-option-name">AIR-7B</div>
+          <div class="model-option-desc">TON & Telegram specialist · Fast · No key needed</div>
+        </div>
+        <span class="model-option-tag free">FREE</span>
+      </div>
+
+      <div class="model-option" id="opt-claude" onclick="selectModel('claude')">
+        <div class="model-option-icon claude">C</div>
+        <div class="model-option-info">
+          <div class="model-option-name">Claude Sonnet</div>
+          <div class="model-option-desc">Anthropic · Best for complex reasoning</div>
+        </div>
+        <span class="model-option-tag key">API KEY</span>
+      </div>
+    </div>
+
+    <div id="key-section" style="display:none;flex-direction:column;gap:8px">
+      <div class="modal-divider">Anthropic API Key</div>
+      <input class="api-input" type="password" placeholder="sk-ant-api03-..." id="api-key-input"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmModel()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────
+let currentModel = 'air';
+let selectedModelTemp = 'air';
+let isStreaming = false;
+let apiKey = '';
+
+// ─── CODE CONTENT ───────────────────────────────────
+const code = [
+  {type:'cmt',text:'// agent.ts — AGENTR TON Agent'},
+  {type:'cmt',text:'// Generated by AIR-7B'},
+  {text:''},
+  {type:'kw',text:'import'},{text:' { TonClient, WalletContractV4 } '},{type:'kw',text:'from'},{type:'str',text:" '@ton/ton'"},
+  {type:'kw',text:'import'},{text:' { TelegramClient } '},{type:'kw',text:'from'},{type:'str',text:" 'telegram'"},
+  {type:'kw',text:'import'},{text:' { StringSession } '},{type:'kw',text:'from'},{type:'str',text:" 'telegram/sessions'"},
+  {text:''},
+  {type:'kw',text:'const'},{text:' client = '},{type:'kw',text:'new'},{text:' '},{type:'ty',text:'TonClient'},
+  {text:'  url: '},{type:'str',text:"'https://toncenter.com/api/v2/jsonRPC'"},
+  {text:')'},
+  {text:''},
+  {type:'kw',text:'export'},{text:' '},{type:'kw',text:'async'},{text:' '},{type:'kw',text:'function'},{text:' '},{type:'fn',text:'initAgent'},
+  {text:'  '},{type:'kw',text:'const'},{text:' wallet = '},{type:'ty',text:'WalletContractV4'},
+  {type:'cmt',text:'    // Restore from mnemonic'},
+  {text:'  )'},
+  {text:''},
+  {type:'cmt',text:'  // Connect Telegram MTProto'},
+  {text:'  '},{type:'kw',text:'const'},{text:' tg = '},{type:'kw',text:'new'},{text:' '},{type:'ty',text:'TelegramClient'},
+  {text:'    '},{type:'kw',text:'new'},{text:' '},{type:'ty',text:'StringSession'},
+  {text:'    process.env.'},{type:'prop',text:'API_ID'},
+  {text:'    process.env.'},{type:'prop',text:'API_HASH'},
+  {text:'  )'},
+  {text:''},
+  {type:'kw',text:'  await'},{text:' tg.'},{type:'fn',text:'connect'},
+  {type:'kw',text:'  await'},{text:' tg.'},{type:'fn',text:'sendMessage'},
+  {text:'    me,'},
+  {text:'    { message: '},{type:'str',text:"'Agent online ✓'"},{text:' }'},
+  {text:'  )'},
+  {text:''},
+  {type:'kw',text:'  return'},{text:' { wallet, tg }'},
+  {text:'}'},
+];
+
+const codeLines = [
+  "// agent.ts — AGENTR TON Agent",
+  "// Generated by AIR-7B",
+  "",
+  "import { TonClient, WalletContractV4 } from '@ton/ton'",
+  "import { TelegramClient } from 'telegram'",
+  "import { StringSession } from 'telegram/sessions'",
+  "",
+  "const client = new TonClient({",
+  "  url: 'https://toncenter.com/api/v2/jsonRPC'",
+  "})",
+  "",
+  "export async function initAgent() {",
+  "  const wallet = WalletContractV4.create({",
+  "    // Restore from mnemonic",
+  "  })",
+  "",
+  "  // Connect Telegram MTProto",
+  "  const tg = new TelegramClient(",
+  "    new StringSession(''),",
+  "    parseInt(process.env.API_ID!),",
+  "    process.env.API_HASH!,",
+  "    { connectionRetries: 5 }",
+  "  )",
+  "",
+  "  await tg.connect()",
+  "  await tg.sendMessage('me', {",
+  "    message: 'Agent online ✓'",
+  "  })",
+  "",
+  "  return { wallet, tg }",
+  "}",
+];
+
+const diffLines = [0,1,3,4,5,11,12,24,25,26,27];
+
+function renderCode() {
+  const editor = document.getElementById('editor');
+  editor.innerHTML = codeLines.map((line, i) => {
+    const isDiff = diffLines.includes(i);
+    const cls = isDiff && i > 10 ? 'code-line diff-add' : 'code-line';
+    return `<div class="${cls}"><span class="line-num">${i+1}</span><span class="line-code">${highlight(line)}</span></div>`;
+  }).join('');
+}
+
+function highlight(line) {
+  return line
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(\/\/.*)/g,'<span class="cmt">$1</span>')
+    .replace(/('(?:[^'\\]|\\.)*')/g,'<span class="str">$1</span>')
+    .replace(/\b(import|export|from|const|let|var|async|await|function|new|return|if|else|class|extends|type|interface)\b/g,'<span class="kw">$1</span>')
+    .replace(/\b(TonClient|WalletContractV4|TelegramClient|StringSession|Buffer|Promise)\b/g,'<span class="ty">$1</span>')
+    .replace(/\b(initAgent|connect|sendMessage|create|parseInt)\b/g,'<span class="fn">$1</span>')
+    .replace(/\b(API_ID|API_HASH|url|message|connectionRetries)\b/g,'<span class="prop">$1</span>');
+}
+
+renderCode();
+
+// ─── THREAD MANAGEMENT ──────────────────────────────
+function newThread() {
+  const names = ['New TON Agent','Deploy Contract','Bot Setup','DeFi Integration'];
+  const name = names[Math.floor(Math.random()*names.length)];
+  const list = document.getElementById('thread-list');
+  const item = document.createElement('div');
+  item.className = 'thread-item';
+  item.innerHTML = `<div class="thread-dot blue"></div><span class="thread-name">${name}</span><span class="thread-time">now</span>`;
+  item.onclick = () => selectThread(item, name);
+  list.prepend(item);
+  selectThread(item, name);
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('composer-input').focus();
+}
+
+function selectThread(el, name) {
+  document.querySelectorAll('.thread-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('topbar-thread').textContent = name;
+}
+
+// ─── COMPOSER TOOL BUTTONS ──────────────────────────
+document.querySelectorAll('.composer-tool-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    const ta = document.getElementById('composer-input');
+    const tag = btn.textContent.trim();
+    const tags = {TON:'#ton ',Telegram:'#telegram ',MCP:'#mcp ',Wallet:'#wallet '};
+    if(btn.classList.contains('active') && tags[tag]) {
+      ta.value = tags[tag] + ta.value;
+    }
+    ta.focus();
+  });
+});
+
+// ─── SEND MESSAGE ───────────────────────────────────
+function handleKey(e) {
+  if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+const responses = [
+  {
+    text: "I'll set up a TON wallet connection for your agent. Let me write the code now.",
+    tools: [
+      {name:'read_file',args:'package.json',status:'done'},
+      {name:'write_file',args:'wallet.ts',status:'done'},
+      {name:'execute_code',args:'ts-node wallet.ts',status:'running'},
+    ],
+    code: "Here's your wallet setup:\n\n```typescript\nconst wallet = WalletContractV4.create({\n  workchain: 0,\n  publicKey: keyPair.publicKey\n})\n```\n\nWallet address: `EQBa7f3k2...`"
+  },
+  {
+    text: "Setting up your Telegram bot with webhook support. This will handle incoming messages and route them to your agent.",
+    tools: [
+      {name:'search_docs',args:'Telegram Bot API webhooks',status:'done'},
+      {name:'write_file',args:'bot.ts',status:'done'},
+    ],
+    code: "Bot created! Configure your webhook:\n\n```bash\ncurl https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://your-server.com/webhook\n```"
+  },
+  {
+    text: "I'll deploy a Jetton smart contract to TON mainnet. This creates your own fungible token.",
+    tools: [
+      {name:'compile_contract',args:'jetton.tact',status:'done'},
+      {name:'deploy_contract',args:'TON mainnet',status:'running'},
+    ],
+    code: "Contract deploying...\n\n```\nContract address: EQD4FP...\nDeploy fee: 0.05 TON\nStatus: pending\n```"
+  }
+];
+
+let responseIdx = 0;
+
+async function sendMessage() {
+  if(isStreaming) return;
+  const ta = document.getElementById('composer-input');
+  const text = ta.value.trim();
+  if(!text) return;
+
+  isStreaming = true;
+  ta.value = '';
+  document.getElementById('send-btn').disabled = true;
+  setStatus('running','Running...');
+
+  const msgs = document.getElementById('chat-messages');
+
+  // User message
+  const userMsg = document.createElement('div');
+  userMsg.className = 'msg user';
+  userMsg.innerHTML = `
+    <div class="msg-header">
+      <div class="msg-avatar user">U</div>
+      <span class="msg-name">You</span>
+      <span class="msg-time">just now</span>
+    </div>
+    <div class="msg-body">${escHtml(text)}</div>
+  `;
+  msgs.appendChild(userMsg);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  await sleep(400);
+
+  // Thinking
+  const thinking = document.createElement('div');
+  thinking.className = 'thinking';
+  thinking.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div><span>AIR is thinking...</span>`;
+  msgs.appendChild(thinking);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  await sleep(900);
+  thinking.remove();
+
+  const resp = responses[responseIdx % responses.length];
+  responseIdx++;
+
+  // AI message wrapper
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'msg';
+  aiMsg.innerHTML = `
+    <div class="msg-header">
+      <div class="msg-avatar ai">A</div>
+      <span class="msg-name">${currentModel === 'air' ? 'AIR' : 'Claude'}</span>
+      <span class="msg-time">just now</span>
+    </div>
+    <div class="msg-body" id="streaming-body"></div>
+  `;
+  msgs.appendChild(aiMsg);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Stream text
+  const body = document.getElementById('streaming-body');
+  await streamText(body, resp.text);
+
+  // Tool calls
+  for(const tool of resp.tools) {
+    await sleep(200);
+    const tc = document.createElement('div');
+    tc.className = `tool-call ${tool.status === 'running' ? 'running' : 'done'}`;
+    tc.innerHTML = `
+      ${tool.status === 'done'
+        ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green)"><path d="M20 6L9 17l-5-5"/></svg>`
+        : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`
+      }
+      <span class="tool-name">${tool.name}</span>
+      <span class="tool-args">${escHtml(tool.args)}</span>
+    `;
+    body.after(tc);
+    msgs.scrollTop = msgs.scrollHeight;
+    await sleep(300);
+  }
+
+  // Final code note
+  if(resp.code) {
+    await sleep(300);
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:var(--text-3);padding:6px 12px;font-family:var(--mono)';
+    note.textContent = '→ Code written to editor';
+    aiMsg.appendChild(note);
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+  isStreaming = false;
+  document.getElementById('send-btn').disabled = false;
+  setStatus('ready','Ready');
+}
+
+async function streamText(el, text) {
+  el.innerHTML = '<span class="cursor-blink"></span>';
+  let i = 0;
+  return new Promise(res => {
+    const iv = setInterval(() => {
+      if(i >= text.length) { clearInterval(iv); el.innerHTML = escHtml(text); res(); return; }
+      el.innerHTML = escHtml(text.slice(0,i+1)) + '<span class="cursor-blink"></span>';
+      i += 2;
+    }, 18);
+  });
+}
+
+// ─── STATUS ─────────────────────────────────────────
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  txt.textContent = text;
+  dot.className = 'status-dot' + (state === 'ready' ? ' idle' : '');
+}
+
+// ─── MODEL MODAL ────────────────────────────────────
+function openModal() {
+  document.getElementById('api-modal').classList.add('open');
+  selectedModelTemp = currentModel;
+  updateModelOptions();
+}
+function closeModal() { document.getElementById('api-modal').classList.remove('open'); }
+function selectModel(m) {
+  selectedModelTemp = m;
+  updateModelOptions();
+  document.getElementById('key-section').style.display = m === 'claude' ? 'flex' : 'none';
+}
+function updateModelOptions() {
+  document.getElementById('opt-air').classList.toggle('selected', selectedModelTemp==='air');
+  document.getElementById('opt-claude').classList.toggle('selected', selectedModelTemp==='claude');
+}
+function confirmModel() {
+  currentModel = selectedModelTemp;
+  if(currentModel === 'claude') apiKey = document.getElementById('api-key-input').value;
+  const label = currentModel === 'air' ? 'AIR-7B' : 'Claude Sonnet';
+  document.getElementById('model-label').textContent = label;
+  document.getElementById('composer-model').textContent = label;
+  document.getElementById('current-model-badge').textContent = currentModel === 'air' ? 'AIR' : 'Claude';
+  closeModal();
+}
+
+// ─── RUN AGENT ──────────────────────────────────────
+function runAgent() {
+  const term = document.getElementById('terminal');
+  const line = document.createElement('div');
+  line.className = 'term-line';
+  line.innerHTML = `<span class="prompt">~/my-ton-agent $</span> <span class="cmd">npx ts-node agent.ts --env production</span>`;
+  term.appendChild(line);
+  term.scrollTop = term.scrollHeight;
+  setStatus('running','Running...');
+  setTimeout(() => {
+    ['✓ Connecting to TON...','✓ Agent initialized','✓ Listening on Telegram'].forEach((msg,i) => {
+      setTimeout(() => {
+        const l = document.createElement('div');
+        l.className = 'term-line';
+        l.innerHTML = `<span class="ok">${msg}</span>`;
+        term.appendChild(l);
+        term.scrollTop = term.scrollHeight;
+      }, i * 400);
+    });
+    setTimeout(() => setStatus('ready','Ready'), 1500);
+  }, 500);
+}
+
+// ─── RESIZE HANDLE ──────────────────────────────────
+(function() {
+  const handle = document.getElementById('resize-handle');
+  const chat = document.getElementById('chat-panel');
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = chat.offsetWidth;
+    handle.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const w = Math.max(280, Math.min(700, startW + e.clientX - startX));
+    chat.style.width = w + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    handle.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// ─── UTILS ──────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function runAgent() {
+  const term = document.getElementById('terminal');
+  const line = document.createElement('div');
+  line.className = 'term-line';
+  line.innerHTML = `<span class="prompt">~/my-ton-agent $</span> <span class="cmd">npx ts-node agent.ts</span>`;
+  term.appendChild(line);
+  term.scrollTop = term.scrollHeight;
+  setStatus('running', 'Running...');
+  const msgs = ['✓ Connecting to TON mainnet...','✓ Wallet loaded','✓ Telegram connected','✓ 32 tools registered','✓ Agent online'];
+  msgs.forEach((m,i) => setTimeout(() => {
+    const l = document.createElement('div');
+    l.className = 'term-line';
+    l.innerHTML = `<span class="ok">${m}</span>`;
+    term.appendChild(l);
+    term.scrollTop = term.scrollHeight;
+    if(i === msgs.length-1) setStatus('ready','Ready');
+  }, (i+1)*350));
+}
+
+// close modal on backdrop click
+document.getElementById('api-modal').addEventListener('click', e => {
+  if(e.target === e.currentTarget) closeModal();
+});
+</script>
+</body>
+</html>
