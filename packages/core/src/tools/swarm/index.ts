@@ -23,12 +23,15 @@ interface SubAgentResult {
 
 const ROLE_PROMPTS: Record<string, string> = {
   coder: `You are an expert software engineer sub-agent. Write clean, working code. Output complete file content ready to save. Use workspace_write to save files directly. Handle errors gracefully.`,
-  executor: `You are a bash execution sub-agent. Use code_execute to run shell commands directly. Output results from tool calls.`,
+  executor: `You are a code execution sub-agent. Use code_execute to run python, javascript, or bash scripts. Output results from tool calls.`,
   researcher: `You are a research sub-agent. Analyze and extract key information concisely. Be factual and structured.`,
   reviewer: `You are a code review sub-agent. List bugs and security issues found. Suggest specific fixes. Be brief and direct.`,
   writer: `You are a content writing sub-agent. Write clear, engaging content. Use workspace_write to save your output directly.`,
 }
 
+// Sub-agents are restricted to workspace I/O and sandboxed code execution only.
+// Direct bash (exec_run), package installation (exec_install), and service management
+// (exec_service) are intentionally excluded to prevent privilege escalation.
 const AGENT_TOOLS = [
   {
     name: "workspace_write",
@@ -54,19 +57,17 @@ const AGENT_TOOLS = [
     },
   },
   {
-    name: "exec_run",
-    description: "Execute any bash command on the server. Use to start bots with pm2, install deps, run scripts.",
-    input_schema: { type: "object", properties: { command: { type: "string", description: "Bash command" }, timeout: { type: "number", description: "Timeout seconds" } }, required: ["command"] },
-  },
-  {
-    name: "exec_install",
-    description: "Install packages using apt, pip, npm, or docker pull.",
-    input_schema: { type: "object", properties: { manager: { type: "string", enum: ["apt","pip","npm","docker"] }, packages: { type: "string" } }, required: ["manager","packages"] },
-  },
-  {
-    name: "exec_service",
-    description: "Manage systemd services — start, stop, restart, status.",
-    input_schema: { type: "object", properties: { action: { type: "string", enum: ["start","stop","restart","status","enable","disable"] }, name: { type: "string" } }, required: ["action","name"] },
+    name: "code_execute",
+    description: "Execute python, javascript, or bash code in a sandboxed container environment.",
+    input_schema: {
+      type: "object",
+      properties: {
+        language: { type: "string", enum: ["python", "javascript", "bash"], description: "Language to execute" },
+        code: { type: "string", description: "Code to execute (max 100 KB)" },
+        timeout: { type: "number", description: "Timeout seconds (default 30)" },
+      },
+      required: ["language", "code"],
+    },
   },
 ]
 
@@ -126,7 +127,7 @@ async function runSubAgent(
 
 export const swarmExecuteTool: Tool = {
   name: "swarm_execute",
-  description: `Spawn multiple specialized sub-agents to work on a complex goal simultaneously. Each sub-agent has real tool access: workspace_write, workspace_read, code_execute. Roles: coder (writes and saves code), executor (runs commands), researcher (analysis), reviewer (code review), writer (content). Use for tasks requiring multiple skills at once. You receive all results and synthesize them.`,
+  description: `Spawn multiple specialized sub-agents to work on a complex goal simultaneously. Each sub-agent has sandboxed tool access: workspace_write, workspace_read, code_execute. Roles: coder (writes and saves code), executor (runs sandboxed code), researcher (analysis), reviewer (code review), writer (content). Use for tasks requiring multiple skills at once. You receive all results and synthesize them.`,
   parameters: Type.Object({
     goal: Type.String({ description: "The overall goal this swarm is working toward" }),
     tasks: Type.Array(Type.Object({

@@ -4,7 +4,44 @@ import type { LLMProvider } from '@agentr/core'
 import { attachMessageListener } from './listener.js'
 import { DockerProvisioner } from './docker.js'
 import { Database } from './database.js'
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import path from 'path'
+
+// ---------------------------------------------------------------------------
+// Wallet mnemonic encryption — AES-256-GCM
+// Stored format: <iv_hex>:<ciphertext_hex>:<auth_tag_hex>
+// Requires WALLET_ENCRYPTION_KEY env var (min 32 chars)
+// ---------------------------------------------------------------------------
+
+function getEncryptionKey(): Buffer {
+  const raw = process.env['WALLET_ENCRYPTION_KEY']
+  if (!raw || raw.length < 32) {
+    throw new Error('WALLET_ENCRYPTION_KEY must be set and at least 32 characters long')
+  }
+  return Buffer.from(raw.slice(0, 32), 'utf8')
+}
+
+export function encryptMnemonic(mnemonic: string): string {
+  const key = getEncryptionKey()
+  const iv = randomBytes(12) // 96-bit IV for GCM
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(mnemonic, 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return `${iv.toString('hex')}:${encrypted.toString('hex')}:${authTag.toString('hex')}`
+}
+
+export function decryptMnemonic(enc: string): string {
+  const key = getEncryptionKey()
+  const parts = enc.split(':')
+  if (parts.length !== 3) throw new Error('Invalid encrypted mnemonic format')
+  const [ivHex, ciphertextHex, authTagHex] = parts
+  const iv = Buffer.from(ivHex!, 'hex')
+  const ciphertext = Buffer.from(ciphertextHex!, 'hex')
+  const authTag = Buffer.from(authTagHex!, 'hex')
+  const decipher = createDecipheriv('aes-256-gcm', key, iv)
+  decipher.setAuthTag(authTag)
+  return decipher.update(ciphertext).toString('utf8') + decipher.final('utf8')
+}
 
 export class AgentFactory {
   private provisioner = new DockerProvisioner()
@@ -17,18 +54,21 @@ export class AgentFactory {
     console.log('[AgentFactory] Initialized')
   }
 
-  private getLLMConfig() {
+  private getLLMConfig(plan?: string, provisionedAt?: number) {
     const provider = (process.env['LLM_PROVIDER'] ?? 'moonshot') as LLMProvider
     const apiKeyMap: Record<LLMProvider, string> = {
       anthropic: process.env['ANTHROPIC_API_KEY'] ?? '',
       openai:    process.env['OPENAI_API_KEY'] ?? '',
       moonshot:  process.env['MOONSHOT_API_KEY'] ?? '',
       'openai-codex': process.env['OPENAI_CODEX_ACCESS_TOKEN'] ?? '',
+      air: process.env['OPENAI_API_KEY'] ?? '',
     }
     return {
       provider,
       apiKey: apiKeyMap[provider],
       model: process.env['LLM_MODEL'] ?? undefined,
+      plan: (plan ?? 'starter') as 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
+      provisionedAt,
     }
   }
 
@@ -37,7 +77,14 @@ export class AgentFactory {
 
     // 1. Generate TON wallet
     const { address, mnemonic } = await this.wallet.generateWallet()
-    const mnemonicEnc = Buffer.from(mnemonic.join(' ')).toString('base64')
+    // Encrypt mnemonic with AES-256-GCM before storing
+    let mnemonicEnc: string
+    try {
+      mnemonicEnc = encryptMnemonic(mnemonic.join(' '))
+    } catch (e) {
+      console.warn('[AgentFactory] WALLET_ENCRYPTION_KEY not set, falling back to base64 (insecure):', e)
+      mnemonicEnc = Buffer.from(mnemonic.join(' ')).toString('base64')
+    }
     console.log(`[AgentFactory] Wallet: ${address}`)
 
     // 2. Get Telegram user info — start gramjs bridge using Telethon-saved session
@@ -53,7 +100,6 @@ export class AgentFactory {
     const me = tgClient?.getMe()
 
     // 3. Upsert user in DB
-    // First ensure a user record exists (Telethon bridge doesn't populate bridgeManager)
     await this.db.query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [tenantId]
@@ -67,7 +113,7 @@ export class AgentFactory {
       })
     }
 
-    // 4. Create tenant record (use passed tenantId)
+    // 4. Create tenant record
     const dbTenantId = tenantId
     await this.db.upsertTenant({
       id: tenantId,
@@ -84,21 +130,28 @@ export class AgentFactory {
     await this.db.updateTenantStatus(dbTenantId, 'active')
     await this.db.createAgentInstance(dbTenantId)
 
-    // 6. Build agent config
+    // 6. Fetch plan and provisioned timestamp for LLM config
+    const tenantRow = await this.db.getTenant(dbTenantId)
+    const plan = tenantRow?.plan ?? 'starter'
+    const provisionedAt = tenantRow?.created_at ? new Date(tenantRow.created_at).getTime() : Date.now()
+
+    // 7. Build agent config
     const config: AgentConfig = {
       tenantId: dbTenantId,
       userId,
       telegramPhone: phone,
-      llmProvider: this.getLLMConfig().provider as AgentConfig['llmProvider'],
+      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
       walletAddress: address,
+      plan: plan as AgentConfig['plan'],
+      provisionedAt,
     }
 
-    // 7. Start agent runtime
-    const runtime = new AgentRuntime(config, this.getLLMConfig(), {
+    // 8. Start agent runtime
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
       deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
     })
 
-    // 8. Register MVP tools
+    // 9. Register MVP tools
     if (tgClient) {
       await registerMVPTools(runtime.tools, {
         client: tgClient,
@@ -123,8 +176,10 @@ export class AgentFactory {
       phone: string
       wallet_address: string
       wallet_mnemonic_enc: string
+      plan: string
+      created_at: string
     }>(
-      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc
+      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at
        FROM tenants t
        JOIN agent_instances ai ON ai.tenant_id = t.id
        WHERE t.status = 'active' AND ai.status = 'running'`
@@ -134,16 +189,21 @@ export class AgentFactory {
 
     for (const tenant of activeTenants) {
       try {
+        const plan = tenant.plan ?? 'starter'
+        const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
+
         const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
         const me = tgClient.getMe()
         const config: AgentConfig = {
           tenantId: tenant.id,
           userId: tenant.id,
           telegramPhone: tenant.phone,
-          llmProvider: this.getLLMConfig().provider as AgentConfig['llmProvider'],
+          llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
           walletAddress: tenant.wallet_address,
+          plan: plan as AgentConfig['plan'],
+          provisionedAt,
         }
-        const runtime = new AgentRuntime(config, this.getLLMConfig(), {
+        const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
           deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
         })
         await registerMVPTools(runtime.tools, {
@@ -153,7 +213,6 @@ export class AgentFactory {
           tenantId: tenant.id,
           walletAddress: tenant.wallet_address,
         })
-        // runtime.start() — not needed
         attachMessageListener(tenant.id, tgClient, runtime)
         this.runtimes.set(tenant.id, runtime)
         console.log(`[AgentFactory] Resumed: ${tenant.id}`)
