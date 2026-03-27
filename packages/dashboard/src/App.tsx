@@ -419,12 +419,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
           </div>
 
           {/* ── FOOTER ── */}
-          <div style={{ borderTop: '1px solid var(--border)', padding: '32px 56px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="landing-footer">
+            <div className="landing-footer-brand">
               <div className="logo" style={{ fontSize: 15 }}>AGENT<em>R</em></div>
               <div style={{ fontSize: 12, color: 'var(--text3)' }}>AI Agent Factory on TON · © 2026</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <div className="landing-footer-links">
               <a href="https://github.com/daraijaola/agentr" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>GitHub</a>
               <a href="https://t.me/agentr_support" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Telegram</a>
               <a href="https://ton.org" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>Built on TON</a>

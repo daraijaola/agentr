@@ -151,6 +151,9 @@ html, body, #root {
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
 .footer { padding: 20px 56px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text3); background: var(--bg); }
+.landing-footer { border-top: 1px solid var(--border); padding: 32px 56px; background: var(--bg); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.landing-footer-brand { display: flex; flex-direction: column; gap: 4px; }
+.landing-footer-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 
 /* ── Auth ─────────────────────────────────────────────────────────────────── */
 .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg); animation: fadeup 0.4s ease; }
@@ -316,6 +319,8 @@ html, body, #root {
   .hero-h1 { font-size: clamp(32px,8vw,48px); }
   .hero-actions { flex-direction: column; align-items: stretch; }
   .footer { flex-direction: column; gap: 8px; text-align: center; padding: 16px 24px; }
+  .landing-footer { padding: 24px 16px; flex-direction: column; align-items: flex-start; gap: 20px; }
+  .landing-footer-links { gap: 16px; }
   .auth-card { padding: 28px 20px; }
   .live { display: flex; flex-direction: column; }
   .live-topbar { padding: 0 12px; }
