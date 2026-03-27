@@ -688,7 +688,9 @@ agentRoutes.post('/admin/submissions',
   zValidator('json', z.object({ password: z.string() })),
   async (c) => {
   const { password } = c.req.valid('json')
-  if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
+  const adminPw = process.env['ADMIN_PASSWORD']
+  if (!adminPw) return c.json({ error: 'Admin not configured' }, 503)
+  if (!timingSafeStringEqual(password, adminPw)) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
@@ -722,7 +724,9 @@ agentRoutes.post('/admin/approve',
   zValidator('json', z.object({ password: z.string(), agentId: z.string(), action: z.enum(['approve','reject']), reviewer_notes: z.string().optional() })),
   async (c) => {
     const { password, agentId, action, reviewer_notes } = c.req.valid('json')
-    if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
+    const adminPw2 = process.env['ADMIN_PASSWORD']
+    if (!adminPw2) return c.json({ error: 'Admin not configured' }, 503)
+    if (!timingSafeStringEqual(password, adminPw2)) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
@@ -742,7 +746,9 @@ agentRoutes.post('/admin/approve-dev',
   zValidator('json', z.object({ password: z.string(), devId: z.string(), action: z.enum(['approve','reject']) })),
   async (c) => {
     const { password, devId, action } = c.req.valid('json')
-    if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
+    const adminPw3 = process.env['ADMIN_PASSWORD']
+    if (!adminPw3) return c.json({ error: 'Admin not configured' }, 503)
+    if (!timingSafeStringEqual(password, adminPw3)) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
