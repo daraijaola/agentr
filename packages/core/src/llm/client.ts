@@ -144,7 +144,8 @@ export class LLMClient {
           }
           if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
             // Strip tool_calls — AIR sees them as <tool_call> text, keep only text content
-            acc.push({ role: 'assistant', content: m.content ?? '' })
+            const text = (m.content ?? '').trim()
+            if (text) acc.push({ role: 'assistant', content: text })
             return acc
           }
           acc.push(m)
