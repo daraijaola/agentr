@@ -1,0 +1,95 @@
+diff --git a/docs/configuration.md b/docs/configuration.md
+index 5622472..1e359d0 100644
+--- a/docs/configuration.md
++++ b/docs/configuration.md
+@@ -63,7 +63,7 @@ Internal OpenAI-compatible proxy — fastest, lowest cost, purpose-built for thi
+ ```env
+ LLM_PROVIDER=air
+ LLM_MODEL=claude-sonnet-4-6
+-AIR_BASE_URL=https://air-by-agentr.replit.app/api/v1
++AIR_BASE_URL=https://air.agentr.online/api/v1
+ OPENAI_API_KEY=air-your-key-here
+ ```
+ 
+diff --git a/packages/api/src/index.ts b/packages/api/src/index.ts
+index 90bb8d6..98a99a0 100644
+--- a/packages/api/src/index.ts
++++ b/packages/api/src/index.ts
+@@ -64,10 +64,9 @@ const app = new Hono()
+ 
+ app.use('*', logger())
+ app.use('*', ipRateLimit(120))
+-const replitDomain = process.env['REPLIT_DEV_DOMAIN'] ? `https://${process.env['REPLIT_DEV_DOMAIN']}` : null
+ const allowedOrigins = process.env['NODE_ENV'] === 'production'
+   ? ['https://agentr.online']
+-  : ['https://agentr.online', 'http://localhost:5173', 'http://localhost:3000', ...(replitDomain ? [replitDomain] : [])]
++  : ['https://agentr.online', 'http://localhost:5173', 'http://localhost:3000']
+ 
+ app.use('*', cors({ origin: allowedOrigins, allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
+ 
+diff --git a/packages/core/src/llm/client.ts b/packages/core/src/llm/client.ts
+index d305228..c7e8391 100644
+--- a/packages/core/src/llm/client.ts
++++ b/packages/core/src/llm/client.ts
+@@ -1,5 +1,4 @@
+ // AIR LLM client — sole provider for AGENTR
+-// AIR gateway: https://ai-gateway-hub.replit.app/api/v1
+ 
+ export type LLMProvider = 'air'
+ 
+@@ -170,7 +169,8 @@ export class LLMClient {
+     const airMessages = toAirMessages(cleanMessages)
+ 
+     const apiKey = process.env['OPENAI_API_KEY'] ?? this.config.apiKey
+-    const baseUrl = process.env['AIR_BASE_URL'] ?? 'https://ai-gateway-hub.replit.app/api/v1'
++    const baseUrl = process.env['AIR_BASE_URL']
++    if (!baseUrl) throw new Error('AIR_BASE_URL environment variable is not set')
+ 
+     const body: Record<string, unknown> = {
+       model,
+diff --git a/packages/dashboard/public/app.html b/packages/dashboard/public/app.html
+index afaa883..612c26b 100644
+--- a/packages/dashboard/public/app.html
++++ b/packages/dashboard/public/app.html
+@@ -1127,11 +1127,18 @@ function closeSidebar() {
+   if (ov) ov.classList.remove('open')
+ }
+ 
+-// persist tenantId across page reloads
+-const _saved = sessionStorage.getItem('agentr_tenant')
++// persist session across page reloads and tab closes
++const _saved = localStorage.getItem('agentr_tenant')
+ if (_saved) { try { Object.assign(STATE, JSON.parse(_saved)) } catch {} }
+ 
+-function saveState() { sessionStorage.setItem('agentr_tenant', JSON.stringify(STATE)) }
++function saveState() { localStorage.setItem('agentr_tenant', JSON.stringify(STATE)) }
++
++// Handle 401/403 — token expired or missing, force re-login
++function handleAuthError() {
++  localStorage.removeItem('agentr_tenant')
++  STATE = { phone:'', tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
++  show('phone')
++}
+ 
+ // ─── SCREEN MANAGEMENT ───────────────────────────
+ function show(name) {
+@@ -1333,7 +1340,7 @@ async function goDashboard() {
+ }
+ 
+ function disconnect() {
+-  sessionStorage.removeItem('agentr_tenant')
++  localStorage.removeItem('agentr_tenant')
+   STATE = { phone:'', tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
+   window.location.href = '/'
+ }
+@@ -1386,7 +1393,9 @@ let wsFiles = [], wsActive = null, wsContent = ''
+ 
+ async function loadWorkspace() {
+   try {
+-    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
++    const r = await fetch(API + '/agent/workspace/' + STATE.tenantId, { headers: authGetHdr() })
++    if (r.status === 401 || r.status === 403) { handleAuthError(); return }
++    const res = await r.json()
+     wsFiles = res.files || []
+     renderFileList()
+     if (wsFiles.length) openFile(wsFiles[0])
