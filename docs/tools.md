@@ -6,7 +6,9 @@ Your agent has access to 63 tools across 8 categories, chained automatically bas
 
 | Tool | Description |
 |---|---|
-| `code_execute` | Run bash or Python scripts |
+| `exec_run` | Run any bash command. Automatically routed through the tenant's Docker sandbox when running |
+| `exec_install` | Install packages via apt, pip, npm, or docker pull — sandboxed when container is active |
+| `code_execute` | Run Python or Node.js scripts inline |
 | `process_start` | Start a persistent PM2 process |
 | `process_stop` | Stop a running process |
 | `process_restart` | Restart a process |
@@ -16,7 +18,7 @@ Your agent has access to 63 tools across 8 categories, chained automatically bas
 
 ## Workspace
 
-Sandboxed file system per tenant — path traversal blocked.
+Sandboxed file system per tenant — path traversal blocked at the API level.
 
 | Tool | Description |
 |---|---|
@@ -44,10 +46,10 @@ Full MTProto access. Agent operates as the connected Telegram account.
 | Tool | Description |
 |---|---|
 | `ton_get_balance` | Get TON balance |
-| `ton_send` | Send TON |
+| `ton_send` | Send TON (requires explicit user confirmation) |
 | `ton_get_transactions` | Transaction history |
 | `ton_get_price` | Current TON price |
-| `jetton_send` | Send jetton tokens |
+| `jetton_send` | Send jetton tokens (requires explicit user confirmation) |
 | `jetton_balances` | All jetton balances |
 | `nft_list` | List NFTs in wallet |
 | `dex_quote` | DEX swap quote |
@@ -68,11 +70,19 @@ Full MTProto access. Agent operates as the connected Telegram account.
 |---|---|
 | `swarm_execute` | Spawn parallel sub-agents |
 
-Roles: `coder`, `executor`, `researcher`, `reviewer`, `writer`. All run simultaneously.
+Roles: `coder`, `executor`, `researcher`, `reviewer`, `writer`. All run simultaneously — results merged into one reply.
 
 ## Memory
 
 | Tool | Description |
 |---|---|
-| `memory_write` | Write to MEMORY.md (persists across sessions) |
+| `memory_write` | Write to MEMORY.md (persists across sessions and server restarts) |
 | `memory_read` | Read current memory |
+
+---
+
+## Notes
+
+- **TON transfers require confirmation** — `ton_send`, `jetton_send`, and DEX swaps always pause and ask the user before executing. All other tools run without confirmation.
+- **`exec_run` sandbox routing** — when Docker is enabled and the tenant container is running, bash commands execute inside the isolated container (`--network=none`, `--cap-drop=ALL`, `--read-only`). Without Docker, commands run on the host.
+- **Conversation memory** — full conversation history is persisted to PostgreSQL and restored automatically when the agent resumes after a server restart.
