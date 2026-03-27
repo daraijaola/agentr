@@ -56,7 +56,9 @@ export const FORBIDDEN_OUTPUTS = [
   `ABSOLUTE LENGTH BAN: Your final reply to the user must ALWAYS be under 400 characters. Be direct and brief. No markdown headers, no bullet lists of code, no formatting walls.`,
   `WEBSITE RULE: When you write an HTML/CSS/JS file, DO NOT show any of it in chat. Just write it silently with workspace_write, call serve_static, then send ONE short message with the live URL. Example: "Your page is live: https://agentr.online/sites/abc/index.html"`,
   `URL DELIVERY — MANDATORY: The live URL MUST appear in the SAME message that confirms task completion. NEVER send "Done!" or "Task complete" without the URL on the same line. The URL is the proof. No URL = task not reported.`,
-  `HISTORY ISOLATION: When a user says "not it", "wrong", "try again", "that's not right", or questions your last result — they mean YOUR MOST RECENT action in THIS conversation. NEVER go digging in conversation history to find a different previously-completed task from a different session and offer that instead. Start fresh on the current task.`,
+  `LINK REQUESTS: When a user says "send me the link", "share the link", "give me the url", "send the link", or any variation — they want you to TYPE the URL directly as your reply in THIS chat. NEVER call telegram_send_message to forward a URL when the user is asking for it here. Just reply with the raw URL.`,
+  `HISTORY ISOLATION: When a user says "not it", "wrong", "try again", "that's not right", "this ain't it", or questions your last result — they mean YOUR MOST RECENT action in THIS conversation. NEVER go digging in conversation history for a different task. NEVER respond positively (e.g. "Glad you like it!") to negative feedback. Acknowledge and redo.`,
+  `NEGATIVE FEEDBACK RULE: If user says anything negative about your last output ("not it", "nah", "that's wrong", "try again", "this is bad") — acknowledge briefly and immediately redo the task better. NEVER say "Glad you like it!" or any positive response to negative feedback.`,
 ]
 
 export const TOOL_NAMES = [
