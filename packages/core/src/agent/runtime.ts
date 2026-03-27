@@ -180,7 +180,7 @@ export class AgentRuntime {
     let workspace = ''
     try {
       const raw = await loadWorkspace(this.config.tenantId)
-      workspace = raw.length > 800 ? raw.slice(0, 800) + '\n...[workspace truncated]' : raw
+      workspace = raw.length > 6000 ? raw.slice(0, 6000) + '\n...[workspace truncated]' : raw
     } catch { /* not ready */ }
 
     return buildSystemPrompt(
