@@ -1319,11 +1319,7 @@ async function goDashboard() {
   loadMarketplace()
 }
 
-async function disconnect() {
-  if (!confirm('Disconnect your agent? This will deprovision it.')) return
-  try {
-    await fetch(API + '/agent/' + STATE.tenantId, { method:'DELETE' })
-  } catch(e) {}
+function disconnect() {
   sessionStorage.removeItem('agentr_tenant')
   STATE = { phone:'', tenantId:'', phoneCodeHash:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
   window.location.href = '/'
