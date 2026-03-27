@@ -5,8 +5,8 @@ import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
 const log = createLogger("Tools");
 export const tonGetBalanceTool: Tool = {
-  name: "ton_get_balance",
-  description: "Check your current TON balance in TON units.",
+  name: "ton_balance",
+  description: "Check your current TON wallet balance in TON units.",
   parameters: Type.Object({}),
   category: "data-bearing",
 };

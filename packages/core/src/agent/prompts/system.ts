@@ -53,6 +53,31 @@ export const FORBIDDEN_OUTPUTS = [
   `WEBSITE RULE: When you write an HTML/CSS/JS file, DO NOT show any of it in chat. Just write it silently with workspace_write, call serve_static, then send ONE short message with the live URL. Example: "Your page is live: https://agentr.online/sites/abc/index.html"`,
 ]
 
+export const TOOL_NAMES = [
+  `EXACT TOOL NAMES — use these verbatim, do NOT guess or paraphrase:`,
+  `TON/Wallet: ton_balance, ton_get_address, ton_price, ton_send, ton_get_transactions, ton_my_transactions, ton_chart`,
+  `Jettons/NFTs: jetton_balances, jetton_history, jetton_holders, jetton_info, jetton_price, jetton_send, nft_list`,
+  `DEX: dex_quote, dedust_quote, dedust_swap, dedust_prices, dedust_pools, dedust_token_info, stonfi_quote, stonfi_swap, stonfi_search, stonfi_trending`,
+  `DNS: dns_check, dns_resolve, dns_start_auction, dns_bid, dns_link, dns_unlink, dns_set_site, dns_auctions`,
+  `Telegram/Chats: telegram_get_dialogs, telegram_get_chat_info, telegram_get_history, telegram_join_channel, telegram_leave_channel, telegram_create_channel, telegram_invite_to_channel, telegram_mark_as_read, telegram_get_admined_channels, telegram_check_channel_username, telegram_set_channel_username, telegram_edit_channel_info`,
+  `Telegram/Messaging: telegram_send_message, telegram_delete_message, telegram_edit_message, telegram_forward_message, telegram_pin_message, telegram_unpin_message, telegram_search_messages, telegram_schedule_message, telegram_send_scheduled_now, telegram_delete_scheduled_message, telegram_get_scheduled_messages, telegram_get_replies, telegram_quote_reply`,
+  `Telegram/Groups: telegram_get_me, telegram_create_group, telegram_get_participants, telegram_kick_user, telegram_ban_user, telegram_unban_user, telegram_set_chat_photo`,
+  `Telegram/Contacts: telegram_get_user_info, telegram_check_username, telegram_block_user, telegram_get_blocked, telegram_get_common_chats`,
+  `Telegram/Media: telegram_send_photo, telegram_send_gif, telegram_send_voice, telegram_send_sticker, telegram_download_media, telegram_transcribe_audio, vision_analyze`,
+  `Telegram/Interactive: telegram_create_poll, telegram_create_quiz, telegram_react, telegram_send_dice, telegram_reply_keyboard`,
+  `Telegram/Profile: telegram_update_profile, telegram_set_bio, telegram_set_username, telegram_set_personal_channel`,
+  `Telegram/Stars: telegram_get_stars_balance, telegram_get_stars_transactions`,
+  `Telegram/Stickers: telegram_add_sticker_set, telegram_get_my_stickers, telegram_search_stickers, telegram_search_gifs`,
+  `Telegram/Stories: telegram_send_story`,
+  `Telegram/Folders: telegram_get_folders, telegram_create_folder, telegram_add_chat_to_folder`,
+  `Telegram/Gifts: telegram_get_available_gifts, telegram_send_gift, telegram_get_my_gifts, telegram_get_resale_gifts, telegram_buy_resale_gift, telegram_set_gift_status, telegram_get_unique_gift, telegram_get_unique_gift_value, telegram_get_collectible_info, telegram_set_collectible_price, telegram_transfer_collectible, telegram_send_gift_offer, telegram_resolve_gift_offer`,
+  `Bots: create_telegram_bot, bot_inline_send`,
+  `Workspace/Files: workspace_write, workspace_read, workspace_list, workspace_delete, workspace_info, workspace_rename`,
+  `Deploy/Exec: exec_run, exec_install, exec_service, exec_status, code_execute, process_start, process_stop, process_restart, process_logs, process_list`,
+  `Deploy/Static: serve_static`,
+  `System: memory_write, memory_read, list_tools, run_test, swarm_execute`,
+]
+
 export const DOMAIN_FLOWS = [
   `Use memory_write to store durable facts in MEMORY.md when relevant.`,
   `WEBSITE FLOW: (1) workspace_write the HTML file, e.g. path="index.html". (2) Call serve_static with path="index.html" (or the folder name like "mysite/"). (3) The tool returns a public URL — send ONLY that URL to the user, nothing else for the link. Never invent a URL. Always say: "Your site is live at [URL from tool]. Want a custom .ton domain? I can register one — check availability with dns_check, then you fund my wallet and I handle the auction automatically."`,
@@ -78,6 +103,8 @@ export function buildSystemPrompt(
     ...EXECUTION_FLOW,
     '',
     ...FORBIDDEN_OUTPUTS,
+    '',
+    ...TOOL_NAMES,
     '',
     ...DOMAIN_FLOWS,
   ]
