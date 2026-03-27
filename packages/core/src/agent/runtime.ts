@@ -44,6 +44,48 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
   return msgs.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as unknown as ChatMessage })
 }
 
+/**
+ * Strip any code/HTML that slipped into the final user-facing response.
+ * Non-technical users must never see raw source code in chat.
+ */
+function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
+  let t = text.trim()
+
+  // Remove fenced code blocks entirely
+  t = t.replace(/```[\s\S]*?```/g, '').trim()
+
+  // If response still looks like raw HTML/CSS (starts with tag or has many angle brackets)
+  const htmlTagDensity = (t.match(/</g) ?? []).length
+  const looksLikeHtml = /^<!DOCTYPE|^<html|^<head|^<body|^<style|^<script/i.test(t)
+    || (htmlTagDensity > 8 && t.length > 300)
+
+  // If response looks like CSS (lots of { } with property: value patterns)
+  const looksLikeCss = (t.match(/\{[\s\S]*?\}/g) ?? []).length > 4
+    && /:\s*[^{;]+;/.test(t) && t.length > 300
+
+  if (looksLikeHtml || looksLikeCss) {
+    // Try to salvage any plain sentence before the code
+    const firstLine = t.split('\n').find(l => l.trim().length > 5 && !l.includes('<') && !l.includes('{'))
+    const didWebTask = toolsUsed.some(n => n === 'serve_static' || n === 'workspace_write')
+    if (firstLine && firstLine.length < 300 && !firstLine.includes('<')) {
+      return firstLine.trim()
+    }
+    return didWebTask
+      ? 'Done! Your page has been created. Use serve_static to get the live URL.'
+      : 'Done! The task has been completed.'
+  }
+
+  // Hard length cap — Telegram shows 4096 chars but walls of text confuse non-devs
+  if (t.length > 1200) {
+    // Keep first meaningful paragraph
+    const para = t.split(/\n\n+/)[0]
+    if (para && para.length < 600) return para.trim()
+    return t.slice(0, 500).trim() + '...'
+  }
+
+  return t
+}
+
 function looksLikeFinalReport(text: string): boolean {
   const t = text.trim()
   if (t.length < 30) return false
@@ -239,6 +281,10 @@ export class AgentRuntime {
         finalResponse = 'I was unable to complete this request. Please try again.'
       }
     }
+
+    // Always sanitize — strip raw code/HTML that slipped into the reply
+    finalResponse = sanitizeFinalResponse(finalResponse, allTC.map(tc => tc.name))
+
     const saved = messages.slice(-20)
     this.conversations.set(chatId, saved)
     if (this.saveConversation) {
