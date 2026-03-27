@@ -1,21 +1,76 @@
-export type LLMProvider = 'anthropic' | 'openai' | 'moonshot' | 'openai-codex'
-export interface LLMConfig { provider: LLMProvider; apiKey: string; model?: string; maxTokens?: number; temperature?: number }
+export type LLMProvider = 'anthropic' | 'openai' | 'moonshot' | 'openai-codex' | 'air'
+export interface LLMConfig {
+  provider: LLMProvider
+  apiKey: string
+  model?: string
+  maxTokens?: number
+  temperature?: number
+  plan?: 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise'
+  provisionedAt?: number // Unix ms — for starter 24h expiry check
+}
 export interface ChatMessage { role: 'user' | 'assistant' | 'system' | 'tool'; content: string | null; tool_call_id?: string; name?: string; tool_calls?: ToolCallRaw[] }
 export interface ToolCallRaw { id: string; type: 'function'; function: { name: string; arguments: string } }
 export interface ChatOptions { systemPrompt?: string; messages: ChatMessage[]; tools?: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> }
 export interface ChatResponse { text: string; toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>; messages: ChatMessage[] }
 
+const AIR_URL = 'https://air-by-agentr.replit.app/api/v1/chat/completions'
+
 const URLS: Record<string, string> = {
   anthropic: 'https://api.anthropic.com/v1/messages',
   openai: 'https://api.openai.com/v1/chat/completions',
   moonshot: 'https://api.moonshot.ai/v1/chat/completions',
-  'openai-codex': 'https://chatgpt.com/backend-api/codex/responses'
+  'openai-codex': 'https://chatgpt.com/backend-api/codex/responses',
+  air: AIR_URL,
 }
+
 const DEFAULTS: Record<string, string> = {
   anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
   moonshot: 'moonshot-v1-128k',
-  'openai-codex': 'gpt-5.3-codex'
+  'openai-codex': 'gpt-5.3-codex',
+  air: 'claude-sonnet-4-6',
+}
+
+// Plan-based model allow-lists for AIR provider
+const PLAN_MODELS: Record<string, string[]> = {
+  starter: ['claude-sonnet-4-6'],
+  pro: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro'],
+  ultra: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro', 'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview'],
+  elite: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro', 'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview'],
+  enterprise: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro', 'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview'],
+}
+
+const STARTER_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const MAX_INPUT_BYTES = 100 * 1024 // 100 KB
+
+function checkPlanAccess(config: LLMConfig, model: string): void {
+  if (config.provider !== 'air') return
+  const plan = config.plan ?? 'starter'
+
+  // Starter plan: 24h TTL
+  if (plan === 'starter') {
+    const provisionedAt = config.provisionedAt ?? Date.now()
+    if (Date.now() - provisionedAt > STARTER_TTL_MS) {
+      throw new Error(
+        'Your Starter plan has expired (24-hour limit reached). Please upgrade to Pro or Ultra to continue using your AI agent.'
+      )
+    }
+  }
+
+  const allowed = PLAN_MODELS[plan] ?? PLAN_MODELS['starter']
+  if (!allowed.includes(model)) {
+    throw new Error(
+      `Model '${model}' is not available on the ${plan} plan. ` +
+      `Allowed models: ${allowed.join(', ')}. Please upgrade your plan to access this model.`
+    )
+  }
+}
+
+function enforceInputSizeLimit(messages: ChatMessage[]): void {
+  const totalSize = messages.reduce((acc, m) => acc + Buffer.byteLength(String(m.content ?? ''), 'utf8'), 0)
+  if (totalSize > MAX_INPUT_BYTES) {
+    throw new Error(`Input messages exceed the 100 KB size limit (got ${Math.round(totalSize / 1024)} KB). Please shorten the conversation or start a new session.`)
+  }
 }
 
 async function refreshCodexToken(): Promise<string> {
@@ -62,6 +117,13 @@ export class LLMClient {
     const msgs: any[] = []
     if (options.systemPrompt) msgs.push({ role: 'system', content: options.systemPrompt })
     msgs.push(...options.messages)
+
+    // Enforce input size limit on LLM calls
+    enforceInputSizeLimit(options.messages)
+
+    // Check plan-based model access (AIR provider only)
+    checkPlanAccess(this.config, model)
+
     // Strip reasoning_content fields (some providers return these)
     const cleanMessages: any[] = msgs.map((m: any) => {
       const { reasoning_content, ...rest } = m
@@ -77,7 +139,6 @@ export class LLMClient {
             if (m.role === 'system') continue
 
             if (m.role === 'tool') {
-              // Only include tool results that follow an assistant with matching tool_use
               const prev = filtered[filtered.length - 1]
               const hasMatch = prev?.role === 'assistant' && Array.isArray(prev.content) &&
                 prev.content.some((b: any) => b.type === 'tool_use' && b.id === m.tool_call_id)
@@ -101,8 +162,7 @@ export class LLMClient {
 
             if (m.role === 'assistant') {
               const text = typeof m.content === 'string' ? m.content.trim() : ''
-              if (!text) continue // skip empty assistant messages entirely
-              // Merge consecutive assistant messages
+              if (!text) continue
               const prev = filtered[filtered.length - 1]
               if (prev?.role === 'assistant') {
                 prev.content = [...(prev.content ?? []), { type: 'text', text }]
@@ -114,7 +174,6 @@ export class LLMClient {
 
             if (m.role === 'user') {
               const text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-              // Merge consecutive user messages
               const prev = filtered[filtered.length - 1]
               if (prev?.role === 'user') {
                 prev.content = typeof prev.content === 'string'
@@ -136,7 +195,10 @@ export class LLMClient {
       return this.chatCodex(model, cleanMessages, options)
     }
 
-    const apiKey = this.config.apiKey
+    // AIR provider uses OpenAI-compatible format with OPENAI_API_KEY as bearer
+    const apiKey = provider === 'air'
+      ? (process.env['OPENAI_API_KEY'] ?? this.config.apiKey)
+      : this.config.apiKey
 
     const body: Record<string, unknown> = {
       model,

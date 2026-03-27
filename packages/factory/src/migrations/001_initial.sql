@@ -121,6 +121,13 @@ CREATE TABLE IF NOT EXISTS marketplace_agents (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Rate limits — persistent per-IP request counters (survives API restarts)
+CREATE TABLE IF NOT EXISTS rate_limits (
+  ip        VARCHAR(64) PRIMARY KEY,
+  count     INTEGER NOT NULL DEFAULT 1,
+  reset_at  BIGINT  NOT NULL  -- Unix ms when the current window expires
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_tenants_user_id ON tenants(user_id);
 CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status);

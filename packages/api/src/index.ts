@@ -5,23 +5,43 @@ import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
 import { authMiddleware } from './middleware/auth.js'
 import { healthRoutes } from './routes/health.js'
-import { agentFactory } from '@agentr/factory'
+import { agentFactory, getPool } from '@agentr/factory'
 import { cors } from 'hono/cors'
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+// PostgreSQL-backed rate limiter — survives process restarts
+async function pgRateLimit(ip: string, max: number): Promise<boolean> {
+  const pool = getPool()
+  const now = Date.now()
+  const windowMs = 60_000
+  const resetAt = now + windowMs
+
+  try {
+    // Upsert: if window expired, reset counter; otherwise increment
+    const res = await pool.query<{ count: number }>(
+      `INSERT INTO rate_limits (ip, count, reset_at)
+       VALUES ($1, 1, $2)
+       ON CONFLICT (ip) DO UPDATE
+         SET count    = CASE WHEN rate_limits.reset_at < $3 THEN 1
+                             ELSE rate_limits.count + 1 END,
+             reset_at = CASE WHEN rate_limits.reset_at < $3 THEN $2
+                             ELSE rate_limits.reset_at END
+       RETURNING count`,
+      [ip, resetAt, now]
+    )
+    const count = res.rows[0]?.count ?? 1
+    return count <= max
+  } catch (err) {
+    // If DB is unavailable, fail open (allow the request) but log
+    console.error('[RateLimit] DB error, failing open:', err)
+    return true
+  }
+}
+
 function ipRateLimit(max: number) {
   return async (c: any, next: any) => {
     const ip = c.req.header('x-forwarded-for') ?? c.req.header('cf-connecting-ip') ?? 'unknown'
-    const now = Date.now()
-    const entry = rateLimitMap.get(ip)
-    if (!entry || now > entry.resetAt) {
-      rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 })
-    } else {
-      entry.count++
-      if (entry.count > max) {
-        return c.json({ error: 'Too many requests' }, 429)
-      }
-    }
+    const allowed = await pgRateLimit(ip, max)
+    if (!allowed) return c.json({ error: 'Too many requests' }, 429)
     await next()
   }
 }
