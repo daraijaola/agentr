@@ -257,16 +257,16 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   }
 
   const PLANS = [
-    { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, cta: 'Start free', note: 'Powered by Claude. No credit card.', features: ['24hr access', 'Claude AI (limited)', 'TON wallet included'] },
+    { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, cta: 'Start free', note: 'No credit card required.', features: ['24hr full access', 'AIR — 10+ models', 'TON wallet included', '129 tools'] },
     { id: 'starter', name: 'Starter', price: '$15', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['7,500 credits/mo', 'All models', 'Bots & mini apps', 'TON payments', 'Cocoon hosting'] },
     { id: 'pro', name: 'Pro', price: '$29', period: 'mo', highlight: true, cta: 'Subscribe', note: '', features: ['20,000 credits/mo', 'All models', 'Sub-agents (soon)', 'TON Sites & DNS', 'Marketplace'] },
     { id: 'elite', name: 'Elite', price: '$49', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['40,000 credits/mo', 'All models priority', 'Swarm mode', 'Publish agents & earn 75%', 'Dedicated support'] },
   ]
 
   const PROVIDERS = [
+    { id: 'air', name: 'AIR', sub: 'AGENTR\'s AI — 10+ models', img: null, available: true },
     { id: 'claude', name: 'Claude', sub: 'Exceptional reasoning', img: '/claude.webp', available: true },
     { id: 'openai', name: 'ChatGPT', sub: 'GPT-4o, full API', img: '/openai.webp', available: true },
-    { id: 'kimi', name: 'Kimi', sub: 'Fast and capable', img: '/kimi.webp', available: false },
     { id: 'gemini', name: 'Gemini', sub: 'Multimodal intelligence', img: '/gemini.webp', available: true },
   ]
 
@@ -393,7 +393,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               </div>
               <div className="plans-grid">
                 {[
-                  { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['24hr full access', 'Claude AI', 'TON wallet included', '63 tools available'] },
+                  { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['24hr full access', 'AIR · Claude · GPT-4o', 'TON wallet included', '129 tools available'] },
                   { id: 'starter', name: 'Starter', price: '$15', period: '/mo', highlight: false, note: '', features: ['7,500 credits/mo', 'All AI models', 'Bot deployment', 'TON payments'] },
                   { id: 'pro', name: 'Pro', price: '$29', period: '/mo', highlight: true, note: '', features: ['20,000 credits/mo', 'All AI models', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
                   { id: 'elite', name: 'Elite', price: '$49', period: '/mo', highlight: false, note: '', features: ['40,000 credits/mo', 'Priority models', 'Publish agents & earn', 'Dedicated support'] },
@@ -519,7 +519,26 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               </div>
             </div>
             <button className="btn btn-dark btn-full" style={{ marginTop: 8 }} onClick={async () => {
-              if (agent) { try { await post('/agent/setup', { tenantId: agent.tenantId, ...setupData }) } catch {} }
+              if (agent) {
+                try { await post('/agent/setup', { tenantId: agent.tenantId, ...setupData }) } catch {}
+                // Save setup details to workspace files immediately so the agent knows who it's talking to
+                try {
+                  const authHdr = getAuthHeader()
+                  const userContent = `# User\n\nOwner name: ${setupData.ownerName || 'Not set'}\nAgent name: ${setupData.agentName || 'Not set'}\nDM policy: ${setupData.dmPolicy}\n\nThis file is updated automatically as the agent learns more about the owner.`
+                  await fetch(API + '/agent/workspace/' + agent.tenantId + '/USER.md', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr },
+                    body: JSON.stringify({ content: userContent }),
+                  })
+                  if (setupData.agentName) {
+                    const ownerLine = setupData.ownerName ? ` Your owner's name is ${setupData.ownerName} — always address them by name.` : ''
+                    const addition = `\n\nYour name is ${setupData.agentName}. When introducing yourself, use this name.${ownerLine}`
+                    await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr },
+                      body: JSON.stringify({ content: addition }),
+                    })
+                  }
+                } catch {}
+              }
               setScreen('pricing')
             }}>Continue</button>
           </div>
@@ -629,7 +648,13 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                   <div className="provider-grid">
                     {PROVIDERS.map((p) => (
                       <div key={p.id} className={`prov-card${provider === p.id ? ' active' : ''}${!p.available ? ' locked' : ''}`} onClick={() => p.available && !switchingProvider && switchProvider(p.id)}>
-                        <div className="prov-img"><img src={p.img} alt={p.name} /></div>
+                        <div className="prov-img">
+                          {p.img ? <img src={p.img} alt={p.name} /> : (
+                            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#141413', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, letterSpacing: '-0.5px' }}>
+                              <span style={{ color: '#fff' }}>AI</span><em style={{ color: '#0098EA', fontStyle: 'italic' }}>R</em>
+                            </div>
+                          )}
+                        </div>
                         <div><div className="prov-name">{p.name}</div><div className="prov-sub">{p.sub}</div></div>
                         {provider === p.id && p.available && <div className="prov-dot" />}
                         {!p.available && <span className="prov-soon">Soon</span>}
