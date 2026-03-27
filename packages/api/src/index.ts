@@ -54,12 +54,18 @@ app.use('*', cors({ origin: ['https://agentr.online', 'http://localhost:5173'], 
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
-// Public agent endpoints (no auth required)
-// Protected agent endpoints
+// Protected agent endpoints (require auth token)
 app.use('/agent/message', authMiddleware)
 app.use('/agent/provision', authMiddleware)
 app.use('/agent/deprovision', authMiddleware)
 app.use('/agent/provider', authMiddleware)
+
+// Protect DELETE /agent/:tenantId — prevents unauthenticated deprovisioning
+app.use('/agent/:tenantId', async (c, next) => {
+  if (c.req.method === 'DELETE') return authMiddleware(c, next)
+  return next()
+})
+
 app.route('/agent', agentRoutes)
 
 app.onError((err, c) => {
