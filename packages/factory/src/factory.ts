@@ -142,7 +142,8 @@ export class AgentFactory {
 
     // 8. Start agent runtime
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
-      deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
+      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
     })
 
     // 9. Register MVP tools
@@ -179,8 +180,17 @@ export class AgentFactory {
       provisionedAt,
     }
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
-      deductCredits: (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {})
+      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
     })
+    // Restore persisted conversations for this tenant (up to last 10 active chats)
+    try {
+      const rows = await this.db.query<{ chat_id: string; messages: unknown[] }>(
+        `SELECT chat_id, messages FROM conversation_state WHERE tenant_id = $1 ORDER BY updated_at DESC LIMIT 10`,
+        [tenant.id]
+      )
+      for (const row of rows) { runtime.loadHistory(row.chat_id, row.messages) }
+    } catch { /* non-blocking — don't prevent resume on failure */ }
     await registerMVPTools(runtime.tools, {
       client: tgClient,
       db: null as never,
@@ -247,6 +257,8 @@ export class AgentFactory {
     await this.db.updateAgentStatus(tenantId, 'stopped')
     console.log(`[AgentFactory] Deprovisioned: ${tenantId}`)
   }
+
+  activeCount(): number { return this.runtimes.size }
 
   getDb(): Database { return this.db }
 }

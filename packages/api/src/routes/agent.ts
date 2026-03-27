@@ -84,7 +84,6 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     return c.json({
       status: isOnline ? 'online' : 'offline',
       tenantId,
-      walletAddress: row.wallet_address,
       telegram: isOnline ? {
         username: row.owner_username || null,
         firstName: row.owner_name || null,

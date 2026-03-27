@@ -9,14 +9,13 @@ import { agentFactory, getPool } from '@agentr/factory'
 import { cors } from 'hono/cors'
 
 // PostgreSQL-backed rate limiter — survives process restarts
-async function pgRateLimit(ip: string, max: number): Promise<boolean> {
+// `key` can be an IP address or any unique identifier (e.g. "tenant:<id>")
+async function pgRateLimit(key: string, max: number, windowMs = 60_000): Promise<boolean> {
   const pool = getPool()
   const now = Date.now()
-  const windowMs = 60_000
   const resetAt = now + windowMs
 
   try {
-    // Upsert: if window expired, reset counter; otherwise increment
     const res = await pool.query<{ count: number }>(
       `INSERT INTO rate_limits (ip, count, reset_at)
        VALUES ($1, 1, $2)
@@ -26,12 +25,11 @@ async function pgRateLimit(ip: string, max: number): Promise<boolean> {
              reset_at = CASE WHEN rate_limits.reset_at < $3 THEN $2
                              ELSE rate_limits.reset_at END
        RETURNING count`,
-      [ip, resetAt, now]
+      [key, resetAt, now]
     )
     const count = res.rows[0]?.count ?? 1
     return count <= max
   } catch (err) {
-    // If DB is unavailable, fail open (allow the request) but log
     console.error('[RateLimit] DB error, failing open:', err)
     return true
   }
@@ -42,6 +40,17 @@ function ipRateLimit(max: number) {
     const ip = c.req.header('x-forwarded-for') ?? c.req.header('cf-connecting-ip') ?? 'unknown'
     const allowed = await pgRateLimit(ip, max)
     if (!allowed) return c.json({ error: 'Too many requests' }, 429)
+    await next()
+  }
+}
+
+// Per-tenant rate limit — applied after authMiddleware so tenantId is available
+function tenantRateLimit(max: number, windowMs = 60_000) {
+  return async (c: any, next: any) => {
+    const tenantId = c.get('tenantId') as string | undefined
+    if (!tenantId) return next()
+    const allowed = await pgRateLimit(`tenant:${tenantId}`, max, windowMs)
+    if (!allowed) return c.json({ error: 'Too many requests — slow down' }, 429)
     await next()
   }
 }
@@ -60,6 +69,7 @@ app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
 // Protected agent endpoints (require auth token)
 app.use('/agent/message', authMiddleware)
+app.use('/agent/message', tenantRateLimit(30)) // 30 messages/min per tenant
 app.use('/agent/provision', authMiddleware)
 app.use('/agent/deprovision', authMiddleware)
 app.use('/agent/provider', authMiddleware)
