@@ -15,6 +15,21 @@ function sanitizeProcessName(name: string): string {
   return name
 }
 
+// Docker container name for a tenant (mirrors DockerProvisioner.containerName)
+function tenantContainerName(tenantId: string): string {
+  return `agentr-${tenantId}`
+}
+
+// Returns true if the tenant's Docker sandbox container is running
+function containerIsRunning(tenantId: string): boolean {
+  try {
+    const out = execFileSync('docker', ['inspect', '--format={{.State.Status}}', tenantContainerName(tenantId)], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return out === 'running'
+  } catch {
+    return false
+  }
+}
+
 type ProcessRegistry = Record<string, { file: string; interpreter: "node" | "python3" | "bash"; env: Record<string, string> }>
 
 function registryPathForTenant(tenantId: string): string {
@@ -136,23 +151,35 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
   const envPrefix = Object.entries(env).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(" ")
   const envFlag = envPrefix ? `env ${envPrefix}` : ""
 
-  try {
-    // Stop existing process with same name if running
-    try { execFileSync('pm2', ['delete', pmName], { encoding: "utf8", stdio: ['ignore', 'pipe', 'ignore'] }) } catch {}
+  const useDocker = containerIsRunning(tenantId)
+  const ctr = tenantContainerName(tenantId)
 
-    // Write a PM2 ecosystem config file so env vars survive PM2 auto-restarts.
-    // Using the shell-prefix approach (env VAR=val pm2 start ...) loses vars on crash-restart.
+  try {
+    // Write PM2 ecosystem config (host-side path; for Docker runs it's also mounted)
     const ecosystemDir = path.join(SESSIONS_ROOT, tenantId)
     mkdirSync(ecosystemDir, { recursive: true })
     const ecosystemPath = path.join(ecosystemDir, `.pm2-${name}.config.cjs`)
-    const ecosystemContent = `module.exports = { apps: [{ name: ${JSON.stringify(pmName)}, script: ${JSON.stringify(filePath)}, interpreter: ${JSON.stringify(interp)}, env: ${JSON.stringify(env)}, autorestart: true, max_restarts: 10, restart_delay: 2000, watch: false }] }`
+    // Docker containers mount SESSIONS_ROOT at /workspace, so map the path
+    const containerEcosystemPath = useDocker ? `/workspace/.pm2-${name}.config.cjs` : ecosystemPath
+    const containerFilePath = useDocker ? filePath.replace(path.join(SESSIONS_ROOT, tenantId), '/workspace') : filePath
+    const ecosystemContent = `module.exports = { apps: [{ name: ${JSON.stringify(pmName)}, script: ${JSON.stringify(useDocker ? containerFilePath : filePath)}, interpreter: ${JSON.stringify(interp)}, env: ${JSON.stringify(env)}, autorestart: true, max_restarts: 10, restart_delay: 2000, watch: false }] }`
     writeFileSync(ecosystemPath, ecosystemContent, "utf8")
 
-    execFileSync('pm2', ['start', ecosystemPath], { encoding: "utf8" })
+    if (useDocker) {
+      // Run entirely inside the tenant's sandbox container
+      try { execFileSync('docker', ['exec', ctr, 'pm2', 'delete', pmName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) } catch {}
+      execFileSync('docker', ['exec', ctr, 'pm2', 'start', containerEcosystemPath], { encoding: 'utf8' })
+    } else {
+      // Fall back to host PM2 when no Docker container
+      try { execFileSync('pm2', ['delete', pmName], { encoding: "utf8", stdio: ['ignore', 'pipe', 'ignore'] }) } catch {}
+      execFileSync('pm2', ['start', ecosystemPath], { encoding: "utf8" })
+    }
 
     // Wait a moment and check status
     await new Promise(r => setTimeout(r, 1500))
-    const status = execFileSync('pm2', ['show', pmName], { encoding: "utf8", stdio: ['ignore', 'pipe', 'pipe'] })
+    const status = useDocker
+      ? execFileSync('docker', ['exec', ctr, 'pm2', 'show', pmName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+      : execFileSync('pm2', ['show', pmName], { encoding: "utf8", stdio: ['ignore', 'pipe', 'pipe'] })
     const isOnline = status.includes("online")
 
     const registry = readRegistry(tenantId)
@@ -199,8 +226,14 @@ export const processStopExecutor: ToolExecutor<ProcessStopParams> = async (
   let safeName: string
   try { safeName = sanitizeProcessName(params.name) } catch (err) { return { success: false, error: String(err) } }
   const pmName = tenantProcessName(tenantId, safeName)
+  const useDocker = containerIsRunning(tenantId)
+  const ctr = tenantContainerName(tenantId)
   try {
-    execFileSync('pm2', ['delete', pmName], { encoding: "utf8" })
+    if (useDocker) {
+      execFileSync('docker', ['exec', ctr, 'pm2', 'delete', pmName], { encoding: 'utf8' })
+    } else {
+      execFileSync('pm2', ['delete', pmName], { encoding: "utf8" })
+    }
     return { success: true, data: { message: `Process "${params.name}" stopped and removed.` } }
   } catch (err) {
     return { success: false, error: `Could not stop process: ${String(err)}` }
@@ -282,8 +315,12 @@ export const processLogsExecutor: ToolExecutor<ProcessLogsParams> = async (
   try { safeName = sanitizeProcessName(params.name) } catch (err) { return { success: false, error: String(err) } }
   const pmName = tenantProcessName(tenantId, safeName)
   const lines = Math.min(Math.max(1, params.lines ?? 30), 200) // clamp to 1-200
+  const useDocker = containerIsRunning(tenantId)
+  const ctr = tenantContainerName(tenantId)
   try {
-    const output = execFileSync('pm2', ['logs', pmName, '--lines', String(lines), '--nostream'], { encoding: "utf8", stdio: ['ignore', 'pipe', 'pipe'] })
+    const output = useDocker
+      ? execFileSync('docker', ['exec', ctr, 'pm2', 'logs', pmName, '--lines', String(lines), '--nostream'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+      : execFileSync('pm2', ['logs', pmName, '--lines', String(lines), '--nostream'], { encoding: "utf8", stdio: ['ignore', 'pipe', 'pipe'] })
     return { success: true, data: { logs: output.slice(0, 6000), lines } }
   } catch (err) {
     return { success: false, error: `Could not get logs: ${String(err)}` }

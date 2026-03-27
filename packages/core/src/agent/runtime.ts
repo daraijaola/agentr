@@ -33,7 +33,7 @@ function sanitizeForAnthropic(messages: any[]): any[] {
   return result
 }
 
-const MAX_ITER = 12
+const MAX_ITER = Math.min(Math.max(1, parseInt(process.env['AGENT_MAX_ITER'] ?? '12', 10)), 20)
 const MAX_SIZE = 6000
 
 export interface ProcessMessageOptions { chatId: string; userMessage: string; userName?: string; isGroup?: boolean; messageId?: number }
@@ -44,9 +44,14 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
 }
 
 function looksLikeFinalReport(text: string): boolean {
-  // Accept any response longer than 80 chars as a final report
-  // Short responses (< 80 chars) after tool calls need verification
-  return text.trim().length > 80
+  const t = text.trim()
+  if (t.length < 30) return false
+  // A final report typically has sentence-ending punctuation, lists, or markdown
+  const hasPunctuation = /[.!?]\s*$/.test(t)
+  const hasList = /^[-*\d]\s+/m.test(t)
+  const hasMarkdown = /#{1,3}\s+\w/.test(t) || /```/.test(t)
+  const isLong = t.length > 200
+  return hasPunctuation || hasList || hasMarkdown || isLong
 }
 
 export class AgentRuntime {
@@ -54,15 +59,21 @@ export class AgentRuntime {
   readonly tools: ToolRegistry
   private conversations = new Map<string, ChatMessage[]>()
   private deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
+  private activeLoops = 0
+  private readonly maxConcurrentLoops: number
 
   constructor(
     private config: AgentConfig,
     llmConfig: LLMConfig,
-    opts?: { deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void> }
+    opts?: {
+      deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
+      maxConcurrentLoops?: number
+    }
   ) {
     this.llm = new LLMClient(llmConfig)
     this.tools = new ToolRegistry()
     this.deductCredits = opts?.deductCredits
+    this.maxConcurrentLoops = opts?.maxConcurrentLoops ?? 1
   }
 
   private hist(chatId: string): ChatMessage[] {
@@ -131,7 +142,21 @@ export class AgentRuntime {
     return workspace ? `${workspace}\n\n---\n\n${base}` : base
   }
 
+  get isBusy(): boolean { return this.activeLoops >= this.maxConcurrentLoops }
+
   async processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
+    if (this.activeLoops >= this.maxConcurrentLoops) {
+      return { content: '⏳ I\'m still working on your previous request. Please wait a moment and try again.' }
+    }
+    this.activeLoops++
+    try {
+      return await this._processMessage(opts)
+    } finally {
+      this.activeLoops--
+    }
+  }
+
+  private async _processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
