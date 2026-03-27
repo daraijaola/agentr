@@ -2,6 +2,7 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const dist = path.join(__dirname, 'dist')
+const SITES_ROOT = process.env.SITES_PATH || '/var/www/agentr-sites'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -28,6 +29,25 @@ http.createServer((req, res) => {
   if (url === '/app' || url === '/app/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
     fs.createReadStream(path.join(dist, 'app.html')).pipe(res)
+    return
+  }
+
+  // Serve agent-published static sites from /sites/<tenantId>/...
+  if (url.startsWith('/sites/')) {
+    const sitePath = path.join(SITES_ROOT, url.slice('/sites/'.length))
+    // Resolve index.html for directory requests
+    const candidates = [sitePath, path.join(sitePath, 'index.html')]
+    const found = candidates.find(p => {
+      try { return fs.statSync(p).isFile() } catch { return false }
+    })
+    if (found) {
+      const ext = path.extname(found)
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+      fs.createReadStream(found).pipe(res)
+      return
+    }
+    res.writeHead(404, { 'Content-Type': 'text/plain' })
+    res.end('Not found')
     return
   }
 
