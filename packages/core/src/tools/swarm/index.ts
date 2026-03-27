@@ -1,5 +1,7 @@
 import { Type } from "@sinclair/typebox"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs"
+import path from "path"
 
 interface SubAgentTask {
   role: "coder" | "executor" | "researcher" | "reviewer" | "writer"
@@ -71,6 +73,48 @@ const AGENT_TOOLS = [
   },
 ]
 
+const SESSIONS_ROOT = process.env["SESSIONS_PATH"] ?? "/root/agentr/sessions"
+
+function getWorkspaceDir(tenantId: string): string {
+  return path.join(SESSIONS_ROOT, tenantId)
+}
+
+function executeSwarmTool(toolName: string, input: Record<string, unknown>, tenantId: string): string {
+  const workspaceDir = getWorkspaceDir(tenantId)
+  try {
+    if (toolName === "workspace_write") {
+      const filePath = String(input["path"] ?? "").replace(/^\/+/, "")
+      const content = String(input["content"] ?? "")
+      const abs = path.resolve(workspaceDir, filePath)
+      if (!abs.startsWith(path.resolve(workspaceDir))) return JSON.stringify({ success: false, error: "Path outside workspace" })
+      mkdirSync(path.dirname(abs), { recursive: true })
+      writeFileSync(abs, content, "utf-8")
+      return JSON.stringify({ success: true, data: { path: filePath, size: content.length, message: "File written" } })
+    }
+
+    if (toolName === "workspace_read") {
+      const filePath = String(input["path"] ?? "").replace(/^\/+/, "")
+      const abs = path.resolve(workspaceDir, filePath)
+      if (!abs.startsWith(path.resolve(workspaceDir))) return JSON.stringify({ success: false, error: "Path outside workspace" })
+      if (!existsSync(abs)) return JSON.stringify({ success: false, error: `File not found: ${filePath}` })
+      const content = readFileSync(abs, "utf-8")
+      return JSON.stringify({ success: true, data: { path: filePath, content: content.slice(0, 8000) } })
+    }
+
+    if (toolName === "code_execute") {
+      // code_execute in swarm context requires the Docker sandbox, which is not directly available here.
+      // Return a descriptive message so the sub-agent can adapt.
+      return JSON.stringify({ success: false, error: "code_execute is not available in swarm sub-agents. Use workspace_write to write the code and process_start to run it." })
+    }
+
+    return JSON.stringify({ success: false, error: `Unknown tool: ${toolName}` })
+  } catch (err) {
+    return JSON.stringify({ success: false, error: String(err) })
+  }
+}
+
+const MAX_SUBAGENT_ITERS = 6
+
 async function runSubAgent(
   task: SubAgentTask,
   apiKey: string,
@@ -82,44 +126,63 @@ async function runSubAgent(
     ? `Context:\n${task.context}\n\nTask:\n${task.task}`
     : task.task
 
+  type AnthropicMessage = { role: "user" | "assistant"; content: unknown }
+  const messages: AnthropicMessage[] = [{ role: "user", content: userMessage }]
+  const textAccum: string[] = []
+  let iters = 0
+
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "prompt-caching-2024-07-31",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: userMessage }],
-        tools: AGENT_TOOLS,
-      }),
-    })
+    while (iters < MAX_SUBAGENT_ITERS) {
+      iters++
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "prompt-caching-2024-07-31",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+          messages,
+          tools: AGENT_TOOLS,
+        }),
+      })
 
-    if (!res.ok) return { result: `Sub-agent API error: ${await res.text()}`, success: false }
+      if (!res.ok) return { result: `Sub-agent API error: ${await res.text()}`, success: false }
 
-    const data = await res.json() as {
-      content: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }>
-      stop_reason: string
-    }
-
-    const textParts: string[] = []
-    const toolResults: string[] = []
-
-    for (const block of data.content) {
-      if (block.type === "text" && block.text) {
-        textParts.push(block.text)
-      } else if (block.type === "tool_use" && block.name && block.input) {
-        toolResults.push(`[${block.name}] called with: ${JSON.stringify(block.input).slice(0, 200)}`)
+      const data = await res.json() as {
+        content: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown>; id?: string }>
+        stop_reason: string
       }
+
+      // Collect text blocks from this turn
+      for (const block of data.content) {
+        if (block.type === "text" && block.text) textAccum.push(block.text)
+      }
+
+      // If no tool calls, or end_turn — we're done
+      const toolUseBlocks = data.content.filter(b => b.type === "tool_use" && b.name && b.id)
+      if (data.stop_reason === "end_turn" || toolUseBlocks.length === 0) break
+
+      // Append assistant turn to history
+      messages.push({ role: "assistant", content: data.content })
+
+      // Execute each tool call and build tool_result blocks
+      const toolResults = toolUseBlocks.map(block => ({
+        type: "tool_result",
+        tool_use_id: block.id!,
+        content: executeSwarmTool(block.name!, block.input ?? {}, tenantId),
+      }))
+
+      // Append tool results as a user turn (Anthropic format)
+      messages.push({ role: "user", content: toolResults })
     }
 
-    const combined = [...textParts, ...toolResults].join("\n")
-    return { result: combined || "Sub-agent completed with no text output.", success: true }
+    const combined = textAccum.join("\n").trim()
+    return { result: combined || "Sub-agent completed.", success: true }
   } catch (err) {
     return { result: `Sub-agent error: ${String(err)}`, success: false }
   }

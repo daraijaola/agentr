@@ -129,8 +129,15 @@ export const processStartExecutor: ToolExecutor<ProcessStartParams> = async (
     // Stop existing process with same name if running
     try { execSync(`pm2 delete ${pmName} 2>/dev/null`, { encoding: "utf8" }) } catch {}
 
-    const cmd = `${envFlag} pm2 start ${filePath} --name ${pmName} --interpreter ${interp}`
-    execSync(cmd, { encoding: "utf8" })
+    // Write a PM2 ecosystem config file so env vars survive PM2 auto-restarts.
+    // Using the shell-prefix approach (env VAR=val pm2 start ...) loses vars on crash-restart.
+    const ecosystemDir = path.join(SESSIONS_ROOT, tenantId)
+    mkdirSync(ecosystemDir, { recursive: true })
+    const ecosystemPath = path.join(ecosystemDir, `.pm2-${name}.config.cjs`)
+    const ecosystemContent = `module.exports = { apps: [{ name: ${JSON.stringify(pmName)}, script: ${JSON.stringify(filePath)}, interpreter: ${JSON.stringify(interp)}, env: ${JSON.stringify(env)}, autorestart: true, max_restarts: 10, restart_delay: 2000, watch: false }] }`
+    writeFileSync(ecosystemPath, ecosystemContent, "utf8")
+
+    execSync(`pm2 start ${ecosystemPath}`, { encoding: "utf8" })
 
     // Wait a moment and check status
     await new Promise(r => setTimeout(r, 1500))
