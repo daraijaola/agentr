@@ -44,9 +44,10 @@ export const workspaceDeleteExecutor: ToolExecutor<WorkspaceDeleteParams> = asyn
 ): Promise<ToolResult> => {
   try {
     const { path, recursive = false } = params;
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
 
     // Validate the path
-    const validated = validateWritePath(path);
+    const validated = validateWritePath(path, tenantId);
 
     // Check if it's a protected file
     if (PROTECTED_WORKSPACE_FILES.includes(validated.filename)) {
