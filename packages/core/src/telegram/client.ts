@@ -6,6 +6,7 @@ import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
 import { withFloodRetry } from './flood-retry.js'
+import { randomLong } from '../utils/gramjs-bigint.js'
 
 //  Per-tenant Telegram MTProto client
 // Per-tenant MTProto client — multi-tenant layer by AGENTR
@@ -42,6 +43,7 @@ export class TelegramUserClient {
   private config: TelegramClientConfig
   private connected = false
   private me?: TelegramUser
+  private watchdogTimer?: ReturnType<typeof setInterval>
 
   constructor(config: TelegramClientConfig) {
     this.config = config
@@ -188,9 +190,36 @@ export class TelegramUserClient {
 
     this.connected = true
     console.log(`[TelegramBridge:${this.config.tenantId}] Connected as @${this.me.username}`)
+    this.startWatchdog()
+  }
+
+  private startWatchdog(): void {
+    if (this.watchdogTimer) return
+    // Ping every 90 seconds — reconnect silently if connection dropped
+    this.watchdogTimer = setInterval(async () => {
+      try {
+        await this.client.invoke(new Api.Ping({ pingId: randomLong() }))
+      } catch {
+        // Connection may have dropped — attempt reconnect
+        console.warn(`[TelegramBridge:${this.config.tenantId}] Watchdog: ping failed, reconnecting...`)
+        try {
+          this.connected = false
+          await this.client.connect()
+          this.connected = true
+          this.saveSession()
+          console.log(`[TelegramBridge:${this.config.tenantId}] Watchdog: reconnected`)
+        } catch (reconnErr) {
+          console.error(`[TelegramBridge:${this.config.tenantId}] Watchdog: reconnect failed`, reconnErr)
+        }
+      }
+    }, 90_000)
   }
 
   async disconnect(): Promise<void> {
+    if (this.watchdogTimer) {
+      clearInterval(this.watchdogTimer)
+      this.watchdogTimer = undefined
+    }
     if (!this.connected) return
     await this.client.disconnect()
     this.connected = false

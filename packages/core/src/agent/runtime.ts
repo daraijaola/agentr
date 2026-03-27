@@ -158,8 +158,12 @@ export class AgentRuntime {
         console.log('[Runtime:' + this.config.tenantId + '] LLM call iter ' + iters)
         const res = await this.llm.chat({ systemPrompt, messages: maskedMessages, tools: tools.length > 0 ? tools : undefined })
         console.log('[Runtime:' + this.config.tenantId + '] LLM done iter ' + iters + ' text:' + res.text.slice(0, 50))
-        const nextMessages = stripReasoning(res.messages)
-        messages = stripReasoning([...messages, ...nextMessages])
+        // res.messages = [...full input history, newAssistantMsg]
+        // Only append the NEW assistant message — do NOT re-append the input history or
+        // the conversation doubles in size every iteration (exponential context explosion).
+        const allNext = stripReasoning(res.messages)
+        const newAssistantMsg = allNext[allNext.length - 1]
+        if (newAssistantMsg) messages = [...messages, newAssistantMsg]
 
         // Deduct credits based on provider (skip for codex - free tier)
         const provider = this.llm.getProvider?.() ?? ''
