@@ -13,14 +13,11 @@ export interface ToolCallRaw { id: string; type: 'function'; function: { name: s
 export interface ChatOptions { systemPrompt?: string; messages: ChatMessage[]; tools?: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> }
 export interface ChatResponse { text: string; toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>; messages: ChatMessage[] }
 
-const AIR_URL = (process.env['AIR_BASE_URL'] ?? '') + '/chat/completions'
-
 const URLS: Record<string, string> = {
   anthropic: 'https://api.anthropic.com/v1/messages',
   openai: 'https://api.openai.com/v1/chat/completions',
   moonshot: 'https://api.moonshot.ai/v1/chat/completions',
   'openai-codex': 'https://chatgpt.com/backend-api/codex/responses',
-  air: AIR_URL,
 }
 
 const DEFAULTS: Record<string, string> = {
@@ -219,7 +216,10 @@ export class LLMClient {
         body.tool_choice = 'auto'
       }
     }
-    const res = await fetch(URLS[provider]!, {
+    const requestUrl = provider === 'air'
+      ? (process.env['AIR_BASE_URL'] ?? '') + '/chat/completions'
+      : URLS[provider]!
+    const res = await fetch(requestUrl, {
       method: 'POST',
       headers: provider === 'anthropic'
         ? { 'Content-Type': 'application/json', 'x-api-key': apiKey!, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'prompt-caching-2024-07-31' }
