@@ -1098,9 +1098,18 @@ const API = '/api'  // proxied via nginx to localhost:3001
 
 // ─── STATE ────────────────────────────────────────
 let STATE = {
-  phone: '', tenantId: '', phoneCodeHash: '',
+  phone: '', tenantId: '', phoneCodeHash: '', token: '',
   walletAddress: '', username: '', firstName: '',
   provider: 'claude', devToken: '', dmPolicy: 'contacts'
+}
+
+function authHdr() {
+  return STATE.token
+    ? { 'Authorization': 'Bearer ' + STATE.token, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' }
+}
+function authGetHdr() {
+  return STATE.token ? { 'Authorization': 'Bearer ' + STATE.token } : {}
 }
 
 // ─── MOBILE SIDEBAR ───────────────────────────────
@@ -1185,6 +1194,8 @@ async function goSetup() {
     if (res.error === '2FA_REQUIRED') { show('twofa'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
     if (!res.success) { showErr('otp-error', res.error || 'Invalid code'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
 
+    STATE.token = res.token || ''
+    saveState()
     STATE._prevScreen = 'otp'; show('setup')
   } catch(e) { showErr('otp-error','Network error') }
   btn.textContent = 'Confirm →'; btn.disabled = false
@@ -1204,6 +1215,8 @@ async function goSetupFrom2FA() {
     }).then(r => r.json())
 
     if (!res.success) { showErr('twofa-error', res.error || 'Invalid password'); btn.textContent = 'Continue →'; btn.disabled = false; return }
+    STATE.token = res.token || ''
+    saveState()
     STATE._prevScreen = 'twofa'; show('setup')
   } catch(e) { showErr('twofa-error','Network error') }
   btn.textContent = 'Continue →'; btn.disabled = false
@@ -1216,7 +1229,7 @@ async function goPricing() {
   // Save setup to API
   try {
     await fetch(API + '/agent/setup', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ tenantId: STATE.tenantId, ownerName, agentName, dmPolicy: STATE.dmPolicy })
     })
   } catch(e) {}
@@ -1232,7 +1245,7 @@ async function goProvisioning(plan, usd, ton) {
     show('provisioning')
     try {
       await fetch(API + '/agent/start-trial', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: authHdr(),
         body: JSON.stringify({ tenantId: STATE.tenantId })
       })
     } catch(e) {}
@@ -1262,7 +1275,7 @@ async function goProvisioning(plan, usd, ton) {
   show('provisioning')
   try {
     await fetch(API + '/agent/start-trial', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ tenantId: STATE.tenantId, plan })
     })
   } catch(e) {}
@@ -1321,7 +1334,7 @@ async function goDashboard() {
 
 function disconnect() {
   sessionStorage.removeItem('agentr_tenant')
-  STATE = { phone:'', tenantId:'', phoneCodeHash:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
+  STATE = { phone:'', tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
   window.location.href = '/'
 }
 
@@ -1361,7 +1374,7 @@ async function selectProvider(el, id) {
   STATE.provider = id
   try {
     await fetch(API + '/agent/provider', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ tenantId: STATE.tenantId, provider: id })
     })
   } catch(e) {}
@@ -1373,7 +1386,7 @@ let wsFiles = [], wsActive = null, wsContent = ''
 
 async function loadWorkspace() {
   try {
-    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId).then(r => r.json())
+    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
     wsFiles = res.files || []
     renderFileList()
     if (wsFiles.length) openFile(wsFiles[0])
@@ -1398,7 +1411,7 @@ async function openFile(name) {
   const editor = document.getElementById('ws-editor')
   editor.innerHTML = `<div style="padding:2rem;font-size:13px;color:var(--text-muted)">Loading…</div>`
   try {
-    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId + '/' + encodeURIComponent(name)).then(r => r.json())
+    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId + '/' + encodeURIComponent(name), { headers: authGetHdr() }).then(r => r.json())
     wsContent = res.content || ''
     editor.innerHTML = `
       <div class="ws-editor-head">
@@ -1420,7 +1433,7 @@ async function saveFile() {
   btn.textContent = 'Saving…'; btn.disabled = true
   try {
     await fetch(API + '/agent/workspace/' + STATE.tenantId + '/' + encodeURIComponent(wsActive), {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ content: document.getElementById('ws-textarea').value })
     })
     btn.textContent = 'Saved'; btn.classList.add('saved')
@@ -1437,15 +1450,8 @@ let mpFilter = 'All', mpAgents = []
 async function loadMarketplace() {
   try {
     const res = await fetch(API + '/agent/marketplace').then(r => r.json())
-    mpAgents = res.agents && res.agents.length ? res.agents : [
-    { id:'1', name:'TON Price Alert Bot', category:'TON/DeFi', description:'Monitors TON, BTC and ETH prices. Sends Telegram alerts when your targets are hit.', rating:4.9, installs:1240, creator_name:'Community', verified:false },
-    { id:'2', name:'STON.fi Trader', category:'TON/DeFi', description:'Execute swaps on STON.fi directly from Telegram. Set slippage, monitor liquidity pools.', rating:4.7, installs:880, creator_name:'Community', verified:false },
-    { id:'3', name:'Telegram Shop', category:'Commerce', description:'Full e-commerce bot: product catalogue, cart, TON payment checkout, order management.', rating:4.8, installs:560, creator_name:'Community', verified:false },
-    { id:'4', name:'Meeting Notes', category:'Productivity', description:'Join Telegram voice chats, transcribe them, and send a structured summary to your DM.', rating:4.6, installs:340, creator_name:'Community', verified:false },
-    { id:'5', name:'Domain Sniper', category:'Utility', description:'Watches .ton domain auctions. Bids automatically when a domain meets your criteria and price.', rating:4.5, installs:210, creator_name:'Community', verified:false },
-    { id:'6', name:'DeDust LP Manager', category:'TON/DeFi', description:'Add and remove liquidity from DeDust pools, monitor yields, and receive fee summaries daily.', rating:4.4, installs:190, creator_name:'Community', verified:false },
-  ]
-  renderMarketplace()
+    mpAgents = res.agents || []
+    renderMarketplace()
   } catch(e) { console.warn('marketplace load failed', e) }
 }
 
@@ -1482,7 +1488,7 @@ async function deployAgent(id, btn) {
   btn.textContent = 'Deploying…'; btn.disabled = true
   try {
     const res = await fetch(API + '/agent/marketplace/deploy', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ tenantId: STATE.tenantId, agentId: id })
     }).then(r => r.json())
     if (res.success) {
@@ -1598,7 +1604,7 @@ async function loadActivity() {
   const body = document.getElementById('activity-body')
   body.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Loading…</div>'
   try {
-    const res = await fetch(API + '/agent/activity/' + STATE.tenantId).then(r => r.json())
+    const res = await fetch(API + '/agent/activity/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
     const msgs = res.activity || []
     body.innerHTML = msgs.length ? `<div class="activity-list">${msgs.map(m => `
       <div class="activity-item">
@@ -1618,7 +1624,7 @@ async function loadBots() {
   const body = document.getElementById('bots-body')
   body.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Loading…</div>'
   try {
-    const res = await fetch(API + '/agent/processes/' + STATE.tenantId).then(r => r.json())
+    const res = await fetch(API + '/agent/processes/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
     const procs = res.processes || []
     if (!procs.length) { body.innerHTML = `<div class="bots-empty"><div class="bots-empty-title">No bots running yet.</div><div class="bots-empty-sub">Message your agent on Telegram and ask it to create and deploy a bot.</div></div>`; return }
     body.innerHTML = `<div class="bots-list">${procs.map(p => `
@@ -1645,7 +1651,7 @@ async function toggleLogs(name) {
   if (el.style.display !== 'none') { el.style.display = 'none'; return }
   el.style.display = 'block'; el.textContent = 'Loading…'
   try {
-    const res = await fetch(API + '/agent/logs/' + STATE.tenantId + '/' + encodeURIComponent(name)).then(r => r.json())
+    const res = await fetch(API + '/agent/logs/' + STATE.tenantId + '/' + encodeURIComponent(name), { headers: authGetHdr() }).then(r => r.json())
     el.textContent = res.logs || 'No logs.'
   } catch(e) { el.textContent = 'Failed to load logs.' }
 }
@@ -1654,7 +1660,7 @@ async function stopBot(name) {
   if (!confirm('Stop ' + name + '?')) return
   try {
     await fetch(API + '/agent/process/stop', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: authHdr(),
       body: JSON.stringify({ tenantId: STATE.tenantId, name })
     })
     const dot = document.querySelector(`#bot-${name} .bot-status-dot`)
@@ -1665,7 +1671,7 @@ async function stopBot(name) {
 // ─── CREDITS ──────────────────────────────────────
 async function loadCredits() {
   try {
-    const data = await fetch(API + '/agent/credits-usage/' + STATE.tenantId).then(r => r.json())
+    const data = await fetch(API + '/agent/credits-usage/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
     const credits = data.credits || 0
     document.getElementById('cred-balance').textContent = Number(credits).toLocaleString()
     document.getElementById('cred-used').textContent = Number(data.totalUsed || 0).toLocaleString()
