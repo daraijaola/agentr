@@ -48,6 +48,10 @@ export function attachMessageListener(
 
     // Absolute last-resort guard — strip code/HTML/JSON before it reaches Telegram
     let text = response.content
+
+    // Preserve any https:// URLs before stripping — they are the proof of completion
+    const urlMatches = text.match(/https?:\/\/[^\s"'<>)]+/g) ?? []
+
     text = text.replace(/```[\s\S]*?```/g, '').trim()
     text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
     text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
@@ -61,9 +65,17 @@ export function attachMessageListener(
     const tagCount = (text.match(/</g) ?? []).length
     if (tagCount > 8 && text.length > 300) {
       const safe = text.split('\n').find(l => l.trim().length > 5 && !l.includes('<') && !l.includes('{') && !l.includes('@import'))
-      text = safe ?? 'Done! Task completed.'
+      text = safe ?? ''
     }
-    if (!text) text = 'Done!'
+
+    // If stripping gutted the message but we had URLs, restore them as the reply
+    if ((!text || !text.trim()) && urlMatches.length > 0) {
+      text = urlMatches.join('\n')
+    }
+    if (!text || !text.trim()) text = 'Done! ✅'
+
+    text = text.trim()
+    if (!text) return   // absolute guard — never send empty to Telegram
 
     // Telegram max is 4096 but keep it shorter for readability
     const MAX_TG = 3800
