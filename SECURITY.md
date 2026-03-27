@@ -4,7 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅ Yes     |
+| 0.2.x   | ✅ Yes     |
+| 0.1.x   | ⚠️ Critical fixes only |
 | < 0.1.0 | ❌ No      |
 
 ## Reporting a Vulnerability
@@ -32,16 +33,23 @@ We appreciate responsible disclosure and will credit reporters in the changelog 
 
 | Layer | Protection |
 |---|---|
-| **Workspace sandbox** | Agent file access confined to `/sessions/{tenantId}/` — path traversal blocked at read/write/delete |
-| **Immutable soul files** | `SOUL.md`, `STRATEGY.md`, `IDENTITY.md` cannot be modified by the agent at runtime |
-| **Process isolation** | Each deployed process is PM2-namespaced per tenant — no cross-tenant process access |
+| **Authentication** | HS256 JWT via `jose` — 24h TTL, algorithm pinned, expiry enforced server-side |
+| **Ownership enforcement** | `requireOwnTenant` guard on every mutating route — JWT `tenantId` must match request `tenantId` |
+| **Workspace sandbox** | All file access confined to `/{workspaces}/{tenantId}/` — `assertWithinBase` blocks path traversal at read/write/delete |
+| **Shell injection prevention** | `execFileSync` with array args throughout; `sanitizeProcessName` and `sanitizeFilename` validate all inputs |
+| **Docker sandbox** | Each tenant agent runs in an isolated container: `--network=none`, `--cap-drop=ALL`, `--read-only` |
+| **Rate limiting** | 120 req/min global per IP; 30 msg/min per tenant on `/agent/message`; 10 req/min on admin endpoints — all PostgreSQL-backed |
+| **Wallet encryption** | Mnemonic phrases encrypted with AES-256-GCM (`WALLET_ENCRYPTION_KEY`) before storage — no plaintext fallback |
+| **Timing-safe comparisons** | Admin password verified with `timingSafeEqual` to prevent timing attacks |
+| **Process isolation** | Each deployed process PM2-namespaced per tenant — no cross-tenant process access |
 | **Credential handling** | User secrets written to workspace `.env` files, loaded via environment variables — never hardcoded in scripts |
-| **Server IP** | Public IP loaded from `SERVER_PUBLIC_IP` environment variable — not hardcoded in source |
-| **Auth** | OTP + optional 2FA required for Telegram login — no mock or bypass modes in production |
-| **Tool result sanitization** | Tool outputs sanitized before injection into LLM context to reduce prompt injection risk |
+| **Immutable soul files** | `SOUL.md`, `STRATEGY.md`, `IDENTITY.md` cannot be modified by the agent at runtime |
+| **Error sanitization** | `safeError()` strips stack traces from all API error responses |
+| **CORS** | Locked to `agentr.online` in production — unrestricted only in development |
+| **Token rotation** | Dev bearer tokens can be rotated on demand via `POST /agent/dev/logout` |
 
 ## Known Limitations
 
 - The agent runs as the provisioned user's Telegram account — all actions it takes are under that account's authority
-- Code execution (`code_execute`, `process_start`) runs on the host system — production deployments should use Docker or VM isolation
-- Rate limiting on the API is basic — production deployments should add a reverse proxy with stricter limits
+- Docker sandboxing requires Docker installed on the host — the platform falls back gracefully without it, but `exec_run` commands run on the host in that case
+- Rate limiting uses the `rate_limits` PostgreSQL table — if the database is unavailable, limits fail open (requests are allowed)
