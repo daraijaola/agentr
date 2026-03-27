@@ -1,10 +1,56 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import { timingSafeEqual, randomBytes } from 'crypto'
+import { resolve as resolvePath } from 'path'
 import { bridgeManager } from '@agentr/core'
 import { agentFactory } from '@agentr/factory'
 
 export const agentRoutes = new Hono()
+
+const MAX_MESSAGE_BYTES = 100 * 1024 // 100 KB
+
+// Allow only safe alphanumeric process names — prevents shell injection
+function sanitizeProcessName(name: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    throw new Error('Invalid process name: only letters, digits, hyphens, and underscores allowed')
+  }
+  return name
+}
+
+// Allow only safe filenames — prevents path traversal
+function sanitizeFilename(filename: string): string {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9 ._-]*$/.test(filename) || filename.includes('..')) {
+    throw new Error('Invalid filename')
+  }
+  return filename
+}
+
+// Verify resolved path stays inside expected base directory
+function assertWithinBase(base: string, filename: string): string {
+  const baseResolved = resolvePath(base)
+  const target = resolvePath(base, filename)
+  if (!target.startsWith(baseResolved + '/') && target !== baseResolved) {
+    throw new Error('Path traversal detected')
+  }
+  return target
+}
+
+// Timing-safe string comparison — prevents timing attacks on secrets
+function timingSafeStringEqual(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(a, 'utf8')
+    const bufB = Buffer.from(b, 'utf8')
+    if (bufA.length !== bufB.length) {
+      // Still run comparison to avoid length-based timing leak
+      timingSafeEqual(bufA, Buffer.alloc(bufA.length))
+      return false
+    }
+    return timingSafeEqual(bufA, bufB)
+  } catch {
+    return false
+  }
+}
 
 // GET /agent/status/:tenantId
 agentRoutes.get('/status/:tenantId', async (c) => {
@@ -40,11 +86,17 @@ agentRoutes.post(
   '/message',
   zValidator('json', z.object({
     tenantId: z.string(),
-    message: z.string().min(1),
+    message: z.string().min(1).max(100_000),
     chatId: z.string().optional(),
   })),
   async (c) => {
     const { tenantId, message, chatId } = c.req.valid('json')
+
+    // Enforce 100 KB input size limit
+    if (Buffer.byteLength(message, 'utf8') > MAX_MESSAGE_BYTES) {
+      return c.json({ success: false, error: 'Message exceeds 100 KB limit' }, 400)
+    }
+
     const runtime = agentFactory.get(tenantId)
 
     if (!runtime) {
@@ -188,10 +240,11 @@ agentRoutes.get('/logs/:tenantId/:name', async (c) => {
   const tenantId = c.req.param('tenantId')
   const name = c.req.param('name')
   try {
-    const { execSync } = await import('child_process')
-    const short = tenantId.split('-')[0]
-    const pmName = 'agent-' + short + '-' + name
-    const logs = execSync('pm2 logs ' + pmName + ' --lines 50 --nostream 2>&1', { encoding: 'utf8' })
+    const safeName = sanitizeProcessName(name)
+    const short = sanitizeProcessName(tenantId.split('-')[0]!)
+    const pmName = 'agent-' + short + '-' + safeName
+    const { execFileSync } = await import('child_process')
+    const logs = execFileSync('pm2', ['logs', pmName, '--lines', '50', '--nostream'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     return c.json({ logs })
   } catch (err) { return c.json({ logs: String(err) }) }
 })
@@ -202,10 +255,11 @@ agentRoutes.post('/process/stop',
   async (c) => {
     const { tenantId, name } = c.req.valid('json')
     try {
-      const { execSync } = await import('child_process')
-      const short = tenantId.split('-')[0]
-      const pmName = 'agent-' + short + '-' + name
-      execSync('pm2 delete ' + pmName, { encoding: 'utf8' })
+      const safeName = sanitizeProcessName(name)
+      const short = sanitizeProcessName(tenantId.split('-')[0]!)
+      const pmName = 'agent-' + short + '-' + safeName
+      const { execFileSync } = await import('child_process')
+      execFileSync('pm2', ['delete', pmName], { encoding: 'utf8' })
       return c.json({ success: true })
     } catch (err) { return c.json({ success: false, error: String(err) }) }
   }
@@ -389,13 +443,14 @@ agentRoutes.get('/workspace/:tenantId/:filename', async (c) => {
   const tenantId = c.req.param('tenantId')
   const filename = c.req.param('filename')
   try {
+    sanitizeFilename(filename)
     const { readFileSync, existsSync } = await import('fs')
-    const { join } = await import('path')
-    const fp = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId, filename)
+    const base = `${process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces'}/${tenantId}`
+    const fp = assertWithinBase(base, filename)
     if (!existsSync(fp)) return c.json({ content: '' })
     const content = readFileSync(fp, 'utf-8')
     return c.json({ content })
-  } catch { return c.json({ content: '' }) }
+  } catch (err) { return c.json({ content: '', error: String(err) }) }
 })
 
 // POST /agent/workspace/:tenantId/:filename - write file
@@ -406,11 +461,12 @@ agentRoutes.post('/workspace/:tenantId/:filename',
     const filename = c.req.param('filename')
     const { content } = c.req.valid('json')
     try {
+      sanitizeFilename(filename)
       const { writeFileSync, mkdirSync } = await import('fs')
-      const { join } = await import('path')
-      const dir = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId)
-      mkdirSync(dir, { recursive: true })
-      writeFileSync(join(dir, filename), content, 'utf-8')
+      const base = `${process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces'}/${tenantId}`
+      mkdirSync(base, { recursive: true })
+      const fp = assertWithinBase(base, filename)
+      writeFileSync(fp, content, 'utf-8')
       return c.json({ success: true })
     } catch (err) { return c.json({ success: false, error: String(err) }) }
   }
@@ -605,7 +661,7 @@ agentRoutes.post('/admin/submissions',
   zValidator('json', z.object({ password: z.string() })),
   async (c) => {
   const { password } = c.req.valid('json')
-  if (password !== process.env['ADMIN_PASSWORD']) {
+  if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
@@ -639,7 +695,7 @@ agentRoutes.post('/admin/approve',
   zValidator('json', z.object({ password: z.string(), agentId: z.string(), action: z.enum(['approve','reject']), reviewer_notes: z.string().optional() })),
   async (c) => {
     const { password, agentId, action, reviewer_notes } = c.req.valid('json')
-    if (password !== process.env['ADMIN_PASSWORD']) {
+    if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
@@ -659,7 +715,7 @@ agentRoutes.post('/admin/approve-dev',
   zValidator('json', z.object({ password: z.string(), devId: z.string(), action: z.enum(['approve','reject']) })),
   async (c) => {
     const { password, devId, action } = c.req.valid('json')
-    if (password !== process.env['ADMIN_PASSWORD']) {
+    if (!timingSafeStringEqual(password, process.env['ADMIN_PASSWORD'] ?? '')) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
