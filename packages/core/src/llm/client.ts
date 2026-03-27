@@ -302,6 +302,31 @@ export class LLMClient {
       }
     }
 
+    // AIR/Claude also uses <function_calls><invoke name="..."><parameter name="...">...</parameter></invoke></function_calls>
+    // (Claude's native XML tool-use format). Parse this too.
+    if (provider === 'air' && rawTC.length === 0 && text.includes('<function_calls>')) {
+      const invokePattern = /<invoke\s+name="([^"]+)">([\s\S]*?)<\/invoke>/g
+      let match
+      while ((match = invokePattern.exec(text)) !== null) {
+        const toolName = match[1]!
+        const body = match[2]!
+        const paramPattern = /<parameter\s+name="([^"]+)">([\s\S]*?)<\/parameter>/g
+        const args: Record<string, string> = {}
+        let p
+        while ((p = paramPattern.exec(body)) !== null) {
+          args[p[1]!] = p[2]!.trim()
+        }
+        rawTC.push({
+          id: 'tc_' + Math.random().toString(36).slice(2),
+          type: 'function',
+          function: { name: toolName, arguments: JSON.stringify(args) }
+        })
+      }
+      if (rawTC.length > 0) {
+        text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
+      }
+    }
+
     const toolCalls = rawTC.map(tc => {
       let input: Record<string, unknown> = {}
       try { input = JSON.parse(tc.function.arguments) as Record<string, unknown> } catch {
