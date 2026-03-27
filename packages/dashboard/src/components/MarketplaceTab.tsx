@@ -45,7 +45,7 @@ export function MarketplaceTab({ tenantId }: Props) {
   const API = detectApiBase()
 
   React.useEffect(() => {
-    fetch(API + '/agent/marketplace')
+    fetch(API + '/agent/marketplace?t=' + Date.now())
       .then((r) => r.json())
       .then((d) => { if (d.agents) setAgents(d.agents) })
       .catch(() => {})

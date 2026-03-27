@@ -173,6 +173,15 @@ export class Database {
       `UPDATE tenants SET trial_expires_at = $1, is_trial_used = true, plan = 'starter', status = 'active' WHERE id = $2`,
       [expires, tenantId]
     )
+    // Give trial credits so the agent can actually respond
+    await this.pool.query(
+      `UPDATE tenants SET credits = credits + 1000 WHERE id = $1`,
+      [tenantId]
+    )
+    await this.pool.query(
+      `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 1000, 'topup', 'Free trial — 24hr access')`,
+      [tenantId]
+    )
   }
 
   async getTrialStatus(tenantId: string): Promise<{ expired: boolean; expiresAt: Date | null; phone: string }> {
