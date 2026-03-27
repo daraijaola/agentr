@@ -513,21 +513,44 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 .dev-status-live { font-size:11px; background:var(--ok-bg); color:var(--ok); padding:3px 10px; border-radius:999px; border:.5px solid var(--ok-bdr); }
 .dev-status-review { font-size:11px; background:var(--warm-200); color:var(--text-muted); padding:3px 10px; border-radius:999px; }
 
+/* ─── MOBILE NAV ─────────────────────────────────────────── */
+.mob-hamburger { display:none; background:none; border:none; font-size:22px; cursor:pointer; padding:6px 8px; color:var(--text-primary); line-height:1; margin-right:6px; }
+.sidebar-overlay { display:none; position:fixed; top:56px; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:90; }
+
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width:860px) {
-  .sidebar { display:none; }
+  .mob-hamburger { display:inline-flex; align-items:center; }
+  .sidebar {
+    position:fixed; top:0; left:0; width:220px; height:100vh;
+    z-index:100; transform:translateX(-100%);
+    transition:transform .25s ease; padding-top:1.5rem;
+    box-shadow:4px 0 20px rgba(0,0,0,0.12);
+  }
+  .sidebar.open { transform:translateX(0); }
+  .sidebar-overlay { display:block; }
+  .dashboard-body { overflow:hidden; }
   .plans-grid { grid-template-columns:repeat(2,1fr); }
   .credits-stats { grid-template-columns:1fr; }
   .credits-stat + .credits-stat { border-left:none; border-top:.5px solid var(--border-subtle); }
   .topup-grid { grid-template-columns:repeat(3,1fr); }
   .main { padding:1.25rem 1rem; }
+  .tg-btn { display:none; }
+  .disc-btn { display:none; }
+  .credits-pill { display:none; }
+  .workspace-wrap { grid-template-columns:1fr; height:auto; min-height:0; }
+  .ws-files { height:200px; border-right:none; border-bottom:.5px solid var(--border-subtle); }
+  .ws-textarea { min-height:300px; }
 }
 
 @media (max-width:540px) {
-  .auth-card { padding:1.75rem; }
+  .auth-card { padding:1.75rem 1.25rem; }
   .plans-grid { grid-template-columns:1fr; }
-  .workspace-wrap { grid-template-columns:1fr; }
   .topup-grid { grid-template-columns:1fr; }
+  #screen-pricing { padding:32px 14px; }
+  .pricing-title { font-size:26px; }
+  .main { padding:1rem .75rem; }
+  .info-card { padding:1.1rem 1rem; }
+  .overview-greeting { font-size:24px; }
 }
 </style>
 <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -725,7 +748,8 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 
   <!-- Topbar -->
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="mob-hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
       <span class="topbar-logo">AGENT<em>R</em></span>
     </div>
     <div class="topbar-right">
@@ -741,17 +765,18 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   </div>
 
   <div class="dashboard-body">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sb-label">Navigation</div>
-      <div class="sb-item active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
-      <div class="sb-item" data-tab="workspace" onclick="switchTab('workspace',this)">Workspace</div>
-      <div class="sb-item" data-tab="marketplace" onclick="switchTab('marketplace',this)">Marketplace</div>
-      <div class="sb-item" data-tab="activity" onclick="switchTab('activity',this)">Activity</div>
-      <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this)">Bots &amp; Processes</div>
-      <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this)">Credits</div>
-      
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sb-label">Navigation</div>
+      <div class="sb-item active" data-tab="overview" onclick="switchTab('overview',this);closeSidebar()">Overview</div>
+      <div class="sb-item" data-tab="workspace" onclick="switchTab('workspace',this);closeSidebar()">Workspace</div>
+      <div class="sb-item" data-tab="marketplace" onclick="switchTab('marketplace',this);closeSidebar()">Marketplace</div>
+      <div class="sb-item" data-tab="activity" onclick="switchTab('activity',this);closeSidebar()">Activity</div>
+      <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this);closeSidebar()">Bots &amp; Processes</div>
+      <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this);closeSidebar()">Credits</div>
     </div>
 
     <!-- Main -->
@@ -780,15 +805,13 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <div><div class="prov-name">Claude</div><div class="prov-sub">Exceptional reasoning</div></div>
               <div class="prov-dot"></div>
             </div>
-            <div class="prov-card locked">
+            <div class="prov-card" onclick="selectProvider(this,'openai')">
               <div class="prov-img"><img src="/openai.webp" alt="GPT-4o" onerror="this.parentNode.innerHTML='G'"/></div>
               <div><div class="prov-name">GPT-4o</div><div class="prov-sub">OpenAI, full API</div></div>
-              <div class="prov-badge">Soon</div>
             </div>
-            <div class="prov-card locked">
+            <div class="prov-card" onclick="selectProvider(this,'gemini')">
               <div class="prov-img"><img src="/gemini.webp" alt="Gemini" onerror="this.parentNode.innerHTML='G'"/></div>
               <div><div class="prov-name">Gemini</div><div class="prov-sub">Multimodal intelligence</div></div>
-              <div class="prov-badge">Soon</div>
             </div>
             <div class="prov-card locked">
               <div class="prov-img"><img src="/kimi.webp" alt="Kimi" onerror="this.parentNode.innerHTML='K'"/></div>
@@ -1029,6 +1052,16 @@ let STATE = {
   phone: '', tenantId: '', phoneCodeHash: '',
   walletAddress: '', username: '', firstName: '',
   provider: 'claude', devToken: '', dmPolicy: 'contacts'
+}
+
+// ─── MOBILE SIDEBAR ───────────────────────────────
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar')
+  sb && sb.classList.toggle('open')
+}
+function closeSidebar() {
+  const sb = document.getElementById('sidebar')
+  sb && sb.classList.remove('open')
 }
 
 // persist tenantId across page reloads
