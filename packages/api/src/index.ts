@@ -50,7 +50,11 @@ const app = new Hono()
 
 app.use('*', logger())
 app.use('*', ipRateLimit(120))
-app.use('*', cors({ origin: ['https://agentr.online', 'http://localhost:5173'], allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
+const allowedOrigins = process.env['NODE_ENV'] === 'production'
+  ? ['https://agentr.online']
+  : ['https://agentr.online', 'http://localhost:5173', 'http://localhost:3000']
+
+app.use('*', cors({ origin: allowedOrigins, allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
 
 app.route('/health', healthRoutes)
 app.route('/auth', authRoutes)
@@ -75,6 +79,9 @@ app.use('/agent/:tenantId', async (c, next) => {
   if (c.req.method === 'DELETE') return authMiddleware(c, next)
   return next()
 })
+
+// Admin endpoints get a tighter per-IP limit (10 req/min)
+app.use('/agent/admin/*', ipRateLimit(10))
 
 app.route('/agent', agentRoutes)
 

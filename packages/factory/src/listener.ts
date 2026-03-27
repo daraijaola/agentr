@@ -8,6 +8,24 @@ import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 const TYPING_DELAY_MS = 500
 const processingMessages = new Set<string>()
 
+// Per-client contact-ID cache with a 5-minute TTL to avoid repeated API calls
+const contactCache = new Map<string, { ids: Set<string>; expiresAt: number }>()
+
+async function isInContacts(client: TelegramUserClient, tenantId: string, senderId: string): Promise<boolean> {
+  const now = Date.now()
+  const cached = contactCache.get(tenantId)
+  if (cached && cached.expiresAt > now) return cached.ids.has(senderId)
+  try {
+    const contacts: Array<{ id?: { toString(): string } }> = await (client as any).getContacts?.() ?? []
+    const ids = new Set(contacts.map(c => c.id?.toString() ?? '').filter(Boolean))
+    contactCache.set(tenantId, { ids, expiresAt: now + 5 * 60_000 })
+    return ids.has(senderId)
+  } catch {
+    // If we can't fetch contacts, fail closed (reject the message)
+    return false
+  }
+}
+
 export function attachMessageListener(
   tenantId: string,
   client: TelegramUserClient,
@@ -76,16 +94,11 @@ export function attachMessageListener(
               if (!ownerUsername || !senderUsername || senderUsername !== ownerUsername) return
             }
             if (policy === 'contacts') {
-              // Only process if sender is in contacts
-              // We check by comparing senderId to known contacts
-              // For now allow owner's own messages + known senders
-              const senderId = (msg.peerId as any).userId?.toString()
+              const msgSenderId = (msg.peerId as any).userId?.toString()
               const ownerId = tenant?.telegram_user_id?.toString()
-              if (senderId && ownerId && senderId !== ownerId) {
-                // Check if sender is a contact via get_contacts tool would be expensive
-                // Simple approach: allow all for now but skip bot messages
-                const isBot = msg.viaBotId != null
-                if (isBot) return
+              if (msgSenderId && ownerId && msgSenderId !== ownerId) {
+                const contact = await isInContacts(client, tenantId, msgSenderId)
+                if (!contact) return
               }
             }
             // policy === 'everyone' — allow all
