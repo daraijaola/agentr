@@ -618,6 +618,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 <div id="screen-twofa" class="screen auth-page">
   <div class="auth-card fadeup">
     <div class="auth-logo">AGENT<em>R</em></div>
+    <button class="back-link" onclick="show('otp')">← Back</button>
     <h1 class="auth-title">Two-step verification</h1>
     <p class="auth-sub">Enter your Telegram cloud password to continue.</p>
     <div class="field">
@@ -635,6 +636,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 <div id="screen-setup" class="screen auth-page">
   <div class="auth-card">
     <div class="auth-logo">AGENT<em>R</em></div>
+    <button class="back-link" onclick="show(STATE._prevScreen||'otp')">← Back</button>
     <h1 class="auth-title">Set up your agent</h1>
     <p class="auth-sub">Personalise your agent before it goes live.</p>
 
@@ -1183,7 +1185,7 @@ async function goSetup() {
     if (res.error === '2FA_REQUIRED') { show('twofa'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
     if (!res.success) { showErr('otp-error', res.error || 'Invalid code'); btn.textContent = 'Confirm →'; btn.disabled = false; return }
 
-    show('setup')
+    STATE._prevScreen = 'otp'; show('setup')
   } catch(e) { showErr('otp-error','Network error') }
   btn.textContent = 'Confirm →'; btn.disabled = false
 }
@@ -1202,7 +1204,7 @@ async function goSetupFrom2FA() {
     }).then(r => r.json())
 
     if (!res.success) { showErr('twofa-error', res.error || 'Invalid password'); btn.textContent = 'Continue →'; btn.disabled = false; return }
-    show('setup')
+    STATE._prevScreen = 'twofa'; show('setup')
   } catch(e) { showErr('twofa-error','Network error') }
   btn.textContent = 'Continue →'; btn.disabled = false
 }
