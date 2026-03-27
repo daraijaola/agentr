@@ -13,3 +13,7 @@ workspaces/
 coverage/
 attached_assets/
 .local/
+.replit
+replit.md
+.cache/
+.agents/
