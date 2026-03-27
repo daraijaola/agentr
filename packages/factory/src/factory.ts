@@ -192,6 +192,7 @@ export class AgentFactory {
     })
     attachMessageListener(tenant.id, tgClient, runtime)
     this.runtimes.set(tenant.id, runtime)
+    await this.db.updateAgentStatus(tenant.id, 'running').catch(() => {})
     console.log(`[AgentFactory] Resumed: ${tenant.id}`)
   }
 
@@ -206,8 +207,10 @@ export class AgentFactory {
     }>(
       `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at
        FROM tenants t
-       JOIN agent_instances ai ON ai.tenant_id = t.id
-       WHERE t.status = 'active' AND ai.status = 'running'`
+       WHERE t.status = 'active'
+         AND EXISTS (
+           SELECT 1 FROM agent_instances ai WHERE ai.tenant_id = t.id
+         )`
     )
 
     console.log(`[AgentFactory] Resuming ${activeTenants.length} active agents...`)
