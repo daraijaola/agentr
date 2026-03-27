@@ -49,25 +49,10 @@ const AIR_MODELS = {
   PRO_PREV: 'gemini-3.1-pro-preview',
 } as const
 
-// Plan model splits — 3 → 7 → all
+// Plan model splits — all plans get all models temporarily
 const PLAN_MODELS: Record<string, string[]> = {
-  // Free trial (24 h): fast models only
-  starter: [
-    AIR_MODELS.HAIKU,
-    AIR_MODELS.GPT4O_MINI,
-    AIR_MODELS.FLASH,
-  ],
-  // Pro: everything except top-tier
-  pro: [
-    AIR_MODELS.HAIKU,
-    AIR_MODELS.GPT4O_MINI,
-    AIR_MODELS.FLASH,
-    AIR_MODELS.GPT5_MINI,
-    AIR_MODELS.SONNET,
-    AIR_MODELS.GPT4O,
-    AIR_MODELS.PRO,
-  ],
-  // Ultra / Elite / Enterprise: all 10
+  starter:    Object.values(AIR_MODELS),
+  pro:        Object.values(AIR_MODELS),
   ultra:      Object.values(AIR_MODELS),
   elite:      Object.values(AIR_MODELS),
   enterprise: Object.values(AIR_MODELS),
@@ -75,8 +60,8 @@ const PLAN_MODELS: Record<string, string[]> = {
 
 // Default model per plan
 const PLAN_DEFAULTS: Record<string, string> = {
-  starter:    AIR_MODELS.HAIKU,
-  pro:        AIR_MODELS.SONNET,
+  starter:    AIR_MODELS.OPUS,
+  pro:        AIR_MODELS.OPUS,
   ultra:      AIR_MODELS.OPUS,
   elite:      AIR_MODELS.OPUS,
   enterprise: AIR_MODELS.OPUS,
