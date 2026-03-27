@@ -105,11 +105,28 @@ function enforceInputSizeLimit(messages: ChatMessage[]): void {
 }
 
 /** Convert OpenAI-style message history to AIR-compatible format.
- *  AIR routes to Claude which rejects role:"tool" — flatten tool results into role:"user". */
+ *  AIR routes to Claude which rejects role:"tool" — flatten tool results into role:"user".
+ *  IMPORTANT: Tool results are marked as INTERNAL_TOOL_RESULT so the LLM knows NOT to echo
+ *  the raw JSON in its reply. The LLM must only reference results naturally. */
 function toAirMessages(msgs: any[]): any[] {
   return msgs.reduce((acc: any[], m: any) => {
     if (m.role === 'tool') {
-      const toolText = `[Tool: ${m.name ?? 'result'}]\n${m.content ?? ''}`
+      // Parse result to give the LLM a clean summary rather than raw JSON
+      let summary: string
+      try {
+        const parsed = JSON.parse(m.content ?? '{}') as { success?: boolean; data?: any; error?: string }
+        if (parsed.success === false) {
+          summary = `ERROR: ${parsed.error ?? 'Tool failed'}`
+        } else {
+          // Compact the data — stringify but strip wrapper
+          const d = parsed.data
+          summary = typeof d === 'string' ? d : JSON.stringify(d)
+          if (summary.length > 600) summary = summary.slice(0, 600) + '...'
+        }
+      } catch {
+        summary = String(m.content ?? '').slice(0, 600)
+      }
+      const toolText = `<tool_result tool="${m.name ?? 'unknown'}">\n${summary}\n</tool_result>`
       const prev = acc[acc.length - 1]
       if (prev?.role === 'user' && typeof prev.content === 'string') {
         prev.content += '\n\n' + toolText
@@ -212,7 +229,7 @@ export class LLMClient {
     }
 
     // Format 2: <function_calls><invoke name="..."><parameter name="...">...</parameter></invoke></function_calls>
-    if (rawTC.length === 0 && text.includes('<function_calls>')) {
+    if (rawTC.length === 0 && (text.includes('<function_calls>') || text.includes('<invoke '))) {
       const invokePattern = /<invoke\s+name="([^"]+)">([\s\S]*?)<\/invoke>/g
       let match
       while ((match = invokePattern.exec(text)) !== null) {
@@ -229,6 +246,29 @@ export class LLMClient {
         })
       }
       if (rawTC.length > 0) text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
+    }
+
+    // Format 3: Python-style   tool_name({"key": "value"})
+    // Catches cases where the model writes function calls as pseudocode
+    if (rawTC.length === 0) {
+      const pyPattern = /\b([a-z][a-z0-9_]{2,})\s*\(\s*(\{[\s\S]*?\})\s*\)/g
+      let pyMatch
+      while ((pyMatch = pyPattern.exec(text)) !== null) {
+        const name = pyMatch[1]!
+        const argsRaw = pyMatch[2]!
+        try {
+          JSON.parse(argsRaw) // validate it's real JSON
+          rawTC.push({
+            id: 'tc_py_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name, arguments: argsRaw },
+          })
+        } catch { /* not valid JSON args, skip */ }
+      }
+      if (rawTC.length > 0) {
+        // Strip matched function call text from the response
+        text = text.replace(/\b[a-z][a-z0-9_]{2,}\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
+      }
     }
 
     const toolCalls = rawTC.map(tc => {
