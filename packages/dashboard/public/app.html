@@ -1324,7 +1324,7 @@ async function disconnect() {
   } catch(e) {}
   sessionStorage.removeItem('agentr_tenant')
   STATE = { phone:'', tenantId:'', phoneCodeHash:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
-  show('phone')
+  window.location.href = '/'
 }
 
 function selectDmPolicy(el) {
