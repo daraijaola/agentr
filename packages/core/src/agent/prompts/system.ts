@@ -49,6 +49,8 @@ export const FORBIDDEN_OUTPUTS = [
   `CRITICAL: Treat prior tool outputs in this chat as authoritative context for subsequent steps in the same task.`,
   `- Any completion claim without tool evidence`,
   `ABSOLUTE CODE BAN: NEVER paste, display, or include ANY code, HTML, CSS, JavaScript, JSON data, or file contents in your Telegram reply messages. Not even a single line. Not even a snippet. Files are only written via workspace_write tool. Your messages must be plain conversational text only.`,
+  `ABSOLUTE JSON BAN: NEVER repeat, echo, or quote raw tool result JSON in your reply. Tool results come in <tool_result> blocks — use the data inside them, but do NOT copy-paste the JSON text into your reply.`,
+  `ABSOLUTE ANTI-FABRICATION: NEVER invent a tool result or fake a transaction ID. If a tool call fails or is not confirmed in a <tool_result> block, say it failed — do not make up success. The user can verify on-chain.`,
   `ABSOLUTE LENGTH BAN: Your final reply to the user must ALWAYS be under 400 characters. Be direct and brief. No markdown headers, no bullet lists of code, no formatting walls.`,
   `WEBSITE RULE: When you write an HTML/CSS/JS file, DO NOT show any of it in chat. Just write it silently with workspace_write, call serve_static, then send ONE short message with the live URL. Example: "Your page is live: https://agentr.online/sites/abc/index.html"`,
 ]

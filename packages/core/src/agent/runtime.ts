@@ -57,6 +57,19 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
   // Strip unparsed <function_calls> XML blocks (Claude native format that leaked through)
   t = t.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
   t = t.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim()
+  t = t.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
+
+  // Strip Python-style leaked tool calls: ton_send({...}) or functionName({...})
+  t = t.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)\s*/g, '').trim()
+
+  // Strip raw JSON blobs (tool result echoes) — leading or standalone
+  // e.g. {"success":true,"data":{...}} that the LLM copied from tool output
+  t = t.replace(/^\s*\{(?:[^{}]|\{[^{}]*\})*\}\s*\n*/gm, (match) => {
+    try { JSON.parse(match.trim()); return '' } catch { return match }
+  }).trim()
+
+  // Strip [Tool: name] headers that bleed through from toAirMessages
+  t = t.replace(/^\[Tool:[^\]]+\][^\n]*\n?/gm, '').trim()
 
   // If response still looks like raw HTML/CSS (starts with tag or has many angle brackets)
   const htmlTagDensity = (t.match(/</g) ?? []).length

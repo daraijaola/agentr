@@ -46,10 +46,18 @@ export function attachMessageListener(
     const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
     if (!response.content) return
 
-    // Absolute last-resort guard — strip code/HTML before it reaches Telegram
+    // Absolute last-resort guard — strip code/HTML/JSON before it reaches Telegram
     let text = response.content
     text = text.replace(/```[\s\S]*?```/g, '').trim()
     text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
+    text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
+    text = text.replace(/<tool_result[\s\S]*?<\/tool_result>/g, '').trim()
+    // Strip Python-style leaked tool calls: ton_send({...})
+    text = text.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
+    // Strip raw JSON blobs (tool result echoes — e.g. {"success":true,...})
+    text = text.replace(/^\{[^]*?\}\s*\n?/gm, (m) => {
+      try { JSON.parse(m.trim()); return '' } catch { return m }
+    }).trim()
     const tagCount = (text.match(/</g) ?? []).length
     if (tagCount > 8 && text.length > 300) {
       const safe = text.split('\n').find(l => l.trim().length > 5 && !l.includes('<') && !l.includes('{') && !l.includes('@import'))
