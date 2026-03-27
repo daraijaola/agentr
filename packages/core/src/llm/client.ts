@@ -25,12 +25,12 @@ const DEFAULTS: Record<string, string> = {
   openai: 'gpt-4o',
   moonshot: 'moonshot-v1-128k',
   'openai-codex': 'gpt-5.3-codex',
-  air: 'claude-sonnet-4-6',
+  air: 'claude-opus-4-6',
 }
 
 // Plan-based model allow-lists for AIR provider
 const PLAN_MODELS: Record<string, string[]> = {
-  starter: ['claude-sonnet-4-6'],
+  starter: ['claude-sonnet-4-6', 'claude-opus-4-6'],
   pro: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro'],
   ultra: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro', 'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview'],
   elite: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro', 'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview'],
