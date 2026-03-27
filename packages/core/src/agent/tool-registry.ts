@@ -20,6 +20,10 @@ export class ToolRegistry {
     return this.tools.get(name)
   }
 
+  has(name: string): boolean {
+    return this.tools.has(name)
+  }
+
   list(): Tool[] {
     return Array.from(this.tools.values())
   }
