@@ -55,17 +55,9 @@ export class AgentFactory {
   }
 
   private getLLMConfig(plan?: string, provisionedAt?: number) {
-    const provider = (process.env['LLM_PROVIDER'] ?? 'moonshot') as LLMProvider
-    const apiKeyMap: Record<LLMProvider, string> = {
-      anthropic: process.env['ANTHROPIC_API_KEY'] ?? '',
-      openai:    process.env['OPENAI_API_KEY'] ?? '',
-      moonshot:  process.env['MOONSHOT_API_KEY'] ?? '',
-      'openai-codex': process.env['OPENAI_CODEX_ACCESS_TOKEN'] ?? '',
-      air: process.env['OPENAI_API_KEY'] ?? '',
-    }
     return {
-      provider,
-      apiKey: apiKeyMap[provider],
+      provider: 'air' as LLMProvider,
+      apiKey: process.env['OPENAI_API_KEY'] ?? '',
       model: process.env['LLM_MODEL'] ?? undefined,
       plan: (plan ?? 'starter') as 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
       provisionedAt,

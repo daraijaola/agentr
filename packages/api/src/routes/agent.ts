@@ -156,34 +156,33 @@ agentRoutes.post(
 )
 
 
-// POST /agent/provider - switch LLM provider for a tenant
+// POST /agent/model - switch AI model for a tenant (all models via AIR gateway)
 agentRoutes.post(
   '/provider',
   zValidator('json', z.object({
     tenantId: z.string(),
-    provider: z.enum(['kimi', 'openai', 'claude']),
+    model: z.enum([
+      'claude-haiku-4-5', 'gpt-4o-mini', 'gemini-2.5-flash', 'gpt-5-mini',
+      'claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro',
+      'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview',
+    ]).optional(),
+    // legacy field — kept for backward compat, ignored
+    provider: z.string().optional(),
   })),
   async (c) => {
-    const { tenantId, provider } = c.req.valid('json')
+    const { tenantId, model } = c.req.valid('json')
     if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     const runtime = agentFactory.get(tenantId)
-    if (!runtime) {
-      return c.json({ success: false, error: 'Agent not found' }, 404)
-    }
+    if (!runtime) return c.json({ success: false, error: 'Agent not found' }, 404)
     try {
       const db = agentFactory.getDb()
-      await db.query(
-        'UPDATE tenants SET llm_provider = $1 WHERE id = $2',
-        [provider, tenantId]
-      )
-      const providerMap = {
-        kimi:   { provider: 'moonshot',   model: 'kimi-k2-turbo-preview', apiKey: process.env['MOONSHOT_API_KEY'] ?? '' },
-        openai: { provider: 'openai',     model: 'gpt-4o',               apiKey: process.env['OPENAI_API_KEY'] ?? '' },
-        claude: { provider: 'anthropic',  model: 'claude-sonnet-4-6',    apiKey: process.env['ANTHROPIC_API_KEY'] ?? '' },
-      }
-      const cfg = providerMap[provider]
-      runtime.updateLLM({ provider: cfg.provider as never, model: cfg.model, apiKey: cfg.apiKey })
-      return c.json({ success: true, provider, model: cfg.model })
+      await db.query('UPDATE tenants SET llm_provider = $1 WHERE id = $2', ['air', tenantId])
+      runtime.updateLLM({
+        provider: 'air',
+        model: model ?? undefined,
+        apiKey: process.env['OPENAI_API_KEY'] ?? '',
+      })
+      return c.json({ success: true, provider: 'air', model: model ?? 'plan-default' })
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500)
     }
