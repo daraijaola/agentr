@@ -169,8 +169,8 @@ html, body, #root {
 .field-inp { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r); color: var(--text); font-family: var(--f); font-size: 15px; padding: 11px 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
 .field-inp:focus { border-color: var(--blue); background: var(--surface); box-shadow: 0 0 0 3px rgba(0,152,234,0.15); }
 .field-inp::placeholder { color: var(--text3); }
-.back-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text2); font-family: var(--f); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 20px; }
-.back-btn:hover { color: var(--text); }
+.back-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #666; font-family: var(--f); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 20px; }
+.back-btn:hover { color: #111; }
 .err { background: var(--err-bg); border: 1px solid #fecaca; border-radius: var(--r); padding: 11px 14px; font-size: 13px; color: var(--err); margin-top: 12px; }
 .hint { font-size: 13px; color: var(--text3); margin-top: 10px; }
 
