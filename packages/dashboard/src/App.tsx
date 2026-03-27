@@ -265,9 +265,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
   const PROVIDERS = [
     { id: 'claude', name: 'Claude', sub: 'Exceptional reasoning', img: '/claude.webp', available: true },
-    { id: 'openai', name: 'ChatGPT', sub: 'GPT-4o, full API', img: '/openai.webp', available: false },
+    { id: 'openai', name: 'ChatGPT', sub: 'GPT-4o, full API', img: '/openai.webp', available: true },
     { id: 'kimi', name: 'Kimi', sub: 'Fast and capable', img: '/kimi.webp', available: false },
-    { id: 'gemini', name: 'Gemini', sub: 'Multimodal intelligence', img: '/gemini.webp', available: false },
+    { id: 'gemini', name: 'Gemini', sub: 'Multimodal intelligence', img: '/gemini.webp', available: true },
   ]
 
   return (
