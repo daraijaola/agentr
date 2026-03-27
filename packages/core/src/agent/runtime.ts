@@ -327,6 +327,48 @@ export class AgentRuntime {
       }
     }
 
+    // If agent wrote an HTML/JS/CSS file but never called serve_static, force deploy now
+    const wroteWebFile = allTC.some(tc =>
+      tc.name === 'workspace_write' &&
+      typeof tc.input['path'] === 'string' &&
+      /\.(html|htm|js|css)$/i.test(tc.input['path'] as string)
+    )
+    const didServeStatic = allTC.some(tc => tc.name === 'serve_static')
+
+    if (wroteWebFile && !didServeStatic && iters < MAX_ITER) {
+      try {
+        const htmlFile = allTC.find(tc =>
+          tc.name === 'workspace_write' &&
+          typeof tc.input['path'] === 'string' &&
+          /\.(html|htm)$/i.test(tc.input['path'] as string)
+        )
+        const filePath = (htmlFile?.input['path'] as string) ?? 'index.html'
+        const nudge: ChatMessage = {
+          role: 'user',
+          content: `SYSTEM: You wrote ${filePath} but did not call serve_static. Call serve_static now with path="${filePath}" to publish it and get the live URL. Do it immediately.`
+        }
+        const deployMessages = stripReasoning([...messages, nudge])
+        const deployRes = await this.llm.chat({ systemPrompt, messages: deployMessages, tools: tools.length > 0 ? tools : undefined })
+        if (deployRes.toolCalls.length > 0) {
+          for (const tc of deployRes.toolCalls) {
+            allTC.push({ name: tc.name, input: tc.input })
+            try {
+              const result = await this.tools.execute(tc.name, tc.input)
+              if (result.success && result.data && typeof result.data === 'object') {
+                const d = result.data as Record<string, unknown>
+                const url = (d['url'] ?? d['link'] ?? d['publicUrl'] ?? '') as string
+                if (typeof url === 'string' && url.startsWith('https://')) toolUrls.push(url)
+              }
+            } catch { /* non-blocking */ }
+          }
+          // One final LLM call to get the URL message
+          const finalMessages = stripReasoning([...deployMessages, stripReasoning(deployRes.messages)[deployRes.messages.length - 1]!])
+          const finalRes = await this.llm.chat({ systemPrompt, messages: finalMessages, tools: undefined })
+          if (finalRes.text.trim()) finalResponse = finalRes.text
+        }
+      } catch { /* non-blocking — fall through to URL restore */ }
+    }
+
     if (!finalResponse) {
       // Extract what happened from tool calls instead of empty error
       if (toolUrls.length > 0) {
