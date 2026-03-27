@@ -64,11 +64,14 @@ export function adaptTools(entries: ToolEntry[], adapterCtx: AdapterContext): To
       execute: async (params: Record<string, unknown>) => {
         try {
           const schema = tool.parameters as TSchema
-          if (!Value.Check(schema, params)) {
-            const errors = [...Value.Errors(schema, params)]
+          // Auto-coerce compatible types (e.g. "0.8" string → 0.8 number) before validation
+          let coerced = params
+          try { coerced = Value.Convert(schema, params) as Record<string, unknown> } catch { /* keep original */ }
+          if (!Value.Check(schema, coerced)) {
+            const errors = [...Value.Errors(schema, coerced)]
             return { success: false, error: `Invalid params: ${errors.map((e) => e.message).join(', ')}` }
           }
-          return await executor(params, toolContext as never)
+          return await executor(coerced, toolContext as never)
         } catch (err) {
           return { success: false, error: String(err) }
         }
