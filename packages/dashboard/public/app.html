@@ -1175,6 +1175,7 @@ async function goOtp() {
     STATE.phone = phone
     STATE.tenantId = res.tenantId
     STATE.phoneCodeHash = res.phoneCodeHash
+    STATE.isExisting = !!res.existing
     saveState()
 
     document.getElementById('otp-sub').textContent = 'Enter the code sent to ' + phone + '.'
@@ -1203,7 +1204,8 @@ async function goSetup() {
 
     STATE.token = res.token || ''
     saveState()
-    STATE._prevScreen = 'otp'; show('setup')
+    if (STATE.isExisting) { show('live'); goDashboard() }
+    else { STATE._prevScreen = 'otp'; show('setup') }
   } catch(e) { showErr('otp-error','Network error') }
   btn.textContent = 'Confirm →'; btn.disabled = false
 }
@@ -1224,7 +1226,8 @@ async function goSetupFrom2FA() {
     if (!res.success) { showErr('twofa-error', res.error || 'Invalid password'); btn.textContent = 'Continue →'; btn.disabled = false; return }
     STATE.token = res.token || ''
     saveState()
-    STATE._prevScreen = 'twofa'; show('setup')
+    if (STATE.isExisting) { show('live'); goDashboard() }
+    else { STATE._prevScreen = 'twofa'; show('setup') }
   } catch(e) { showErr('twofa-error','Network error') }
   btn.textContent = 'Continue →'; btn.disabled = false
 }
