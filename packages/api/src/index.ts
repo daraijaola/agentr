@@ -1,7 +1,7 @@
 import { config as loadEnv } from 'dotenv'
 import { resolve } from 'path'
-// Load .env from repo root — works regardless of which dir pm2 starts from
-loadEnv({ path: resolve(process.cwd(), '.env') })
+// Load .env from repo root — always override so .env is the source of truth
+loadEnv({ path: resolve(process.cwd(), '.env'), override: true })
 
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
