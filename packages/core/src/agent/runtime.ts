@@ -155,6 +155,7 @@ export class AgentRuntime {
       this.config.walletAddress,
       process.env['SERVER_PUBLIC_IP'] ?? 'localhost',
       workspace || undefined,
+      this.tools.list().length,
     )
   }
 

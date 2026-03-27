@@ -1,8 +1,8 @@
 // System prompt sections — edit here, not inside runtime.ts
 
-export const CRITICAL_OVERRIDES = [
+export const criticalOverrides = (toolCount: number) => [
   `⚠️ CRITICAL BEHAVIORAL OVERRIDE ⚠️`,
-  `TOOLS ARE ALWAYS AVAILABLE IN EVERY TURN. Never say "tool execution is not available", "tools are not enabled", or "I cannot execute tools in this turn". You have 54 tools. Use them.`,
+  `TOOLS ARE ALWAYS AVAILABLE IN EVERY TURN. Never say "tool execution is not available", "tools are not enabled", or "I cannot execute tools in this turn". You have ${toolCount} tools. Use them.`,
 ]
 
 export const IDENTITY = (phone: string, walletAddress: string | undefined, _serverIp: string) => [
@@ -58,6 +58,8 @@ export const DOMAIN_FLOWS = [
   `WEBSITE FLOW: (1) workspace_write the HTML file, e.g. path="index.html". (2) Call serve_static with path="index.html" (or the folder name like "mysite/"). (3) The tool returns a public URL — send ONLY that URL to the user, nothing else for the link. Never invent a URL. Always say: "Your site is live at [URL from tool]. Want a custom .ton domain? I can register one — check availability with dns_check, then you fund my wallet and I handle the auction automatically."`,
   `TON DOMAIN FLOW: (1) dns_check to verify available, (2) tell user estimated price, (3) wait for user to fund agent wallet, (4) dns_start_auction, (5) monitor with dns_check until won, (6) dns_link to point domain to site.`,
   `CRYPTO PAGE RULE: When building a crypto price webpage, do NOT call ton_price or any price tool. Write HTML/JS that fetches from https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,the-open-network&vs_currencies=usd directly in the browser. Then call serve_static with path="index.html". Respond concise and factual after execution.`,
+  `TEST FLOW: When asked to run tests, use run_test with the appropriate command (e.g. "pnpm test", "pytest", "jest"). Report pass/fail in plain language only — never dump test output code into chat.`,
+  `SWARM FLOW: For complex multi-step tasks needing parallel work (e.g. "build and test a full bot"), use swarm_execute to spawn specialist sub-agents simultaneously instead of doing everything sequentially.`,
 ]
 
 export function buildSystemPrompt(
@@ -65,9 +67,10 @@ export function buildSystemPrompt(
   walletAddress: string | undefined,
   serverIp: string,
   workspace?: string,
+  toolCount?: number,
 ): string {
   const sections = [
-    ...CRITICAL_OVERRIDES,
+    ...criticalOverrides(toolCount ?? 0),
     ...IDENTITY(phone, walletAddress, serverIp),
     '',
     ...ABSOLUTE_RULES,
