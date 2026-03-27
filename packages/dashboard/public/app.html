@@ -1127,11 +1127,18 @@ function closeSidebar() {
   if (ov) ov.classList.remove('open')
 }
 
-// persist tenantId across page reloads
-const _saved = sessionStorage.getItem('agentr_tenant')
+// persist session across page reloads and tab closes
+const _saved = localStorage.getItem('agentr_tenant')
 if (_saved) { try { Object.assign(STATE, JSON.parse(_saved)) } catch {} }
 
-function saveState() { sessionStorage.setItem('agentr_tenant', JSON.stringify(STATE)) }
+function saveState() { localStorage.setItem('agentr_tenant', JSON.stringify(STATE)) }
+
+// Handle 401/403 — token expired or missing, force re-login
+function handleAuthError() {
+  localStorage.removeItem('agentr_tenant')
+  STATE = { phone:'', tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
+  show('phone')
+}
 
 // ─── SCREEN MANAGEMENT ───────────────────────────
 function show(name) {
@@ -1333,7 +1340,7 @@ async function goDashboard() {
 }
 
 function disconnect() {
-  sessionStorage.removeItem('agentr_tenant')
+  localStorage.removeItem('agentr_tenant')
   STATE = { phone:'', tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'claude', devToken:'', dmPolicy:'contacts' }
   window.location.href = '/'
 }
@@ -1386,7 +1393,9 @@ let wsFiles = [], wsActive = null, wsContent = ''
 
 async function loadWorkspace() {
   try {
-    const res = await fetch(API + '/agent/workspace/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
+    const r = await fetch(API + '/agent/workspace/' + STATE.tenantId, { headers: authGetHdr() })
+    if (r.status === 401 || r.status === 403) { handleAuthError(); return }
+    const res = await r.json()
     wsFiles = res.files || []
     renderFileList()
     if (wsFiles.length) openFile(wsFiles[0])

@@ -64,10 +64,9 @@ const app = new Hono()
 
 app.use('*', logger())
 app.use('*', ipRateLimit(120))
-const replitDomain = process.env['REPLIT_DEV_DOMAIN'] ? `https://${process.env['REPLIT_DEV_DOMAIN']}` : null
 const allowedOrigins = process.env['NODE_ENV'] === 'production'
   ? ['https://agentr.online']
-  : ['https://agentr.online', 'http://localhost:5173', 'http://localhost:3000', ...(replitDomain ? [replitDomain] : [])]
+  : ['https://agentr.online', 'http://localhost:5173', 'http://localhost:3000']
 
 app.use('*', cors({ origin: allowedOrigins, allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
 

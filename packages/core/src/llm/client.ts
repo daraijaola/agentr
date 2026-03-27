@@ -1,5 +1,4 @@
 // AIR LLM client — sole provider for AGENTR
-// AIR gateway: https://ai-gateway-hub.replit.app/api/v1
 
 export type LLMProvider = 'air'
 
@@ -170,7 +169,8 @@ export class LLMClient {
     const airMessages = toAirMessages(cleanMessages)
 
     const apiKey = process.env['OPENAI_API_KEY'] ?? this.config.apiKey
-    const baseUrl = process.env['AIR_BASE_URL'] ?? 'https://ai-gateway-hub.replit.app/api/v1'
+    const baseUrl = process.env['AIR_BASE_URL']
+    if (!baseUrl) throw new Error('AIR_BASE_URL environment variable is not set')
 
     const body: Record<string, unknown> = {
       model,
