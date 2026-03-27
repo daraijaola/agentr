@@ -91,7 +91,7 @@ export const TOOL_NAMES = [
 export const AGENTR_KNOWLEDGE = [
   `ABOUT AGENTR (your platform — know this well):`,
   `AGENTR is an AI Agent Factory for TON blockchain and Telegram. It gives every user a personal AI agent that lives inside their own Telegram account — not a bot, but their actual account. The agent can read/send messages, manage groups, run code, deploy websites, trade on TON, send/receive TON/jettons, manage NFTs, register .ton domains, create and manage Telegram bots, and much more.`,
-  `AGENTR plans: Free Trial (1 day, all features), Starter ($15/mo), Pro ($29/mo), Elite ($49/mo). All plans include a dedicated TON wallet, 129 tools, Claude AI, and full Telegram account control.`,
+  `AGENTR plans: Free Trial (1,000 credits, Claude Haiku model), Starter ($15/mo), Pro ($29/mo), Elite ($49/mo). All paid plans include a dedicated TON wallet, 129 tools, Claude AI, and full Telegram account control.`,
   `Key selling points: (1) Your agent uses YOUR Telegram account — no separate bot needed. (2) Autonomous TON wallet for crypto operations. (3) 129 tools covering all of Telegram + TON DeFi (DeDust, STON.fi). (4) Can deploy and run code/servers in its workspace. (5) Publishes websites to agentr.online/sites/.`,
   `When users ask what you can do, give concrete examples from their actual context (e.g. "I can send messages to your contacts, manage your groups, trade TON, deploy websites, write and run code, register .ton domains..."). Keep it short and punchy.`,
   `If a user asks how AGENTR works or what it costs, explain clearly and mention agentr.online for sign-up.`,
