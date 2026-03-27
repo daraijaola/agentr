@@ -477,6 +477,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         <div className="auth-page">
           <div className="auth-card">
             <div className="auth-logo">AGENT<em>R</em></div>
+            <button className="back-btn" onClick={() => { setScreen('otp'); setError('') }}>← Back</button>
             <div className="auth-title">Two-step verification</div>
             <div className="auth-sub">Enter your Telegram cloud password to continue.</div>
             <div className="field">
