@@ -45,20 +45,34 @@ export function attachMessageListener(
     }
     const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
     if (!response.content) return
-    const MAX_TG = 4000
-    const text = response.content
+
+    // Absolute last-resort guard — strip code/HTML before it reaches Telegram
+    let text = response.content
+    text = text.replace(/```[\s\S]*?```/g, '').trim()
+    text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
+    const tagCount = (text.match(/</g) ?? []).length
+    if (tagCount > 8 && text.length > 300) {
+      const safe = text.split('\n').find(l => l.trim().length > 5 && !l.includes('<') && !l.includes('{') && !l.includes('@import'))
+      text = safe ?? 'Done! Task completed.'
+    }
+    if (!text) text = 'Done!'
+
+    // Telegram max is 4096 but keep it shorter for readability
+    const MAX_TG = 3800
     if (text.length <= MAX_TG) {
       await tgClient.sendMessage(chatId, text, { replyTo: replyToId })
     } else {
+      // Hard cap — never send more than 2 chunks; if still too long, trim
+      const trimmed = text.slice(0, MAX_TG * 2)
       const chunks: string[] = []
-      let rem = text
+      let rem = trimmed
       while (rem.length > 0) {
-        let cut = MAX_TG
-        if (rem.length > MAX_TG) { const nl = rem.lastIndexOf('\n', MAX_TG); cut = nl > MAX_TG / 2 ? nl : MAX_TG }
+        const nl = rem.lastIndexOf('\n', MAX_TG)
+        const cut = nl > MAX_TG / 2 ? nl : MAX_TG
         chunks.push(rem.slice(0, cut)); rem = rem.slice(cut)
       }
-      for (let i = 0; i < chunks.length; i++) {
-        await tgClient.sendMessage(chatId, chunks[i], i === 0 ? { replyTo: replyToId } : undefined)
+      for (let i = 0; i < Math.min(chunks.length, 2); i++) {
+        await tgClient.sendMessage(chatId, chunks[i]!, i === 0 ? { replyTo: replyToId } : undefined)
         if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
       }
     }
