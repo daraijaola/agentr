@@ -1,5 +1,5 @@
 import React from 'react'
-import { detectApiBase } from '../lib/api'
+import { detectApiBase, getAuthHeader } from '../lib/api'
 
 interface Process {
   name: string
@@ -21,7 +21,7 @@ export function BotsTab({ tenantId }: Props) {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch(API + '/agent/processes/' + tenantId)
+      const res = await fetch(API + '/agent/processes/' + tenantId, { headers: getAuthHeader() })
       const d = await res.json()
       if (d.processes) setProcs(d.processes)
     } catch {
@@ -32,7 +32,7 @@ export function BotsTab({ tenantId }: Props) {
 
   const fetchLogs = async (name: string) => {
     try {
-      const res = await fetch(API + '/agent/logs/' + tenantId + '/' + name)
+      const res = await fetch(API + '/agent/logs/' + tenantId + '/' + name, { headers: getAuthHeader() })
       const d = await res.json()
       if (d.logs) setLogs((prev) => ({ ...prev, [name]: d.logs }))
     } catch {}
@@ -43,7 +43,7 @@ export function BotsTab({ tenantId }: Props) {
     try {
       await fetch(API + '/agent/process/stop', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({ tenantId, name }),
       })
       load()

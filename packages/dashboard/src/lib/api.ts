@@ -10,17 +10,30 @@ export function detectApiBase(): string {
 
 export const API = detectApiBase()
 
+export function getAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const saved = localStorage.getItem('agentr_tenant')
+    if (!saved) return {}
+    const parsed = JSON.parse(saved) as AgentState
+    if (parsed.token) return { Authorization: 'Bearer ' + parsed.token }
+    return {}
+  } catch {
+    return {}
+  }
+}
+
 export async function post(path: string, body: object) {
   const res = await fetch(API + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(body),
   })
   return res.json()
 }
 
 export async function apiGet(path: string) {
-  const res = await fetch(API + path)
+  const res = await fetch(API + path, { headers: getAuthHeader() })
   return res.json()
 }
 
@@ -31,6 +44,7 @@ export interface AgentState {
   tenantId: string
   phoneCodeHash: string
   phone: string
+  token?: string
   username?: string
   firstName?: string
   walletAddress?: string

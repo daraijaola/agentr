@@ -59,6 +59,16 @@ app.use('/agent/message', authMiddleware)
 app.use('/agent/provision', authMiddleware)
 app.use('/agent/deprovision', authMiddleware)
 app.use('/agent/provider', authMiddleware)
+app.use('/agent/start-trial', authMiddleware)
+app.use('/agent/setup', authMiddleware)
+app.use('/agent/activity/*', authMiddleware)
+app.use('/agent/credits-usage/*', authMiddleware)
+app.use('/agent/credits/*', authMiddleware)
+app.use('/agent/workspace/*', authMiddleware)
+app.use('/agent/processes/*', authMiddleware)
+app.use('/agent/logs/*', authMiddleware)
+app.use('/agent/process/stop', authMiddleware)
+app.use('/agent/marketplace/deploy', authMiddleware)
 
 // Protect DELETE /agent/:tenantId — prevents unauthenticated deprovisioning
 app.use('/agent/:tenantId', async (c, next) => {

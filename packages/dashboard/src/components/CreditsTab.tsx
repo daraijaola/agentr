@@ -1,5 +1,5 @@
 import React from 'react'
-import { detectApiBase } from '../lib/api'
+import { detectApiBase, getAuthHeader } from '../lib/api'
 
 interface Transaction {
   amount: number
@@ -33,7 +33,7 @@ export function CreditsTab({ tenantId, tonWallet, tonConnectUI }: Props) {
   const API = detectApiBase()
 
   React.useEffect(() => {
-    fetch(API + '/agent/credits-usage/' + tenantId)
+    fetch(API + '/agent/credits-usage/' + tenantId, { headers: getAuthHeader() })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => {})

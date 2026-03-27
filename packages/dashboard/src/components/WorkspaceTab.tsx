@@ -1,5 +1,5 @@
 import React from 'react'
-import { detectApiBase } from '../lib/api'
+import { detectApiBase, getAuthHeader } from '../lib/api'
 
 const CORE_FILES = ['SOUL.md', 'IDENTITY.md', 'STRATEGY.md', 'SECURITY.md', 'USER.md', 'MEMORY.md']
 
@@ -20,7 +20,7 @@ export function WorkspaceTab({ tenantId, apiBase }: Props) {
   const loadFiles = async () => {
     setLoading(true)
     try {
-      const res = await fetch(apiBase + '/agent/workspace/' + tenantId)
+      const res = await fetch(apiBase + '/agent/workspace/' + tenantId, { headers: getAuthHeader() })
       const d = await res.json()
       if (d.files) {
         const sorted = [
@@ -42,7 +42,8 @@ export function WorkspaceTab({ tenantId, apiBase }: Props) {
     setMobileFilesOpen(false)
     try {
       const res = await fetch(
-        (base || apiBase) + '/agent/workspace/' + tenantId + '/' + encodeURIComponent(name)
+        (base || apiBase) + '/agent/workspace/' + tenantId + '/' + encodeURIComponent(name),
+        { headers: getAuthHeader() }
       )
       const d = await res.json()
       setFileContent(d.content ?? '')
@@ -57,7 +58,7 @@ export function WorkspaceTab({ tenantId, apiBase }: Props) {
     try {
       await fetch(apiBase + '/agent/workspace/' + tenantId + '/' + encodeURIComponent(activeFile), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({ content: fileContent }),
       })
       setSaved(true)

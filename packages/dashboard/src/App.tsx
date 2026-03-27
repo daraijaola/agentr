@@ -5,7 +5,7 @@ import { MarketplaceTab } from './components/MarketplaceTab'
 import { CreditsTab } from './components/CreditsTab'
 import { BotsTab } from './components/BotsTab'
 import { ActivityTab } from './components/ActivityTab'
-import { post, apiGet, detectApiBase, type Screen, type LiveTab, type AgentState } from './lib/api'
+import { post, apiGet, detectApiBase, getAuthHeader, type Screen, type LiveTab, type AgentState } from './lib/api'
 import './styles/app.css'
 
 const AGENTR_WALLET = 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M'
@@ -88,7 +88,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       .catch(() => {})
   }, [screen, agent])
 
-  const goLive = async (tenantId: string) => {
+  const goLive = async (tenantId: string, token?: string) => {
+    // Store token upfront so all polling requests include it in the auth header
+    if (token) {
+      const partial: AgentState = { tenantId, phone: agent?.phone ?? phone, phoneCodeHash: '', token }
+      localStorage.setItem('agentr_tenant', JSON.stringify(partial))
+    }
     setScreen('provisioning')
     for (let a = 0; a < 20; a++) {
       await new Promise((r) => setTimeout(r, 1500))
@@ -101,6 +106,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             firstName: data.telegram?.firstName,
             walletAddress: data.walletAddress,
             phoneCodeHash: '',
+            token: token ?? agent?.token,
           }
           setAgent(saved)
           localStorage.setItem('agentr_tenant', JSON.stringify(saved))
@@ -134,7 +140,13 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       })
       if (d.error === '2FA_REQUIRED') { setScreen('twofa'); return }
       if (!d.success) throw new Error(d.error)
-      if (!agent.isNew) { await goLive(agent.tenantId) } else { setScreen('setup') }
+      const withToken = { ...agent, token: d.token as string | undefined }
+      setAgent(withToken)
+      if (!agent.isNew) { await goLive(agent.tenantId, d.token) } else {
+        // Store token now so setup-flow API calls include it
+        localStorage.setItem('agentr_tenant', JSON.stringify(withToken))
+        setScreen('setup')
+      }
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -144,7 +156,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
     try {
       const d = await post('/auth/verify-2fa', { tenantId: agent.tenantId, phone: agent.phone, password: twofa.trim() })
       if (!d.success) throw new Error(d.error)
-      if (!agent.isNew) { await goLive(agent.tenantId) } else { setScreen('setup') }
+      const withToken = { ...agent, token: d.token as string | undefined }
+      setAgent(withToken)
+      if (!agent.isNew) { await goLive(agent.tenantId, d.token) } else {
+        localStorage.setItem('agentr_tenant', JSON.stringify(withToken))
+        setScreen('setup')
+      }
     } catch (e) { setError(String(e)) } finally { setLoading(false) }
   }
 
@@ -167,20 +184,21 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const handlePlan = async (planId: string) => {
     if (!agent || planId !== 'free') return
     try {
-      const existingCheck = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md').then((r) => r.json()).catch(() => ({ content: '' }))
+      const authHdr = getAuthHeader()
+      const existingCheck = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', { headers: authHdr }).then((r) => r.json()).catch(() => ({ content: '' }))
       const isFirstTime = !existingCheck.content || existingCheck.content.length < 100
       if (isFirstTime && (setupData.agentName || setupData.ownerName || setupData.dmPolicy !== 'contacts')) {
         const userContent = `# User\n\nOwner name: ${setupData.ownerName || 'Not set'}\nAgent name: ${setupData.agentName || 'Not set'}\nDM policy: ${setupData.dmPolicy}\n\nThis file is updated automatically as the agent learns more about the owner.`
         await fetch(API + '/agent/workspace/' + agent.tenantId + '/USER.md', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr },
           body: JSON.stringify({ content: userContent }),
         }).catch(() => {})
         if (setupData.agentName) {
-          const soulRes = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md').then((r) => r.json()).catch(() => ({ content: '' }))
+          const soulRes = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', { headers: authHdr }).then((r) => r.json()).catch(() => ({ content: '' }))
           const addition = `\n\nYour name is ${setupData.agentName}. When introducing yourself, use this name.`
           if (setupData.ownerName) {
             await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr },
               body: JSON.stringify({ content: (soulRes.content || '') + addition }),
             }).catch(() => {})
           }

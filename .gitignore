@@ -11,3 +11,5 @@ sessions/
 workspaces/
 .turbo/
 coverage/
+attached_assets/
+.local/
