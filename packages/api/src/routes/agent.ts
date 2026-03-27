@@ -93,7 +93,8 @@ agentRoutes.post(
     const { tenantId, message, chatId } = c.req.valid('json')
 
     // Cross-tenant check: token's tenantId must match request body's tenantId
-    const authTenantId = c.get('tenantId') as string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const authTenantId = (c as any).get('tenantId') as string
     if (authTenantId !== tenantId) {
       return c.json({ success: false, error: 'Unauthorized: tenant mismatch' }, 403)
     }
