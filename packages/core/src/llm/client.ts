@@ -128,6 +128,30 @@ export class LLMClient {
       return rest
     })
 
+    // AIR gateway routes to Claude which rejects role:"tool" — convert to role:"user"
+    const airMessages: any[] = provider === 'air'
+      ? cleanMessages.reduce((acc: any[], m: any) => {
+          if (m.role === 'tool') {
+            // Merge consecutive tool results into the previous user message if possible
+            const prev = acc[acc.length - 1]
+            const toolText = `[Tool: ${m.name ?? 'result'}]\n${m.content ?? ''}`
+            if (prev?.role === 'user' && typeof prev.content === 'string') {
+              prev.content += '\n\n' + toolText
+            } else {
+              acc.push({ role: 'user', content: toolText })
+            }
+            return acc
+          }
+          if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+            // Strip tool_calls — AIR sees them as <tool_call> text, keep only text content
+            acc.push({ role: 'assistant', content: m.content ?? '' })
+            return acc
+          }
+          acc.push(m)
+          return acc
+        }, [])
+      : cleanMessages
+
     // Anthropic needs different message format
     const anthropicMessages: any[] = provider === 'anthropic'
       ? (() => {
@@ -201,7 +225,7 @@ export class LLMClient {
       model,
       max_tokens: this.config.maxTokens ?? 4096,
       temperature: provider === 'moonshot' ? 1 : (this.config.temperature ?? 0.7),
-      messages: anthropicMessages,
+      messages: provider === 'air' ? airMessages : anthropicMessages,
       ...(provider === 'anthropic' && options.systemPrompt ? {
         system: [{ type: 'text', text: options.systemPrompt, cache_control: { type: 'ephemeral' } }]
       } : {}),
