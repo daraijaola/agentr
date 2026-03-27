@@ -227,9 +227,10 @@ export class AgentFactory {
           await this.resumeOne(tenant)
         } catch (err: any) {
           const msg = String(err)
-          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
-            console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
+          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED') || msg.includes('USER_DEACTIVATED')) {
+            console.warn(`[AgentFactory] Session expired for ${tenant.id}, suspending`)
             try { const { unlinkSync, existsSync } = await import('fs'); const { join } = await import('path'); const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenant.id + '.session'); if (existsSync(sf)) unlinkSync(sf) } catch {}
+            await this.db.updateTenantStatus(tenant.id, 'suspended')
           } else {
             console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
           }
