@@ -249,8 +249,34 @@ export class LLMClient {
 
     const data = await res.json() as { choices: Array<{ message: { content: string | null; tool_calls?: ToolCallRaw[] } }> }
     const choice = data.choices[0]?.message
-    const text = choice?.content ?? ''
-    const rawTC = choice?.tool_calls ?? []
+    let text = choice?.content ?? ''
+    let rawTC: ToolCallRaw[] = choice?.tool_calls ?? []
+
+    // AIR provider sometimes returns tool calls as <tool_call>{...}</tool_call> text tags
+    // instead of structured function calls. Parse and extract them.
+    if (provider === 'air' && rawTC.length === 0 && text.includes('<tool_call>')) {
+      const tagPattern = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g
+      let match
+      while ((match = tagPattern.exec(text)) !== null) {
+        try {
+          const parsed = JSON.parse(match[1]!) as { name?: string; arguments?: unknown }
+          if (parsed.name) {
+            const argsStr = typeof parsed.arguments === 'string'
+              ? parsed.arguments
+              : JSON.stringify(parsed.arguments ?? {})
+            rawTC.push({
+              id: 'tc_' + Math.random().toString(36).slice(2),
+              type: 'function',
+              function: { name: parsed.name, arguments: argsStr }
+            })
+          }
+        } catch { /* malformed tag — skip */ }
+      }
+      if (rawTC.length > 0) {
+        text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
+      }
+    }
+
     const toolCalls = rawTC.map(tc => {
       let input: Record<string, unknown> = {}
       try { input = JSON.parse(tc.function.arguments) as Record<string, unknown> } catch {
