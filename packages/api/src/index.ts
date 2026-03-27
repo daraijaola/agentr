@@ -101,6 +101,14 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500)
 })
 
+// Prevent unhandled rejections/exceptions from crashing the process
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err)
+})
+
 const port = Number(process.env['API_PORT'] ?? 3001)
 
 // Init factory + resume active agents on startup
