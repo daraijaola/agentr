@@ -233,7 +233,9 @@ export function MarketplaceTab({ tenantId }: Props) {
             <div key={a.id} style={{ ...cardStyle, flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{a.category} · {a.installs} installs · {a.rating} ★</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
+                  {a.category}{a.installs > 0 ? ` · ${a.installs} installs` : ''}{a.rating > 0 ? ` · ${a.rating.toFixed(1)} ★` : ''}
+                </div>
               </div>
               <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 100, background: a.active ? 'var(--ok-bg)' : 'var(--bg2)', color: a.active ? 'var(--ok)' : 'var(--text3)', border: `1px solid ${a.active ? 'var(--ok-bdr)' : 'var(--border)'}` }}>
                 {a.active ? 'Live' : 'Under review'}
@@ -318,10 +320,12 @@ export function MarketplaceTab({ tenantId }: Props) {
                   </div>
                   <span style={{ fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text3)', padding: '2px 8px', borderRadius: 100 }}>{a.category}</span>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'right', flexShrink: 0 }}>
-                  <div>{a.rating} ★</div>
-                  <div>{a.installs.toLocaleString()} installs</div>
-                </div>
+                {a.installs > 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'right', flexShrink: 0 }}>
+                    {a.rating > 0 && <div>{a.rating.toFixed(1)} ★</div>}
+                    <div>{a.installs.toLocaleString()} installs</div>
+                  </div>
+                )}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, flex: 1 }}>{a.description}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
