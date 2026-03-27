@@ -1,3 +1,8 @@
+import { config as loadEnv } from 'dotenv'
+import { resolve } from 'path'
+// Load .env from repo root — works regardless of which dir pm2 starts from
+loadEnv({ path: resolve(process.cwd(), '.env') })
+
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
