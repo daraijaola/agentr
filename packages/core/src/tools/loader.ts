@@ -97,5 +97,15 @@ export async function registerMVPTools(
     parameters: serveStaticTool.parameters as Record<string, unknown>,
     execute: async (params) => serveStaticExecutor(params as never, { tenantId: ctx.tenantId }),
   })
+
+  // -- Test runner
+  const { runTestTool, runTestExecutor } = await import('./deploy/run-test.js')
+  registry.register({
+    name: runTestTool.name,
+    description: runTestTool.description,
+    parameters: runTestTool.parameters as Record<string, unknown>,
+    execute: async (params) => runTestExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
+
   console.log(`[ToolLoader] Registered ${registry.list().length} tools for tenant: ${ctx.tenantId}`)
 }
