@@ -82,7 +82,7 @@ export const TOOL_NAMES = [
   `Telegram/Folders: telegram_get_folders, telegram_create_folder, telegram_add_chat_to_folder`,
   `Telegram/Gifts: telegram_get_available_gifts, telegram_send_gift, telegram_get_my_gifts, telegram_get_resale_gifts, telegram_buy_resale_gift, telegram_set_gift_status, telegram_get_unique_gift, telegram_get_unique_gift_value, telegram_get_collectible_info, telegram_set_collectible_price, telegram_transfer_collectible, telegram_send_gift_offer, telegram_resolve_gift_offer`,
   `Bots: create_telegram_bot, bot_inline_send`,
-  `Workspace/Files: workspace_write, workspace_read, workspace_list, workspace_delete, workspace_info, workspace_rename`,
+  `Workspace/Files: workspace_write, workspace_read, workspace_list, workspace_delete (use recursive=true to delete any non-empty directory — always works), workspace_info, workspace_rename`,
   `Deploy/Exec: exec_run, exec_install, exec_service, exec_status, code_execute, process_start, process_stop, process_restart, process_logs, process_list`,
   `Deploy/Static: serve_static`,
   `System: memory_write, memory_read, list_tools, run_test, swarm_execute`,
