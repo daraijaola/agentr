@@ -1,47 +1,60 @@
 import { Type } from "@sinclair/typebox"
-import { execSync, execFileSync } from "child_process"
+import { execSync } from "child_process"
+import { existsSync, mkdirSync, cpSync, copyFileSync } from "fs"
+import { join, basename } from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
 const PUBLIC_BASE = "https://agentr.online/sites"
-
-// Allow only safe filename characters — prevents shell injection in curl probe
-function sanitizeFilename(filename: string): string {
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(filename) || filename.includes('..')) {
-    throw new Error(`Invalid filename: "${filename}"`)
-  }
-  return filename
-}
+const SITES_ROOT = process.env["SITES_PATH"] ?? "/root/agentr/sites"
 
 export const serveStaticTool: Tool = {
   name: "serve_static",
-  description: "Serve a static HTML file or folder publicly. Give the filename in the tenant workspace and get back a public URL.",
+  description: "Publish a file or folder from your workspace so it's accessible via a public URL. Pass the path relative to your workspace root, e.g. 'index.html' or 'mysite/' (directory). Returns a live public URL.",
   parameters: Type.Object({
-    filename: Type.String({ description: "HTML file to serve, e.g. index.html" }),
-    port: Type.Optional(Type.Number({ description: "Port to use (default 8080)" })),
+    path: Type.String({ description: "File or directory path relative to your workspace root, e.g. 'index.html' or 'mysite/'" }),
   }),
 }
 
-export const serveStaticExecutor: ToolExecutor<{ filename: string; port?: number }> = async (params, context): Promise<ToolResult> => {
-  const { port = 8080 } = params
-  let filename: string
-  try { filename = sanitizeFilename(params.filename) } catch (err) { return { success: false, error: String(err) } }
-  const safePort = Math.floor(port) // ensure integer
+export const serveStaticExecutor: ToolExecutor<{ path: string }> = async (params, context): Promise<ToolResult> => {
   const tenantId = context.tenantId
-  const dir = `${process.env["SESSIONS_PATH"] ?? "/root/agentr/sessions"}/${tenantId}`
+  const sessionsRoot = process.env["SESSIONS_PATH"] ?? "/root/agentr/sessions"
+  const workspaceRoot = join(sessionsRoot, tenantId)
+
+  // Sanitize path — no traversal
+  const safePath = params.path.replace(/\.\./g, "").replace(/^\/+/, "").trim()
+  if (!safePath) return { success: false, error: "path is required" }
+
+  const sourcePath = join(workspaceRoot, safePath)
+  if (!existsSync(sourcePath)) {
+    return { success: false, error: `Path not found in workspace: ${safePath}` }
+  }
 
   try {
-    // Kill any existing server on this port
-    try { execSync(`fuser -k ${safePort}/tcp 2>/dev/null`, { stdio: 'ignore' }) } catch {}
+    // Destination: /root/agentr/sites/<tenantId>/<path>
+    const destDir = join(SITES_ROOT, tenantId)
+    mkdirSync(destDir, { recursive: true })
 
-    // Start fresh — dir is derived from UUID tenantId, safe to use in shell
-    execSync(`cd ${dir} && nohup python3 -m http.server ${safePort} > /tmp/static-${tenantId}.log 2>&1 &`, { shell: '/bin/bash' })
+    const destPath = join(destDir, basename(safePath))
 
-    // Wait and verify — use execFileSync to avoid shell injection from filename
-    await new Promise(r => setTimeout(r, 1500))
-    execFileSync('curl', ['-sf', `http://localhost:${safePort}/${filename}`], { stdio: 'ignore' })
+    // Copy file or directory
+    try {
+      execSync(`cp -r "${sourcePath}" "${destPath}"`, { stdio: "ignore" })
+    } catch {
+      return { success: false, error: "Failed to copy files to public directory" }
+    }
 
-    const publicUrl = `${PUBLIC_BASE}/${filename}`
-    return { success: true, data: { url: publicUrl, port: safePort, message: `Site live at ${publicUrl}` } }
+    const isDir = existsSync(destPath) && (await import("fs")).lstatSync(destPath).isDirectory()
+    const publicUrl = isDir
+      ? `${PUBLIC_BASE}/${tenantId}/${basename(safePath)}/`
+      : `${PUBLIC_BASE}/${tenantId}/${basename(safePath)}`
+
+    return {
+      success: true,
+      data: {
+        url: publicUrl,
+        message: `Site is live at ${publicUrl}`,
+      },
+    }
   } catch (err) {
     return { success: false, error: String(err) }
   }
