@@ -165,6 +165,7 @@ agentRoutes.post(
   })),
   async (c) => {
     const { tenantId, provider } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     const runtime = agentFactory.get(tenantId)
     if (!runtime) {
       return c.json({ success: false, error: 'Agent not found' }, 404)
@@ -195,6 +196,7 @@ agentRoutes.post(
   zValidator('json', z.object({ tenantId: z.string() })),
   async (c) => {
     const { tenantId } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     try {
       const db = agentFactory.getDb()
       await db.startFreeTrial(tenantId)
@@ -290,6 +292,7 @@ agentRoutes.post('/process/stop',
   zValidator('json', z.object({ tenantId: z.string(), name: z.string() })),
   async (c) => {
     const { tenantId, name } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     try {
       const safeName = sanitizeProcessName(name)
       const short = sanitizeProcessName(tenantId.split('-')[0]!)
@@ -560,6 +563,7 @@ agentRoutes.post('/marketplace/deploy',
   zValidator('json', z.object({ tenantId: z.string(), agentId: z.string() })),
   async (c) => {
     const { tenantId, agentId } = c.req.valid('json')
+    if (!requireOwnTenant(c, tenantId)) return c.json({ success: false, error: 'Unauthorized' }, 403)
     try {
       const db = agentFactory.getDb()
       const rows = await db.query<any>(
