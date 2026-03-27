@@ -92,6 +92,12 @@ agentRoutes.post(
   async (c) => {
     const { tenantId, message, chatId } = c.req.valid('json')
 
+    // Cross-tenant check: token's tenantId must match request body's tenantId
+    const authTenantId = c.get('tenantId') as string
+    if (authTenantId !== tenantId) {
+      return c.json({ success: false, error: 'Unauthorized: tenant mismatch' }, 403)
+    }
+
     // Enforce 100 KB input size limit
     if (Buffer.byteLength(message, 'utf8') > MAX_MESSAGE_BYTES) {
       return c.json({ success: false, error: 'Message exceeds 100 KB limit' }, 400)

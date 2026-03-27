@@ -1,5 +1,5 @@
 import React from 'react'
-import { detectApiBase } from '../lib/api'
+import { detectApiBase, getAuthHeader } from '../lib/api'
 
 interface Message {
   id: string
@@ -21,7 +21,7 @@ export function ActivityTab({ tenantId }: Props) {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(API + '/agent/activity/' + tenantId)
+        const res = await fetch(API + '/agent/activity/' + tenantId, { headers: getAuthHeader() })
         const d = await res.json()
         if (d.activity) setMsgs(d.activity)
       } catch {

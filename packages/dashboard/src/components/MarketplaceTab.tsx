@@ -1,5 +1,5 @@
 import React from 'react'
-import { detectApiBase } from '../lib/api'
+import { detectApiBase, getAuthHeader } from '../lib/api'
 
 const CATS = ['All', 'TON/DeFi', 'Commerce', 'Productivity', 'Utility']
 const DEV_CATS = ['TON/DeFi', 'Commerce', 'Productivity', 'Utility', 'Entertainment', 'Education', 'Other']
@@ -67,7 +67,7 @@ export function MarketplaceTab({ tenantId }: Props) {
     setDeploying(agentId)
     try {
       const res = await fetch(API + '/agent/marketplace/deploy', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({ tenantId, agentId }),
       })
       const d = await res.json()

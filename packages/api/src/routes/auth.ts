@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { telethonRequestOtp, telethonVerifyOtp, telethonVerify2FA } from '../telethon-bridge.js'
 import { randomUUID } from 'crypto'
 import { agentFactory } from '@agentr/factory'
+import { signToken, getSecret } from '../middleware/auth.js'
 
 export const authRoutes = new Hono()
 
@@ -50,7 +51,8 @@ authRoutes.post(
       const ok = await telethonVerifyOtp(tenantId, phone, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
       await agentFactory.provision(tenantId, phone)
-      return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
+      const token = signToken(tenantId, getSecret())
+      return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {
       if (String(err).includes('2FA_REQUIRED')) {
         return c.json({ success: false, error: '2FA_REQUIRED', tenantId }, 202)
@@ -74,7 +76,8 @@ authRoutes.post(
       const ok = await telethonVerify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
       await agentFactory.provision(tenantId, phone)
-      return c.json({ success: true, tenantId, message: 'Agent provisioned and live' })
+      const token = signToken(tenantId, getSecret())
+      return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {
       console.error('[verify-2fa ERROR]', err)
       return c.json({ success: false, error: String(err) }, 500)
