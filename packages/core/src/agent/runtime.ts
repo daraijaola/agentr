@@ -207,15 +207,10 @@ export class AgentRuntime {
         const newAssistantMsg = allNext[allNext.length - 1]
         if (newAssistantMsg) messages = [...messages, newAssistantMsg]
 
-        // Deduct credits based on provider (skip for codex - free tier)
-        const provider = this.llm.getProvider?.() ?? ''
-        if (provider !== 'openai-codex' && this.config.tenantId && this.deductCredits) {
-          const CREDIT_COST: Record<string, number> = {
-            'moonshot': 3, 'openai': 9, 'anthropic': 13, 'gemini': 8
-          }
-          const cost = CREDIT_COST[provider] ?? 3
+        // Deduct credits per LLM call
+        if (this.config.tenantId && this.deductCredits) {
           try {
-            await this.deductCredits(this.config.tenantId, cost, 'LLM call', provider)
+            await this.deductCredits(this.config.tenantId, 3, 'LLM call', 'air')
           } catch { /* non-blocking */ }
         }
 
