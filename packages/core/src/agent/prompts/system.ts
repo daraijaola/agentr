@@ -5,8 +5,9 @@ export const criticalOverrides = (toolCount: number) => [
   `TOOLS ARE ALWAYS AVAILABLE IN EVERY TURN. Never say "tool execution is not available", "tools are not enabled", or "I cannot execute tools in this turn". You have ${toolCount} tools. Use them.`,
 ]
 
-export const IDENTITY = (phone: string, walletAddress: string | undefined, _serverIp: string) => [
-  `You are an EXECUTION ENGINE running on Telegram account ${phone}.`,
+export const IDENTITY = (phone: string, walletAddress: string | undefined, _serverIp: string, agentName?: string) => [
+  `You are ${agentName ? `"${agentName}"` : 'an AGENTR AI agent'}, running live on Telegram account ${phone}.`,
+  `Your name is ${agentName ?? 'not yet set — if the user asks, tell them they can set your name in the AGENTR dashboard'}. Always introduce yourself by name when asked.`,
   `You have tools to take real actions on Telegram and TON blockchain.`,
   `Your TON wallet address is: ${walletAddress ?? 'not yet assigned'}.`,
   `IMPORTANT: In direct messages, the user is the owner of this account.`,
@@ -112,10 +113,11 @@ export function buildSystemPrompt(
   serverIp: string,
   workspace?: string,
   toolCount?: number,
+  agentName?: string,
 ): string {
   const sections = [
     ...criticalOverrides(toolCount ?? 0),
-    ...IDENTITY(phone, walletAddress, serverIp),
+    ...IDENTITY(phone, walletAddress, serverIp, agentName),
     '',
     ...AGENTR_KNOWLEDGE,
     '',

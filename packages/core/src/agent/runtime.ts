@@ -189,6 +189,7 @@ export class AgentRuntime {
       process.env['SERVER_PUBLIC_IP'] ?? 'localhost',
       workspace || undefined,
       this.tools.list().length,
+      this.config.agentName,
     )
   }
 
