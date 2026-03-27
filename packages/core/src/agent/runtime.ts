@@ -210,7 +210,7 @@ export class AgentRuntime {
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
-    const trimmedHist = histMessages.length > 60 ? histMessages.slice(-60) : histMessages
+    const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
     const tools = this.tools.list().map(t => ({
       name: t.name,
@@ -341,7 +341,9 @@ export class AgentRuntime {
     finalResponse = sanitizeFinalResponse(finalResponse, allTC.map(tc => tc.name))
 
     // Cache tool-free responses for repeated queries
-    if (allTC.length === 0 && !hasPriorTools && userMessage.length < 200 && finalResponse.length > 0) {
+    // Never cache responses that contain URLs — they're task-specific and must never bleed into future chats
+    const responseHasUrl = finalResponse.includes('https://') || finalResponse.includes('http://')
+    if (allTC.length === 0 && !hasPriorTools && !responseHasUrl && userMessage.length < 200 && finalResponse.length > 0) {
       const cacheKey = `${chatId}:${userMessage.toLowerCase().trim()}`
       setCache(cacheKey, finalResponse)
     }
@@ -354,7 +356,7 @@ export class AgentRuntime {
       }
     }
 
-    const saved = messages.slice(-20)
+    const saved = messages.slice(-15)
     this.conversations.set(chatId, saved)
     if (this.saveConversation) {
       this.saveConversation(this.config.tenantId, chatId, saved).catch(() => {/* non-blocking */})
