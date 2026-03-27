@@ -249,13 +249,16 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   color:var(--text-muted); padding:0 1rem .75rem; margin-top:.5rem;
 }
 .sb-item {
-  display:flex; align-items:center; justify-content:space-between;
+  display:flex; align-items:center; gap:9px;
   padding:9px 1rem; font-size:13px; color:var(--text-secondary);
   cursor:pointer; border-left:2px solid transparent;
   transition:all .12s;
 }
+.sb-item svg { opacity:.7; flex-shrink:0; }
 .sb-item:hover { color:var(--text-primary); background:var(--warm-200); }
+.sb-item:hover svg { opacity:1; }
 .sb-item.active { color:var(--accent); border-left-color:var(--accent); background:var(--accent-tint); }
+.sb-item.active svg { opacity:1; }
 .sb-item.locked { opacity:.5; cursor:not-allowed; }
 .sb-item.locked:hover { color:var(--text-secondary); background:transparent; }
 
@@ -514,21 +517,20 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 .dev-status-review { font-size:11px; background:var(--warm-200); color:var(--text-muted); padding:3px 10px; border-radius:999px; }
 
 /* ─── MOBILE NAV ─────────────────────────────────────────── */
-.mob-hamburger { display:none; background:none; border:none; font-size:22px; cursor:pointer; padding:6px 8px; color:var(--text-primary); line-height:1; margin-right:6px; }
-.sidebar-overlay { display:none; position:fixed; top:56px; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:90; }
+.mob-hamburger { display:none; background:none; border:none; font-size:20px; cursor:pointer; padding:6px 8px; color:var(--text-primary); line-height:1; flex-shrink:0; }
+.sidebar-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:99; }
+.sidebar-overlay.open { display:block; }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width:860px) {
   .mob-hamburger { display:inline-flex; align-items:center; }
   .sidebar {
-    position:fixed; top:0; left:0; width:220px; height:100vh;
+    position:fixed; top:0; left:0; width:240px; height:100vh;
     z-index:100; transform:translateX(-100%);
-    transition:transform .25s ease; padding-top:1.5rem;
-    box-shadow:4px 0 20px rgba(0,0,0,0.12);
+    transition:transform .25s ease; padding-top:1rem;
+    box-shadow:4px 0 24px rgba(0,0,0,0.18);
   }
   .sidebar.open { transform:translateX(0); }
-  .sidebar-overlay { display:block; }
-  .dashboard-body { overflow:hidden; }
   .plans-grid { grid-template-columns:repeat(2,1fr); }
   .credits-stats { grid-template-columns:1fr; }
   .credits-stat + .credits-stat { border-left:none; border-top:.5px solid var(--border-subtle); }
@@ -537,20 +539,24 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   .tg-btn { display:none; }
   .disc-btn { display:none; }
   .credits-pill { display:none; }
+  #ton-connect-btn { display:none; }
   .workspace-wrap { grid-template-columns:1fr; height:auto; min-height:0; }
-  .ws-files { height:200px; border-right:none; border-bottom:.5px solid var(--border-subtle); }
-  .ws-textarea { min-height:300px; }
+  .ws-files { height:180px; border-right:none; border-bottom:.5px solid var(--border-subtle); }
+  .ws-textarea { min-height:280px; }
+  .topbar { padding:0 .75rem; }
+  .status-badge { font-size:11px; padding:3px 9px; }
 }
 
 @media (max-width:540px) {
-  .auth-card { padding:1.75rem 1.25rem; }
+  .auth-card { padding:1.5rem 1rem; }
   .plans-grid { grid-template-columns:1fr; }
   .topup-grid { grid-template-columns:1fr; }
-  #screen-pricing { padding:32px 14px; }
-  .pricing-title { font-size:26px; }
-  .main { padding:1rem .75rem; }
-  .info-card { padding:1.1rem 1rem; }
-  .overview-greeting { font-size:24px; }
+  #screen-pricing { padding:28px 12px; }
+  .pricing-title { font-size:24px; }
+  .main { padding:.875rem .625rem; }
+  .info-card { padding:1rem .875rem; }
+  .overview-greeting { font-size:22px; }
+  .wallet-addr { font-size:12px; }
 }
 </style>
 <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -771,12 +777,30 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <div class="sb-label">Navigation</div>
-      <div class="sb-item active" data-tab="overview" onclick="switchTab('overview',this);closeSidebar()">Overview</div>
-      <div class="sb-item" data-tab="workspace" onclick="switchTab('workspace',this);closeSidebar()">Workspace</div>
-      <div class="sb-item" data-tab="marketplace" onclick="switchTab('marketplace',this);closeSidebar()">Marketplace</div>
-      <div class="sb-item" data-tab="activity" onclick="switchTab('activity',this);closeSidebar()">Activity</div>
-      <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this);closeSidebar()">Bots &amp; Processes</div>
-      <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this);closeSidebar()">Credits</div>
+      <div class="sb-item active" data-tab="overview" onclick="switchTab('overview',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </div>
+      <div class="sb-item" data-tab="workspace" onclick="switchTab('workspace',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Workspace
+      </div>
+      <div class="sb-item" data-tab="marketplace" onclick="switchTab('marketplace',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Marketplace
+      </div>
+      <div class="sb-item" data-tab="activity" onclick="switchTab('activity',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Activity
+      </div>
+      <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>
+        Bots &amp; Processes
+      </div>
+      <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this);closeSidebar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Credits
+      </div>
     </div>
 
     <!-- Main -->
@@ -1057,11 +1081,16 @@ let STATE = {
 // ─── MOBILE SIDEBAR ───────────────────────────────
 function toggleSidebar() {
   const sb = document.getElementById('sidebar')
-  sb && sb.classList.toggle('open')
+  const ov = document.getElementById('sidebar-overlay')
+  if (!sb) return
+  const opening = sb.classList.toggle('open')
+  if (ov) ov.classList.toggle('open', opening)
 }
 function closeSidebar() {
   const sb = document.getElementById('sidebar')
-  sb && sb.classList.remove('open')
+  const ov = document.getElementById('sidebar-overlay')
+  if (sb) sb.classList.remove('open')
+  if (ov) ov.classList.remove('open')
 }
 
 // persist tenantId across page reloads
