@@ -1,7 +1,11 @@
 import type { Context, Next } from 'hono'
-import { createHmac, timingSafeEqual } from 'crypto'
+import { SignJWT, jwtVerify } from 'jose'
 
-const TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const TOKEN_TTL_SECONDS = 24 * 60 * 60 // 24 hours
+
+function getSecretKey(secret: string): Uint8Array {
+  return new TextEncoder().encode(secret)
+}
 
 function getSecret(): string {
   const secret = process.env['API_SECRET']
@@ -9,24 +13,19 @@ function getSecret(): string {
   return secret
 }
 
-function signToken(tenantId: string, secret: string): string {
-  const payload = Buffer.from(JSON.stringify({ tenantId, iat: Date.now() })).toString('base64url')
-  const sig = createHmac('sha256', secret).update(payload).digest('base64url')
-  return `${payload}.${sig}`
+async function signToken(tenantId: string, secret: string): Promise<string> {
+  return new SignJWT({ tenantId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${TOKEN_TTL_SECONDS}s`)
+    .sign(getSecretKey(secret))
 }
 
-function verifyToken(token: string, secret: string): { tenantId: string } | null {
+async function verifyToken(token: string, secret: string): Promise<{ tenantId: string } | null> {
   try {
-    const [payload, sig] = token.split('.')
-    if (!payload || !sig) return null
-    const expected = createHmac('sha256', secret).update(payload).digest('base64url')
-    const eBuf = Buffer.from(expected, 'utf8')
-    const sBuf = Buffer.from(sig, 'utf8')
-    if (eBuf.length !== sBuf.length || !timingSafeEqual(eBuf, sBuf)) return null
-    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { tenantId: string; iat: number }
-    // Enforce 24-hour TTL
-    if (!parsed.iat || Date.now() - parsed.iat > TOKEN_TTL_MS) return null
-    return { tenantId: parsed.tenantId }
+    const { payload } = await jwtVerify(token, getSecretKey(secret), { algorithms: ['HS256'] })
+    if (typeof payload['tenantId'] !== 'string') return null
+    return { tenantId: payload['tenantId'] }
   } catch {
     return null
   }
@@ -43,7 +42,7 @@ export async function authMiddleware(c: Context, next: Next) {
   } catch {
     return c.json({ error: 'Server misconfiguration: API_SECRET is not set' }, 500)
   }
-  const payload = verifyToken(token, secret)
+  const payload = await verifyToken(token, secret)
   if (!payload) return c.json({ error: 'Invalid or expired token' }, 401)
   c.set('tenantId', payload.tenantId)
   await next()

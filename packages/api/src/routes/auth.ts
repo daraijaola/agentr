@@ -70,7 +70,7 @@ authRoutes.post(
       const ok = await telethonVerifyOtp(tenantId, phone, phoneCodeHash, code)
       if (!ok) return c.json({ success: false, error: 'Invalid OTP code' }, 400)
       await provisionOrResume(tenantId, phone)
-      const token = signToken(tenantId, getSecret())
+      const token = await signToken(tenantId, getSecret())
       return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {
       if (String(err).includes('2FA_REQUIRED')) {
@@ -95,7 +95,7 @@ authRoutes.post(
       const ok = await telethonVerify2FA(tenantId, password)
       if (!ok) return c.json({ success: false, error: 'Invalid 2FA password' }, 400)
       await provisionOrResume(tenantId, phone)
-      const token = signToken(tenantId, getSecret())
+      const token = await signToken(tenantId, getSecret())
       return c.json({ success: true, tenantId, token, message: 'Agent provisioned and live' })
     } catch (err) {
       console.error('[verify-2fa ERROR]', err)
