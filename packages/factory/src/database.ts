@@ -36,12 +36,11 @@ export class Database {
     console.log('[Database] Connecting to PostgreSQL...')
     const client = await this.pool.connect()
     try {
-      // Run migrations
-      const sql = readFileSync(
-        join(__dirname, 'migrations/001_initial.sql'),
-        'utf-8'
-      )
-      await client.query(sql)
+      const migrations = ['001_initial.sql', '002_conversation_state.sql']
+      for (const file of migrations) {
+        const sql = readFileSync(join(__dirname, 'migrations', file), 'utf-8')
+        await client.query(sql)
+      }
       console.log('[Database] Migrations complete')
     } finally {
       client.release()
@@ -251,6 +250,26 @@ export class Database {
     )
     return res.rows[0]?.credits ?? 0
   }
+  // Conversation state persistence
+  async saveConversationState(tenantId: string, chatId: string, messages: unknown[]): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO conversation_state (tenant_id, chat_id, messages, updated_at)
+       VALUES ($1, $2, $3::jsonb, NOW())
+       ON CONFLICT (tenant_id, chat_id) DO UPDATE
+         SET messages   = EXCLUDED.messages,
+             updated_at = NOW()`,
+      [tenantId, chatId, JSON.stringify(messages)]
+    )
+  }
+
+  async loadConversationState(tenantId: string, chatId: string): Promise<unknown[]> {
+    const res = await this.pool.query<{ messages: unknown[] }>(
+      `SELECT messages FROM conversation_state WHERE tenant_id = $1 AND chat_id = $2`,
+      [tenantId, chatId]
+    )
+    return res.rows[0]?.messages ?? []
+  }
+
   async query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
     const result = await this.pool.query(sql, params)
     return result.rows as T[]
