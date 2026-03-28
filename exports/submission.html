@@ -47,38 +47,36 @@
       flex: 1;
       height:100%;
       display:flex; align-items:center; justify-content:center;
-      padding: 0 52px 0 0;
+      padding: 0 56px 0 0;
     }
 
+    /* wider phone so full screenshot width is visible */
     .phone {
-      width: 232px;
-      height: 562px;
-      background:#1c1c1e;
+      width: 280px;
+      height: 580px;
+      background:#f5f0e8;
       border-radius:44px;
       border:1.5px solid rgba(255,255,255,0.12);
       box-shadow:
-        0 0 0 5px rgba(255,255,255,0.025),
-        0 30px 60px rgba(0,0,0,0.9),
-        0 60px 100px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.07);
+        0 0 0 6px rgba(255,255,255,0.03),
+        0 28px 56px rgba(0,0,0,0.9),
+        0 56px 96px rgba(0,0,0,0.5);
       position:relative; overflow:hidden;
-      transform: perspective(1200px) rotateY(-5deg) rotateX(1deg);
     }
     .screen { position:absolute; inset:0; border-radius:43px; overflow:hidden; background:#f5f0e8; }
+    /* fit width exactly — no horizontal crop */
     .screen img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: left top;
+      height: auto;
       display: block;
     }
     .notch { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:72px; height:22px; background:#1c1c1e; border-radius:15px; z-index:10; }
-    .btn { position:absolute; background:rgba(255,255,255,0.07); border-radius:3px; }
+    .btn { position:absolute; background:rgba(255,255,255,0.08); border-radius:3px; }
     .r  { right:-3px; top:122px; width:3px; height:52px; }
     .l1 { left:-3px; top:102px; width:3px; height:32px; }
     .l2 { left:-3px; top:146px; width:3px; height:32px; }
     .l3 { left:-3px; top:192px; width:3px; height:60px; }
-    .shine { position:absolute; inset:0; border-radius:43px; background:linear-gradient(145deg,rgba(255,255,255,0.05) 0%,transparent 30%); pointer-events:none; z-index:20; }
+    .shine { position:absolute; inset:0; border-radius:43px; background:linear-gradient(160deg,rgba(255,255,255,0.06) 0%,transparent 35%); pointer-events:none; z-index:20; }
   </style>
   </head>
   <body>
