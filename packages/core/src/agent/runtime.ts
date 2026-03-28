@@ -91,9 +91,10 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
     try { JSON.parse(match.trim()); return '' } catch { return match }
   }).trim()
 
-  // Strip [Tool: name] and [called: name] markers that bleed through from toAirMessages
+  // Strip internal/leaked tool markers
   t = t.replace(/^\[Tool:[^\]]+\][^\n]*\n?/gm, '').trim()
   t = t.replace(/\[called:[^\]]+\]/g, '').trim()
+  t = t.replace(/\[calling:[^\]]+\]/gi, '').trim()
 
   // If response still looks like raw HTML/CSS (starts with tag or has many angle brackets)
   const htmlTagDensity = (t.match(/</g) ?? []).length

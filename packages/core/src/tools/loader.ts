@@ -71,13 +71,7 @@ export async function registerMVPTools(
   const { tools: tonTools } = await import('./ton/index.js')
   adaptTools(tonTools, ctx).forEach((t) => registry.register(t))
 
-  // -- DeDust DEX
-  const { tools: dedustTools } = await import('./dedust/index.js')
-  adaptTools(dedustTools, ctx).forEach((t) => registry.register(t))
-
-  // -- Ston.fi DEX
-  const { tools: stonfiTools } = await import('./stonfi/index.js')
-  adaptTools(stonfiTools, ctx).forEach((t) => registry.register(t))
+  // DeDust and Ston.fi DEX tools disabled — AGENTR is a coding agent, not a trading platform
 
   // -- Bot creation
   const { tools: botTools } = await import('./bot/index.js')

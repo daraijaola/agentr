@@ -345,6 +345,25 @@ export class LLMClient {
       }
     }
 
+    // Format 5: [calling: tool_name with {"key": "value"}] — model narrating what it's doing
+    if (rawTC.length === 0) {
+      const narPattern = /\[calling:\s*([a-z][a-z0-9_]*)\s+with\s+(\{[\s\S]*?\})\]/gi
+      let narMatch
+      while ((narMatch = narPattern.exec(text)) !== null) {
+        const name = narMatch[1]!.trim()
+        const argsRaw = (narMatch[2] ?? '').trim()
+        try {
+          JSON.parse(argsRaw)
+          rawTC.push({
+            id: 'tc_nar_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name, arguments: argsRaw },
+          })
+        } catch { /* invalid JSON */ }
+      }
+      if (rawTC.length > 0) text = text.replace(/\[calling:[^\]]+\]/gi, '').trim()
+    }
+
     const toolCalls = rawTC.map(tc => {
       let input: Record<string, unknown> = {}
       try { input = JSON.parse(tc.function.arguments) as Record<string, unknown> } catch {
