@@ -91,16 +91,38 @@ function checkPlanAccess(config: LLMConfig, model: string): void {
   }
 }
 
-function enforceInputSizeLimit(messages: ChatMessage[]): void {
-  const totalSize = messages.reduce(
-    (acc, m) => acc + Buffer.byteLength(String(m.content ?? ''), 'utf8'), 0
-  )
-  if (totalSize > MAX_INPUT_BYTES) {
-    throw new Error(
-      `Input messages exceed the 100 KB size limit (got ${Math.round(totalSize / 1024)} KB). ` +
-      `Please start a new session.`
-    )
+function messageBytes(messages: ChatMessage[]): number {
+  return messages.reduce((acc, m) => acc + Buffer.byteLength(String(m.content ?? ''), 'utf8'), 0)
+}
+
+/** Trim message history to stay under MAX_INPUT_BYTES.
+ *  Strategy (applied in order until size is acceptable):
+ *  1. Compress ALL tool results to a short "[Tool: X - OK]" token
+ *  2. Drop oldest non-system messages in chunks of 4 (one tool round-trip)
+ *  Never drops the first system message or the last user message. */
+function trimToFit(messages: ChatMessage[]): ChatMessage[] {
+  let msgs = [...messages]
+
+  // Pass 1: compress all tool results
+  if (messageBytes(msgs) > MAX_INPUT_BYTES) {
+    msgs = msgs.map(m => {
+      if (m.role !== 'tool') return m
+      try {
+        const p = JSON.parse(String(m.content ?? ''))
+        if (p.success === false) return m  // keep errors — model needs to see them
+      } catch { /* not JSON */ }
+      return { ...m, content: `[Tool: ${m.name ?? 'tool'} - OK]` }
+    })
   }
+
+  // Pass 2: drop oldest messages in chunks until we fit
+  while (messageBytes(msgs) > MAX_INPUT_BYTES && msgs.length > 6) {
+    // Find the first non-system message to drop (skip index 0 if it's system)
+    const dropStart = msgs[0]?.role === 'system' ? 1 : 0
+    msgs.splice(dropStart, Math.min(4, msgs.length - 4))
+  }
+
+  return msgs
 }
 
 /** Convert OpenAI-style message history to AIR-compatible format.
@@ -155,13 +177,14 @@ export class LLMClient {
     const plan = this.config.plan ?? 'starter'
     const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.SONNET
 
-    enforceInputSizeLimit(options.messages)
     checkPlanAccess(this.config, model)
 
     // Build message list (system + history), strip reasoning_content artifacts
+    // trimToFit compresses or drops old messages to stay under the 100 KB AIR limit
+    const trimmedMessages = trimToFit(options.messages)
     const msgs: any[] = []
     if (options.systemPrompt) msgs.push({ role: 'system', content: options.systemPrompt })
-    msgs.push(...options.messages)
+    msgs.push(...trimmedMessages)
     const cleanMessages: any[] = msgs.map((m: any) => {
       const { reasoning_content, ...rest } = m
       void reasoning_content
