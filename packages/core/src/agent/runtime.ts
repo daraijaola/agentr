@@ -228,6 +228,8 @@ export class AgentRuntime {
     const toolUrls: string[] = []  // URLs returned by serve_static, dns_link, etc.
     const systemPrompt = await this.sys()
     let toolsRanThisTurn = false
+    let consecutiveMalformedCount = 0   // empty/unparseable <tool_call> blocks in a row
+    const truncationRetries = new Map<string, number>()  // tool name → truncation count
 
     // Cache check — only for short messages with no prior tool context in history
     const hasPriorTools = trimmedHist.some(m => m.role === 'tool')
@@ -269,15 +271,20 @@ export class AgentRuntime {
           if (res.text.trim().length > 0) {
             // LLM generated raw XML tool call format instead of using the API tool call format
             if (/<tool_calls?[\s>]/i.test(res.text) || /<tool_call[\s>]/i.test(res.text) || /<tool_use[\s>]/i.test(res.text)) {
-              messages = stripReasoning([
-                ...messages,
-                {
-                  role: 'user',
-                  content: 'SYSTEM: Your tool call was not recognized. Make sure the tool name is valid and args are complete JSON. Call the required tool now.'
-                }
-              ])
+              consecutiveMalformedCount++
+              let nudge: string
+              if (consecutiveMalformedCount >= 3) {
+                // Persistent loop — force a completely different strategy
+                nudge = 'SYSTEM: Your tool calls keep failing because the file content is too large to fit in a single response. CHANGE STRATEGY: (1) Call workspace_write with a minimal skeleton version of the file — plain HTML under 2000 characters, no inline styles, no long scripts. (2) Then call serve_static. (3) You can improve the design in a follow-up. Do NOT attempt to write the full design in one shot — it will always fail. Start with the skeleton NOW.'
+              } else if (consecutiveMalformedCount >= 2) {
+                nudge = 'SYSTEM: Your tool call JSON is incomplete — the content is too long and gets cut off. Write a MUCH shorter version of the file (under 3000 characters total). Strip all inline CSS, long scripts, and decorative content. A working minimal page first, then we can improve it.'
+              } else {
+                nudge = 'SYSTEM: Your tool call was not recognized — the JSON arguments were missing or incomplete. Make sure the args are valid complete JSON. If writing a file, keep the content under 4000 characters. Call the required tool now.'
+              }
+              messages = stripReasoning([...messages, { role: 'user', content: nudge }])
               continue
             }
+            consecutiveMalformedCount = 0  // reset on clean text response
             // If first iteration and no tools run yet and response is short,
             // the LLM is just acknowledging ("On it!", "Sure!", "Give me a moment...")
             // — nudge it to start executing immediately instead of treating it as done
@@ -317,12 +324,23 @@ export class AgentRuntime {
 
 
         toolsRanThisTurn = true
+        consecutiveMalformedCount = 0  // valid tool calls arrived — reset malformed counter
         for (const tc of res.toolCalls) {
           // Truncated tool call — response was cut off before JSON closed; skip execution and retry
           if (tc.input['__truncated'] === true) {
+            const retries = (truncationRetries.get(tc.name) ?? 0) + 1
+            truncationRetries.set(tc.name, retries)
+            let truncMsg: string
+            if (retries >= 3) {
+              truncMsg = `CRITICAL: ${tc.name} has failed ${retries} times because your content is too long. You MUST write a skeleton version under 1500 characters — no inline CSS, no long scripts, just plain semantic HTML. Write the minimal version NOW. You can always improve it afterwards.`
+            } else if (retries >= 2) {
+              truncMsg = `${tc.name} failed again — still too long. Keep the entire file content under 2500 characters. Remove all decorative CSS, animations, and scripts. Write a clean minimal HTML skeleton now and serve it. Improvements can follow in the next message.`
+            } else {
+              truncMsg = `Response was truncated — your file content is too long for one call. Write a shorter version (under 4000 characters). You can improve it with a second workspace_write afterwards.`
+            }
             messages = stripReasoning([
               ...messages,
-              { role: 'tool', content: JSON.stringify({ success: false, error: 'Response was truncated — the file content was too long to fit in one call. Write a shorter, simpler version of the file (aim for under 5000 characters). You can always improve it with a second workspace_write call once the first version is saved.' }), tool_call_id: tc.id, name: tc.name }
+              { role: 'tool', content: JSON.stringify({ success: false, error: truncMsg }), tool_call_id: tc.id, name: tc.name }
             ])
             continue
           }
