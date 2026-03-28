@@ -33,17 +33,63 @@ export function attachMessageListener(
 ): void {
   const me = client.getMe()
 
+  // Classify task complexity and return an ETA bucket
+  function classifyTask(msg: string): { label: string; etaSec: number } | null {
+    const m = msg.toLowerCase()
+    const len = msg.length
+    // Very complex — parallel builds, full apps, multi-step deployments
+    if (/landing page|full.?stack|web.?app|mini.?app|whatsapp|telegram.?app|complete.+site|swarm|parallel|multiple.+bot|dashboard|platform/i.test(m)) {
+      return { label: 'This one is fairly complex — should be done in about a minute. I\'ll keep you posted.', etaSec: 60 }
+    }
+    // Complex — website, bot deploy, scripts running
+    if ((len > 40 && /website|webpage|page|landing|deploy|hosting|bot|script|install|set.?up|create.+site|build.+app/i.test(m))) {
+      return { label: 'On it! Should take around 30 seconds — I\'ll let you know how it\'s going.', etaSec: 30 }
+    }
+    // Medium — code/file generation
+    if (len > 20 && /write|make|code|generate|create|design|develop/i.test(m)) {
+      return { label: 'On it! Give me about 15 seconds.', etaSec: 15 }
+    }
+    return null
+  }
+
+  // Progress messages sent every 25s for long-running tasks
+  const PROGRESS_UPDATES = [
+    'Still working on it — going well so far...',
+    'Almost there, wrapping up the last steps...',
+    'Taking a little longer than expected, but still on it...',
+  ]
+
   // Message debouncer — batches rapid messages, sends typing indicator
   const debouncer = new MessageDebouncer(700, async (chatId, messages, replyToId, userName, tgClient) => {
     const combined = messages.join('\n')
     try { await tgClient.setTyping(chatId) } catch {}
     await new Promise(r => setTimeout(r, TYPING_DELAY_MS))
-    // Immediate ack for complex tasks
-    const isComplex = combined.length > 20 && /create|build|deploy|write|make|run|install|set up|webpage|bot/i.test(combined)
-    if (isComplex) {
-      try { await tgClient.sendMessage(chatId, '⚙️ On it! Give me a moment...') } catch {}
+
+    // Send ETA estimate immediately before blocking on the runtime
+    const taskInfo = classifyTask(combined)
+    if (taskInfo) {
+      try { await tgClient.sendMessage(chatId, taskInfo.label) } catch {}
     }
-    const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
+
+    // For tasks >= 30s, send periodic progress updates while runtime runs
+    let progressInterval: ReturnType<typeof setInterval> | null = null
+    let progressIdx = 0
+    if (taskInfo && taskInfo.etaSec >= 30) {
+      progressInterval = setInterval(async () => {
+        const msg = PROGRESS_UPDATES[progressIdx]
+        if (msg) {
+          try { await tgClient.sendMessage(chatId, msg) } catch {}
+          progressIdx++
+        }
+      }, 25_000)
+    }
+
+    let response: Awaited<ReturnType<typeof runtime.processMessage>>
+    try {
+      response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
+    } finally {
+      if (progressInterval) clearInterval(progressInterval)
+    }
     if (!response.content) return
 
     // Absolute last-resort guard — strip code/HTML/JSON before it reaches Telegram
