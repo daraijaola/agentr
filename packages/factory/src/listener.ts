@@ -54,8 +54,9 @@ export function attachMessageListener(
 
     text = text.replace(/```[\s\S]*?```/g, '').trim()
     text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
-    text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
-    text = text.replace(/<tool_result[\s\S]*?<\/tool_result>/g, '').trim()
+    text = text.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/g, '').trim()
+    text = text.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/g, '').trim()
+    text = text.replace(/<tool_result[^>]*>[\s\S]*?<\/tool_result>/g, '').trim()
     // Strip Python-style leaked tool calls: ton_send({...})
     text = text.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
     // Strip raw JSON blobs (tool result echoes — e.g. {"success":true,...})
@@ -72,10 +73,9 @@ export function attachMessageListener(
     if ((!text || !text.trim()) && urlMatches.length > 0) {
       text = urlMatches.join('\n')
     }
-    if (!text || !text.trim()) text = 'Done! ✅'
-
     text = text.trim()
-    if (!text) return   // absolute guard — never send empty to Telegram
+    if (!text) text = 'Done! ✅'
+    if (!text.trim()) return   // absolute guard — never send empty to Telegram
 
     // Telegram max is 4096 but keep it shorter for readability
     const MAX_TG = 3800
