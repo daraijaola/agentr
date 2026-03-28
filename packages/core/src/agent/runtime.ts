@@ -344,10 +344,13 @@ export class AgentRuntime {
             ])
             continue
           }
-          allTC.push({ name: tc.name, input: tc.input })
+          // Strip internal meta-flags before passing to the tool
+          const { __salvaged, __truncated: _t, ...cleanInput } = tc.input as Record<string, unknown>
+          void __salvaged; void _t
+          allTC.push({ name: tc.name, input: cleanInput })
           let txt: string
           try {
-            const result = await this.tools.execute(tc.name, tc.input)
+            const result = await this.tools.execute(tc.name, cleanInput)
             // Capture URLs returned by URL-producing tools so they survive sanitization
             if (result.success && result.data && typeof result.data === 'object') {
               const d = result.data as Record<string, unknown>

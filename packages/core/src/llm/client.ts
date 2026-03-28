@@ -166,6 +166,94 @@ function toAirMessages(msgs: any[]): any[] {
   }, [])
 }
 
+/**
+ * Recover as much as possible from a truncated JSON tool call.
+ * For workspace_write: extracts `path` and salvages whatever `content` is available.
+ * Returns a ToolCallRaw array (empty if nothing recoverable).
+ */
+function recoverTruncatedArgs(toolName: string, rawArgs: string): ToolCallRaw[] {
+  if (!rawArgs.trim()) return []
+
+  // First try: valid JSON as-is
+  try {
+    JSON.parse(rawArgs)
+    return [{
+      id: 'tc_rec_' + Math.random().toString(36).slice(2),
+      type: 'function',
+      function: { name: toolName, arguments: rawArgs },
+    }]
+  } catch { /* truncated — recover below */ }
+
+  const partialArgs: Record<string, unknown> = {}
+
+  // Extract "path" — almost always comes first and is complete
+  const pathMatch = /"path"\s*:\s*"((?:[^"\\]|\\.)*)"/i.exec(rawArgs)
+  if (pathMatch) partialArgs['path'] = pathMatch[1]
+
+  // For workspace_write: salvage the content field even if truncated
+  if (toolName === 'workspace_write') {
+    const contentStart = rawArgs.indexOf('"content"')
+    if (contentStart !== -1) {
+      // Find the opening quote of the content value
+      const quoteIdx = rawArgs.indexOf('"', contentStart + 9)
+      if (quoteIdx !== -1) {
+        // Collect content until we hit an unescaped quote or end of string
+        let content = ''
+        let i = quoteIdx + 1
+        while (i < rawArgs.length) {
+          const ch = rawArgs[i]!
+          if (ch === '\\' && i + 1 < rawArgs.length) {
+            const next = rawArgs[i + 1]!
+            if (next === 'n') { content += '\n'; i += 2; continue }
+            if (next === '"') { content += '"'; i += 2; continue }
+            if (next === '\\') { content += '\\'; i += 2; continue }
+            if (next === 't') { content += '\t'; i += 2; continue }
+            i += 2; continue
+          }
+          if (ch === '"') break  // end of content string
+          content += ch
+          i++
+        }
+        if (content.length > 100) {
+          // Attempt to close HTML/JS properly so the file is valid
+          if (/<html/i.test(content) && !/<\/html>/i.test(content)) {
+            if (!/<\/body>/i.test(content)) content += '\n</body>'
+            content += '\n</html>'
+          }
+          partialArgs['content'] = content
+          // Mark truncated so runtime knows it's partial
+          partialArgs['__salvaged'] = true
+        }
+      }
+    }
+    // If we have both path and content, we can actually execute this
+    if (partialArgs['path'] && partialArgs['content']) {
+      return [{
+        id: 'tc_salvaged_' + Math.random().toString(36).slice(2),
+        type: 'function',
+        function: { name: toolName, arguments: JSON.stringify(partialArgs) },
+      }]
+    }
+  }
+
+  // For other tools: mark truncated so runtime sends the "write shorter" nudge
+  if (partialArgs['path'] || Object.keys(partialArgs).length > 0) {
+    partialArgs['__truncated'] = true
+    return [{
+      id: 'tc_trunc_' + Math.random().toString(36).slice(2),
+      type: 'function',
+      function: { name: toolName, arguments: JSON.stringify(partialArgs) },
+    }]
+  }
+
+  // Nothing recoverable — return truncated marker so runtime nudges
+  return [{
+    id: 'tc_trunc_empty_' + Math.random().toString(36).slice(2),
+    type: 'function',
+    function: { name: toolName, arguments: JSON.stringify({ __truncated: true }) },
+  }]
+}
+
 export class LLMClient {
   constructor(private config: LLMConfig) {}
 
@@ -226,6 +314,40 @@ export class LLMClient {
     const choice = data.choices[0]?.message
     let text = choice?.content ?? ''
     let rawTC: ToolCallRaw[] = choice?.tool_calls ?? []
+
+    // Format 1a: <tool_call tool="name">{...}</tool_call> — attribute-style (model narrates with tool attr)
+    // Also handles truncated blocks where closing tag is missing (response cut off mid-JSON)
+    if (rawTC.length === 0 && /<tool_call\s+tool=/i.test(text)) {
+      // Complete blocks
+      const attrPattern = /<tool_call\s+tool="([^"]+)">\s*([\s\S]*?)\s*<\/tool_call>/gi
+      let attrMatch
+      while ((attrMatch = attrPattern.exec(text)) !== null) {
+        const toolName = attrMatch[1]!.trim()
+        const argsRaw = (attrMatch[2] ?? '').trim()
+        try {
+          const parsed = JSON.parse(argsRaw) as Record<string, unknown>
+          rawTC.push({
+            id: 'tc_attr_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name: toolName, arguments: argsRaw },
+          })
+          void parsed
+        } catch {
+          // Truncated JSON inside complete-looking block — recover partial args
+          rawTC.push(...recoverTruncatedArgs(toolName, argsRaw))
+        }
+      }
+      // Truncated block — no closing tag (response cut off)
+      if (rawTC.length === 0) {
+        const truncMatch = /<tool_call\s+tool="([^"]+)">\s*([\s\S]*)$/i.exec(text)
+        if (truncMatch) {
+          const toolName = truncMatch[1]!.trim()
+          const argsRaw = (truncMatch[2] ?? '').trim()
+          rawTC.push(...recoverTruncatedArgs(toolName, argsRaw))
+        }
+      }
+      if (rawTC.length > 0) text = text.replace(/<tool_call\s+tool="[^"]*">[\s\S]*/gi, '').trim()
+    }
 
     // Format 1: <tool_call>{...}</tool_call> text tags
     if (rawTC.length === 0 && text.includes('<tool_call>')) {
