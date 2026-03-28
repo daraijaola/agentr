@@ -48,20 +48,20 @@ const AIR_MODELS = {
   PRO_PREV: 'gemini-3.1-pro-preview',
 } as const
 
-// Plan model splits — all plans get all models temporarily
+// Plan model splits
 const PLAN_MODELS: Record<string, string[]> = {
-  starter:    Object.values(AIR_MODELS),
-  pro:        Object.values(AIR_MODELS),
-  ultra:      Object.values(AIR_MODELS),
+  starter:    [AIR_MODELS.HAIKU, AIR_MODELS.FLASH_LITE],
+  pro:        [AIR_MODELS.HAIKU, AIR_MODELS.SONNET, AIR_MODELS.SONNET_LATEST, AIR_MODELS.FLASH, AIR_MODELS.FLASH_LITE, AIR_MODELS.GPT4O_MINI],
+  ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.SONNET, AIR_MODELS.SONNET_LATEST, AIR_MODELS.FLASH, AIR_MODELS.FLASH_LITE, AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT4O, AIR_MODELS.O4_MINI, AIR_MODELS.PRO_PREV],
   elite:      Object.values(AIR_MODELS),
   enterprise: Object.values(AIR_MODELS),
 }
 
 // Default model per plan
 const PLAN_DEFAULTS: Record<string, string> = {
-  starter:    AIR_MODELS.OPUS,
-  pro:        AIR_MODELS.OPUS,
-  ultra:      AIR_MODELS.OPUS,
+  starter:    AIR_MODELS.HAIKU,
+  pro:        AIR_MODELS.SONNET,
+  ultra:      AIR_MODELS.SONNET_LATEST,
   elite:      AIR_MODELS.OPUS,
   enterprise: AIR_MODELS.OPUS,
 }

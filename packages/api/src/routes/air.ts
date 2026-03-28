@@ -94,15 +94,15 @@ airRoutes.post(
     try {
       const { writeFileSync, mkdirSync } = await import('fs')
       const { join } = await import('path')
-      const { execSync } = await import('child_process')
+      const { execFileSync } = await import('child_process')
       const dir = join(process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces', tenantId)
       mkdirSync(dir, { recursive: true })
       const safeName = agentName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase()
       const filepath = join(dir, `${safeName}.ts`)
       writeFileSync(filepath, code, 'utf-8')
-      const pmName = `agent-${tenantId.split('-')[0]}-${safeName}`
-      execSync(`pm2 start ${filepath} --name ${pmName} --interpreter ts-node --restart-delay=5000 2>&1`, { encoding: 'utf8' })
-      const logs = execSync(`pm2 logs ${pmName} --lines 20 --nostream 2>&1`, { encoding: 'utf8' })
+      const pmName = `agent-${tenantId.split('-')[0]!}-${safeName}`
+      execFileSync('pm2', ['start', filepath, '--name', pmName, '--interpreter', 'ts-node', '--restart-delay=5000'], { encoding: 'utf8' })
+      const logs = execFileSync('pm2', ['logs', pmName, '--lines', '20', '--nostream'], { encoding: 'utf8' })
       return c.json({ success: true, processName: pmName, filename: `${safeName}.ts`, logs })
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500)
