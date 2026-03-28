@@ -271,7 +271,7 @@ export class AgentRuntime {
                 ...messages,
                 {
                   role: 'user',
-                  content: 'SYSTEM: Use the tool_use API format to call tools — do not write XML. Call the required tool now.'
+                  content: 'SYSTEM: Your tool call was not recognized. Make sure the tool name is valid and args are complete JSON. Call the required tool now.'
                 }
               ])
               continue
@@ -316,6 +316,14 @@ export class AgentRuntime {
 
         toolsRanThisTurn = true
         for (const tc of res.toolCalls) {
+          // Truncated tool call — response was cut off before JSON closed; skip execution and retry
+          if (tc.input['__truncated'] === true) {
+            messages = stripReasoning([
+              ...messages,
+              { role: 'tool', content: JSON.stringify({ success: false, error: 'Response was truncated — the file content was too long to fit in one call. Write a shorter, simpler version of the file (aim for under 5000 characters). You can always improve it with a second workspace_write call once the first version is saved.' }), tool_call_id: tc.id, name: tc.name }
+            ])
+            continue
+          }
           allTC.push({ name: tc.name, input: tc.input })
           let txt: string
           try {

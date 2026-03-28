@@ -136,7 +136,9 @@ function toAirMessages(msgs: any[]): any[] {
     }
     if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
       const text = (m.content ?? '').trim()
-      if (text) acc.push({ role: 'assistant', content: text })
+      // Keep a summary of what tools were called so the model doesn't repeat them
+      const callSummary = m.tool_calls.map((tc: ToolCallRaw) => `[called: ${tc.function.name}]`).join(' ')
+      acc.push({ role: 'assistant', content: text ? `${text}\n${callSummary}` : callSummary })
       return acc
     }
     acc.push(m)
@@ -174,7 +176,7 @@ export class LLMClient {
 
     const body: Record<string, unknown> = {
       model,
-      max_tokens: this.config.maxTokens ?? 4096,
+      max_tokens: this.config.maxTokens ?? 8192,
       temperature: this.config.temperature ?? 0.7,
       messages: airMessages,
     }
@@ -251,6 +253,7 @@ export class LLMClient {
     // Format 3b: <tool_use>\ntool_name\n{json}\n</tool_use>
     // Anthropic XML tool use format — tool name on its own line after opening tag
     if (rawTC.length === 0 && text.includes('<tool_use>')) {
+      // First try complete blocks
       const tuPattern = /<tool_use>\s*([a-z][a-z0-9_]*)\s*([\s\S]*?)\s*<\/tool_use>/gi
       let tuMatch
       while ((tuMatch = tuPattern.exec(text)) !== null) {
@@ -263,15 +266,39 @@ export class LLMClient {
             type: 'function',
             function: { name: toolName, arguments: JSON.stringify(parsed) },
           })
-        } catch { /* malformed args — push with empty input */ 
-          if (toolName) rawTC.push({
+        } catch {
+          // Truncated JSON — try to recover partial args (at least path/name)
+          const partialArgs: Record<string, unknown> = {}
+          const pathM = /"path"\s*:\s*"([^"]*)"/.exec(argsRaw)
+          if (pathM) partialArgs['path'] = pathM[1]
+          const nameM = /"name"\s*:\s*"([^"]*)"/.exec(argsRaw)
+          if (nameM) partialArgs['name'] = nameM[1]
+          rawTC.push({
             id: 'tc_tu_' + Math.random().toString(36).slice(2),
             type: 'function',
-            function: { name: toolName, arguments: '{}' },
+            function: { name: toolName, arguments: JSON.stringify(partialArgs) },
           })
         }
       }
-      if (rawTC.length > 0) text = text.replace(/<tool_use>[\s\S]*?<\/tool_use>/gi, '').trim()
+      // Fallback: incomplete block (response truncated before closing tag)
+      if (rawTC.length === 0 && !text.includes('</tool_use>')) {
+        const incompleteMatch = /<tool_use>\s*([a-z][a-z0-9_]*)\s*([\s\S]*)$/i.exec(text)
+        if (incompleteMatch) {
+          const toolName = incompleteMatch[1]!.trim()
+          const argsRaw = (incompleteMatch[2] ?? '').trim()
+          const partialArgs: Record<string, unknown> = {}
+          const pathM = /"path"\s*:\s*"([^"]*)"/.exec(argsRaw)
+          if (pathM) partialArgs['path'] = pathM[1]
+          // Mark as truncated so the runtime knows to nudge for retry
+          partialArgs['__truncated'] = true
+          rawTC.push({
+            id: 'tc_tu_trunc_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name: toolName, arguments: JSON.stringify(partialArgs) },
+          })
+        }
+      }
+      if (rawTC.length > 0) text = text.replace(/<tool_use>[\s\S]*/gi, '').trim()
     }
 
     // Format 4: Python-style   tool_name({"key": "value"})
