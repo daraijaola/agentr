@@ -58,6 +58,9 @@ export function attachMessageListener(
     text = text.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, '').trim()
     text = text.replace(/<tool_use[^>]*>[\s\S]*?<\/tool_use>/gi, '').trim()
     text = text.replace(/<tool_result[^>]*>[\s\S]*?<\/tool_result>/gi, '').trim()
+    // Strip internal tool history markers: [called: workspace_write] [Tool: X - OK]
+    text = text.replace(/\[called:[^\]]+\]/g, '').trim()
+    text = text.replace(/^\[Tool:[^\]]+\][^\n]*\n?/gm, '').trim()
     // Strip Python-style leaked tool calls: ton_send({...})
     text = text.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
     // Strip raw JSON blobs (tool result echoes — e.g. {"success":true,...})
