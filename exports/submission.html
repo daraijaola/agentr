@@ -4,199 +4,81 @@
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html, body {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: #0a0a0a;
+      width: 100vw; height: 100vh;
+      overflow: hidden; background: #0a0a0a;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     }
-
     .wrap {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-      background: #0a0a0a;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden; background: #0a0a0a;
     }
-
-    .glow {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(120px);
-      pointer-events: none;
-      z-index: 0;
-    }
+    .glow { position:absolute; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
     .g1 { width:520px; height:520px; background:#0098ea; opacity:0.12; top:-140px; left:80px; }
     .g2 { width:400px; height:400px; background:#6b5ce7; opacity:0.10; bottom:-100px; left:220px; }
-    .g3 { width:300px; height:300px; background:#0098ea; opacity:0.06; top:60px; right:80px; }
+    .g3 { width:320px; height:320px; background:#0098ea; opacity:0.07; top:40px; right:40px; }
 
     .left {
-      position: relative;
-      z-index: 2;
-      width: 54%;
-      height: 100%;
-      padding: 0 48px 0 72px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 22px;
+      position:relative; z-index:2;
+      width:54%; height:100%;
+      padding: 0 44px 0 72px;
+      display:flex; flex-direction:column; justify-content:center; gap:22px;
     }
-
-    .eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 10.5px;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: #555;
-    }
-    .dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: #0098ea;
-      flex-shrink: 0;
-      box-shadow: 0 0 6px #0098ea;
-    }
-
-    .headline {
-      font-size: 54px;
-      font-weight: 900;
-      line-height: 1.06;
-      color: #fff;
-      letter-spacing: -0.03em;
-    }
-    .b {
-      background: linear-gradient(130deg,#0098ea,#22d3ee);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .t {
-      background: linear-gradient(130deg,#3b9dd2,#229ed9);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .sub {
-      font-size: 14.5px;
-      color: #555;
-      line-height: 1.65;
-      max-width: 490px;
-    }
-    .sub b { color: #888; font-weight: 500; }
-
-    .pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-    .pill {
-      padding: 5px 13px;
-      border-radius: 100px;
-      border: 1px solid rgba(255,255,255,0.09);
-      background: rgba(255,255,255,0.03);
-      font-size: 11.5px;
-      font-weight: 500;
-      color: #999;
-    }
-    .pill.air {
-      border-color: rgba(0,152,234,0.3);
-      background: rgba(0,152,234,0.07);
-      color: #38bdf8;
-    }
-
-    .foot {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 2px;
-    }
-    .logo {
-      font-size: 16px;
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: -0.02em;
-    }
-    .logo em { color: #0098ea; font-style: normal; }
+    .eyebrow { display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:#555; }
+    .dot { width:5px; height:5px; border-radius:50%; background:#0098ea; flex-shrink:0; box-shadow:0 0 6px #0098ea; }
+    .headline { font-size:54px; font-weight:900; line-height:1.06; color:#fff; letter-spacing:-0.03em; }
+    .b { background:linear-gradient(130deg,#0098ea,#22d3ee); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .t { background:linear-gradient(130deg,#3b9dd2,#229ed9); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .sub { font-size:14.5px; color:#555; line-height:1.65; max-width:490px; }
+    .sub b { color:#888; font-weight:500; }
+    .pills { display:flex; flex-wrap:wrap; gap:7px; }
+    .pill { padding:5px 13px; border-radius:100px; border:1px solid rgba(255,255,255,0.09); background:rgba(255,255,255,0.03); font-size:11.5px; font-weight:500; color:#999; }
+    .pill.air { border-color:rgba(0,152,234,0.3); background:rgba(0,152,234,0.07); color:#38bdf8; }
+    .foot { display:flex; align-items:center; gap:10px; margin-top:2px; }
+    .logo { font-size:16px; font-weight:900; color:#fff; letter-spacing:-0.02em; }
+    .logo em { color:#0098ea; font-style:normal; }
     .bar { width:1px; height:13px; background:#252525; }
-    .domain { font-size: 12.5px; color: #3a3a3a; }
+    .domain { font-size:12.5px; color:#3a3a3a; }
 
     .right {
-      position: relative;
-      z-index: 2;
-      width: 46%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-right: 60px;
+      position:relative; z-index:2;
+      width:46%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      padding-right: 68px;
+      padding-left: 10px;
     }
 
     .phone {
-      width: 240px;
-      height: 494px;
-      background: #1c1c1e;
-      border-radius: 40px;
-      border: 1.5px solid rgba(255,255,255,0.11);
+      width: 228px;
+      height: 556px;
+      background:#1c1c1e;
+      border-radius:42px;
+      border:1.5px solid rgba(255,255,255,0.11);
       box-shadow:
         0 0 0 5px rgba(255,255,255,0.025),
-        0 30px 60px rgba(0,0,0,0.9),
-        0 60px 100px rgba(0,0,0,0.45),
+        0 32px 64px rgba(0,0,0,0.9),
+        0 64px 100px rgba(0,0,0,0.45),
         inset 0 1px 0 rgba(255,255,255,0.06);
-      position: relative;
-      overflow: hidden;
-      transform: perspective(900px) rotateY(-5deg) rotateX(1deg);
+      position:relative; overflow:hidden;
+      transform: perspective(1200px) rotateY(4deg) rotateX(-1.5deg);
     }
-    .screen {
-      position: absolute;
-      inset: 0;
-      border-radius: 39px;
-      overflow: hidden;
-      background: #f5efe6;
-    }
+    .screen { position:absolute; inset:0; border-radius:41px; overflow:hidden; background:#f5efe6; }
+    /* left-anchored + 116% height crops Safari bar without shifting content */
     .screen img {
       width: 100%;
-      height: 100%;
+      height: 116%;
       object-fit: cover;
-      object-position: top center;
+      object-position: left top;
+      display: block;
     }
-    .notch {
-      position: absolute;
-      top: 9px; left: 50%;
-      transform: translateX(-50%);
-      width: 70px; height: 21px;
-      background: #1c1c1e;
-      border-radius: 14px;
-      z-index: 10;
-    }
-    .sb {
-      position: absolute;
-      top: 12px; left: 18px; right: 18px;
-      z-index: 9;
-      display: flex;
-      justify-content: space-between;
-      font-size: 9px; font-weight: 700;
-      color: #111;
-    }
-    .btn { position: absolute; background: rgba(255,255,255,0.07); border-radius: 3px; }
-    .r  { right:-3px; top:110px; width:3px; height:48px; }
-    .l1 { left:-3px; top:92px;  width:3px; height:30px; }
-    .l2 { left:-3px; top:133px; width:3px; height:30px; }
-    .l3 { left:-3px; top:175px; width:3px; height:56px; }
-    .shine {
-      position: absolute; inset: 0;
-      border-radius: 39px;
-      background: linear-gradient(145deg,rgba(255,255,255,0.045) 0%,transparent 30%);
-      pointer-events: none; z-index: 20;
-    }
+    .notch { position:absolute; top:9px; left:50%; transform:translateX(-50%); width:70px; height:21px; background:#1c1c1e; border-radius:14px; z-index:10; }
+    .btn { position:absolute; background:rgba(255,255,255,0.07); border-radius:3px; }
+    .r  { right:-3px; top:120px; width:3px; height:52px; }
+    .l1 { left:-3px; top:100px; width:3px; height:32px; }
+    .l2 { left:-3px; top:144px; width:3px; height:32px; }
+    .l3 { left:-3px; top:190px; width:3px; height:60px; }
+    .shine { position:absolute; inset:0; border-radius:41px; background:linear-gradient(145deg,rgba(255,255,255,0.045) 0%,transparent 30%); pointer-events:none; z-index:20; }
   </style>
   </head>
   <body>
@@ -207,28 +89,23 @@
 
     <div class="left">
       <div class="eyebrow"><div class="dot"></div>AI Agent SaaS &nbsp;·&nbsp; Telegram + TON</div>
-
       <div class="headline">
-        Your agent.<br>
-        Real <span class="t">Telegram</span><br>
-        account. Built on<br>
-        <span class="b">TON</span>.
+        Real AI agents on<br>
+        <span class="t">Telegram</span> &amp; <span class="b">TON</span>.<br>
+        Fully managed.
       </div>
-
       <div class="sub">
-        Not a bot. A <b>full SaaS platform</b> that deploys autonomous AI agents acting
-        as real Telegram user accounts — with a built-in <b>TON wallet</b>, 136 tools,
-        and <b>AIR</b>, our own AI gateway powering every agent.
+        AGENTR is a <b>full SaaS platform</b>. Your agent runs as a real Telegram
+        user account — not a bot — with a built-in <b>TON wallet</b>, 136 tools,
+        and <b>AIR</b>, our own AI gateway. Live in under 2 minutes.
+        No API keys. No servers. No setup.
       </div>
-
       <div class="pills">
-        <span class="pill">Real Telegram Account (not a bot)</span>
         <span class="pill">136 AI Tools</span>
         <span class="pill">TON Wallet Built-in</span>
         <span class="pill">Multi-Agent Swarm</span>
         <span class="pill air">AIR — Built-in AI Gateway</span>
       </div>
-
       <div class="foot">
         <div class="logo">AGENT<em>R</em></div>
         <div class="bar"></div>
