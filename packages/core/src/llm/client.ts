@@ -158,9 +158,7 @@ function toAirMessages(msgs: any[]): any[] {
     }
     if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
       const text = (m.content ?? '').trim()
-      // Keep a summary of what tools were called so the model doesn't repeat them
-      const callSummary = m.tool_calls.map((tc: ToolCallRaw) => `[called: ${tc.function.name}]`).join(' ')
-      acc.push({ role: 'assistant', content: text ? `${text}\n${callSummary}` : callSummary })
+      if (text) acc.push({ role: 'assistant', content: text })
       return acc
     }
     acc.push(m)
