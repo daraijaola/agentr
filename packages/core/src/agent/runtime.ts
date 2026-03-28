@@ -77,9 +77,10 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
   // Strip unparsed <function_calls> XML blocks (Claude native format that leaked through)
   t = t.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
   t = t.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim()
-  // Handle <tool_call> and <tool_call tool="..."> (with or without attributes) and <tool_calls> wrapper
-  t = t.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/g, '').trim()
-  t = t.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/g, '').trim()
+  // Handle all XML tool call formats (with or without attributes)
+  t = t.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/gi, '').trim()
+  t = t.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, '').trim()
+  t = t.replace(/<tool_use[^>]*>[\s\S]*?<\/tool_use>/gi, '').trim()
 
   // Strip Python-style leaked tool calls: ton_send({...}) or functionName({...})
   t = t.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)\s*/g, '').trim()
@@ -264,8 +265,8 @@ export class AgentRuntime {
 
         if (res.toolCalls.length === 0) {
           if (res.text.trim().length > 0) {
-            // LLM generated raw <tool_calls> XML as text instead of using the API tool call format
-            if (/<tool_calls?[\s>]/.test(res.text) || /<tool_call[\s>]/.test(res.text)) {
+            // LLM generated raw XML tool call format instead of using the API tool call format
+            if (/<tool_calls?[\s>]/i.test(res.text) || /<tool_call[\s>]/i.test(res.text) || /<tool_use[\s>]/i.test(res.text)) {
               messages = stripReasoning([
                 ...messages,
                 {

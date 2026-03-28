@@ -54,9 +54,10 @@ export function attachMessageListener(
 
     text = text.replace(/```[\s\S]*?```/g, '').trim()
     text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
-    text = text.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/g, '').trim()
-    text = text.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/g, '').trim()
-    text = text.replace(/<tool_result[^>]*>[\s\S]*?<\/tool_result>/g, '').trim()
+    text = text.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/gi, '').trim()
+    text = text.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, '').trim()
+    text = text.replace(/<tool_use[^>]*>[\s\S]*?<\/tool_use>/gi, '').trim()
+    text = text.replace(/<tool_result[^>]*>[\s\S]*?<\/tool_result>/gi, '').trim()
     // Strip Python-style leaked tool calls: ton_send({...})
     text = text.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
     // Strip raw JSON blobs (tool result echoes — e.g. {"success":true,...})

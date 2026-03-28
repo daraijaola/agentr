@@ -248,7 +248,33 @@ export class LLMClient {
       if (rawTC.length > 0) text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
     }
 
-    // Format 3: Python-style   tool_name({"key": "value"})
+    // Format 3b: <tool_use>\ntool_name\n{json}\n</tool_use>
+    // Anthropic XML tool use format — tool name on its own line after opening tag
+    if (rawTC.length === 0 && text.includes('<tool_use>')) {
+      const tuPattern = /<tool_use>\s*([a-z][a-z0-9_]*)\s*([\s\S]*?)\s*<\/tool_use>/gi
+      let tuMatch
+      while ((tuMatch = tuPattern.exec(text)) !== null) {
+        const toolName = tuMatch[1]!.trim()
+        const argsRaw = (tuMatch[2] ?? '').trim()
+        try {
+          const parsed = argsRaw.startsWith('{') ? JSON.parse(argsRaw) as Record<string, unknown> : {}
+          rawTC.push({
+            id: 'tc_tu_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name: toolName, arguments: JSON.stringify(parsed) },
+          })
+        } catch { /* malformed args — push with empty input */ 
+          if (toolName) rawTC.push({
+            id: 'tc_tu_' + Math.random().toString(36).slice(2),
+            type: 'function',
+            function: { name: toolName, arguments: '{}' },
+          })
+        }
+      }
+      if (rawTC.length > 0) text = text.replace(/<tool_use>[\s\S]*?<\/tool_use>/gi, '').trim()
+    }
+
+    // Format 4: Python-style   tool_name({"key": "value"})
     // Catches cases where the model writes function calls as pseudocode
     if (rawTC.length === 0) {
       const pyPattern = /\b([a-z][a-z0-9_]{2,})\s*\(\s*(\{[\s\S]*?\})\s*\)/g
