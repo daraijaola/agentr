@@ -111,7 +111,7 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
       return firstLine.trim()
     }
     return didWebTask
-      ? 'Done! Your page has been created. Use serve_static to get the live URL.'
+      ? 'Done! Your page has been saved.'
       : 'Done! The task has been completed.'
   }
 
@@ -262,6 +262,19 @@ export class AgentRuntime {
 
         if (res.toolCalls.length === 0) {
           if (res.text.trim().length > 0) {
+            // If first iteration and no tools run yet and response is short,
+            // the LLM is just acknowledging ("On it!", "Sure!", "Give me a moment...")
+            // — nudge it to start executing immediately instead of treating it as done
+            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 120) {
+              messages = stripReasoning([
+                ...messages,
+                {
+                  role: 'user',
+                  content: 'SYSTEM: Do not send acknowledgements — start executing tool calls immediately to complete the task.'
+                }
+              ])
+              continue
+            }
             if (toolsRanThisTurn && !looksLikeFinalReport(res.text) && res.text.trim().length < 50) {
               messages = stripReasoning([
                 ...messages,
