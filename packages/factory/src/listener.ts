@@ -78,13 +78,32 @@ export function attachMessageListener(
       text = urlMatches.join('\n')
     }
     text = text.trim()
-    if (!text) text = 'Done! ✅'
-    if (!text.trim()) return   // absolute guard — never send empty to Telegram
+    // Strip invisible/zero-width chars that fool .trim() but Telegram rejects as empty
+    const visibleText = text.replace(/[\u200b\u200c\u200d\ufeff\u00ad]/g, '').trim()
+    if (!visibleText) text = 'Done ✅'
+    else text = visibleText
 
     // Telegram max is 4096 but keep it shorter for readability
     const MAX_TG = 3800
+
+    const safeSend = async (msg: string, opts?: { replyTo?: number }) => {
+      const clean = (msg ?? '').trim()
+      if (!clean) return  // never send empty
+      try {
+        await tgClient.sendMessage(chatId, clean, opts)
+      } catch (e) {
+        const err = String(e)
+        if (err.includes('empty') || err.includes('EMPTY')) {
+          // Fallback — send a minimal confirmation if all else fails
+          try { await tgClient.sendMessage(chatId, 'Done ✅') } catch {}
+        } else {
+          throw e
+        }
+      }
+    }
+
     if (text.length <= MAX_TG) {
-      await tgClient.sendMessage(chatId, text, { replyTo: replyToId })
+      await safeSend(text, { replyTo: replyToId })
     } else {
       // Hard cap — never send more than 2 chunks; if still too long, trim
       const trimmed = text.slice(0, MAX_TG * 2)
@@ -93,10 +112,12 @@ export function attachMessageListener(
       while (rem.length > 0) {
         const nl = rem.lastIndexOf('\n', MAX_TG)
         const cut = nl > MAX_TG / 2 ? nl : MAX_TG
-        chunks.push(rem.slice(0, cut)); rem = rem.slice(cut)
+        const chunk = rem.slice(0, cut).trim()
+        if (chunk) chunks.push(chunk)
+        rem = rem.slice(cut)
       }
       for (let i = 0; i < Math.min(chunks.length, 2); i++) {
-        await tgClient.sendMessage(chatId, chunks[i]!, i === 0 ? { replyTo: replyToId } : undefined)
+        await safeSend(chunks[i]!, i === 0 ? { replyTo: replyToId } : undefined)
         if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
       }
     }
