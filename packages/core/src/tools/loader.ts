@@ -4,6 +4,97 @@ import type { ToolRegistry } from '../agent/tool-registry.js'
 import { memoryWriteTool } from './memory-write.js'
 import { registerListToolsTool } from './list-tools.js'
 
+export interface DevContext {
+  tenantId: string
+  walletAddress?: string
+  mnemonic?: string[]
+}
+
+/**
+ * Register dev-only tools (workspace, TON, exec) without a Telegram client.
+ * Used by the Developer IDE API route.
+ */
+export async function registerDevTools(registry: ToolRegistry, ctx: DevContext): Promise<void> {
+  const mockCtx: AdapterContext = {
+    client: null as never,
+    db: null as never,
+    chatId: `dev:${ctx.tenantId}`,
+    tenantId: ctx.tenantId,
+    walletAddress: ctx.walletAddress,
+    mnemonic: ctx.mnemonic,
+  }
+
+  // -- Workspace: file operations (per-tenant sandboxed)
+  const { tools: wsTools } = await import('./workspace/index.js')
+  adaptTools(wsTools, mockCtx).forEach((t) => registry.register(t))
+
+  // -- TON: compile, deploy, balance, price (no wallet send in dev IDE)
+  const { tools: tonTools } = await import('./ton/index.js')
+  adaptTools(tonTools, mockCtx).forEach((t) => registry.register(t))
+
+  // -- Deploy: exec / process management
+  const { execRunTool, execRunExecutor, execInstallTool, execInstallExecutor,
+          execStatusTool, execStatusExecutor } = await import('./deploy/index.js')
+  const execTools = [
+    { tool: execRunTool, executor: execRunExecutor },
+    { tool: execInstallTool, executor: execInstallExecutor },
+    { tool: execStatusTool, executor: execStatusExecutor },
+  ] as const
+  execTools.forEach(({ tool, executor }) => {
+    registry.register({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters as Record<string, unknown>,
+      execute: async (params: Record<string, unknown>) => {
+        try { return await (executor as Function)(params, { tenantId: ctx.tenantId, walletAddress: ctx.walletAddress }) }
+        catch (err) { return { success: false, error: String(err) } }
+      },
+    })
+  })
+
+  // -- Test runner
+  const { runTestTool, runTestExecutor } = await import('./deploy/run-test.js')
+  registry.register({
+    name: runTestTool.name,
+    description: runTestTool.description,
+    parameters: runTestTool.parameters as Record<string, unknown>,
+    execute: async (params) => runTestExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
+
+  // -- Serve + delete static site
+  const { serveStaticTool, serveStaticExecutor } = await import('./deploy/serve-static.js')
+  registry.register({
+    name: serveStaticTool.name,
+    description: serveStaticTool.description,
+    parameters: serveStaticTool.parameters as Record<string, unknown>,
+    execute: async (params) => serveStaticExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
+
+  const { deleteSiteTool, deleteSiteExecutor } = await import('./deploy/delete-site.js')
+  registry.register({
+    name: deleteSiteTool.name,
+    description: deleteSiteTool.description,
+    parameters: deleteSiteTool.parameters as Record<string, unknown>,
+    execute: async (params) => deleteSiteExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
+
+  // -- Durable memory writes
+  if (!registry.has(memoryWriteTool.name)) {
+    registry.register({
+      name: memoryWriteTool.name,
+      description: memoryWriteTool.description,
+      parameters: memoryWriteTool.parameters,
+      execute: async (params: Record<string, unknown>) =>
+        memoryWriteTool.execute(params as { content: string; mode: 'append' | 'overwrite' }, { tenantId: ctx.tenantId }),
+    })
+  }
+
+  // -- Built-in: list all tools (always last so count is accurate)
+  registerListToolsTool(registry)
+
+  console.log(`[DevTools] Registered ${registry.list().length} tools for dev tenant: ${ctx.tenantId}`)
+}
+
 // AGENTR MVP tool set
 export async function registerMVPTools(
   registry: ToolRegistry,
@@ -71,13 +162,7 @@ export async function registerMVPTools(
   const { tools: tonTools } = await import('./ton/index.js')
   adaptTools(tonTools, ctx).forEach((t) => registry.register(t))
 
-  // -- DeDust DEX
-  const { tools: dedustTools } = await import('./dedust/index.js')
-  adaptTools(dedustTools, ctx).forEach((t) => registry.register(t))
-
-  // -- Ston.fi DEX
-  const { tools: stonfiTools } = await import('./stonfi/index.js')
-  adaptTools(stonfiTools, ctx).forEach((t) => registry.register(t))
+  // DeDust and Ston.fi DEX tools disabled — AGENTR is a coding agent, not a trading platform
 
   // -- Bot creation
   const { tools: botTools } = await import('./bot/index.js')
@@ -152,6 +237,15 @@ export async function registerMVPTools(
     description: serveStaticTool.description,
     parameters: serveStaticTool.parameters as Record<string, unknown>,
     execute: async (params) => serveStaticExecutor(params as never, { tenantId: ctx.tenantId }),
+  })
+
+  // -- Delete published static files
+  const { deleteSiteTool, deleteSiteExecutor } = await import('./deploy/delete-site.js')
+  registry.register({
+    name: deleteSiteTool.name,
+    description: deleteSiteTool.description,
+    parameters: deleteSiteTool.parameters as Record<string, unknown>,
+    execute: async (params) => deleteSiteExecutor(params as never, { tenantId: ctx.tenantId }),
   })
 
   // -- Test runner

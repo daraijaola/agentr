@@ -58,7 +58,7 @@ http.createServer((req, res) => {
   const url = req.url.split('?')[0]
 
   // Proxy API routes to the backend API server
-  if (url.startsWith('/agent/') || url.startsWith('/auth/') || url === '/health') {
+  if (url.startsWith('/agent/') || url.startsWith('/auth/') || url.startsWith('/dev/') || url === '/health') {
     return proxyToApi(req, res)
   }
 
@@ -70,7 +70,14 @@ http.createServer((req, res) => {
 
   if (url === '/app' || url === '/app/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-    fs.createReadStream(path.join(dist, 'app.html')).pipe(res)
+    fs.createReadStream(path.join(__dirname, 'public', 'app.html')).pipe(res)
+    return
+  }
+
+  if (url === '/coder' || url === '/coder/') {
+    const p = path.join(__dirname, 'public', 'codeR.html')
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    fs.createReadStream(p).pipe(res)
     return
   }
 
@@ -93,12 +100,15 @@ http.createServer((req, res) => {
     return
   }
 
-  const filePath = path.join(dist, url)
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath)
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
-    fs.createReadStream(filePath).pipe(res)
-    return
+  // Check dist/ first, then public/ as fallback for static assets
+  const candidates = [path.join(dist, url), path.join(__dirname, 'public', url)]
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath)
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+      fs.createReadStream(filePath).pipe(res)
+      return
+    }
   }
 
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })

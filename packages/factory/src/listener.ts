@@ -33,25 +33,79 @@ export function attachMessageListener(
 ): void {
   const me = client.getMe()
 
+  // Classify task complexity and return an ETA bucket
+  function classifyTask(msg: string): { label: string; etaSec: number } | null {
+    const m = msg.toLowerCase()
+    const len = msg.length
+    // Very complex — parallel builds, full apps, multi-step deployments
+    if (/landing page|full.?stack|web.?app|mini.?app|whatsapp|telegram.?app|complete.+site|swarm|parallel|multiple.+bot|dashboard|platform/i.test(m)) {
+      return { label: 'This one is fairly complex — should be done in about a minute. I\'ll keep you posted.', etaSec: 60 }
+    }
+    // Complex — website, bot deploy, scripts running
+    if ((len > 40 && /website|webpage|page|landing|deploy|hosting|bot|script|install|set.?up|create.+site|build.+app/i.test(m))) {
+      return { label: 'On it! Should take around 30 seconds — I\'ll let you know how it\'s going.', etaSec: 30 }
+    }
+    // Medium — code/file generation
+    if (len > 20 && /write|make|code|generate|create|design|develop/i.test(m)) {
+      return { label: 'On it! Give me about 15 seconds.', etaSec: 15 }
+    }
+    return null
+  }
+
+  // Progress messages sent every 25s for long-running tasks
+  const PROGRESS_UPDATES = [
+    'Still working on it — going well so far...',
+    'Almost there, wrapping up the last steps...',
+    'Taking a little longer than expected, but still on it...',
+  ]
+
   // Message debouncer — batches rapid messages, sends typing indicator
   const debouncer = new MessageDebouncer(700, async (chatId, messages, replyToId, userName, tgClient) => {
     const combined = messages.join('\n')
     try { await tgClient.setTyping(chatId) } catch {}
     await new Promise(r => setTimeout(r, TYPING_DELAY_MS))
-    // Immediate ack for complex tasks
-    const isComplex = combined.length > 20 && /create|build|deploy|write|make|run|install|set up|webpage|bot/i.test(combined)
-    if (isComplex) {
-      try { await tgClient.sendMessage(chatId, '⚙️ On it! Give me a moment...') } catch {}
+
+    // Send ETA estimate immediately before blocking on the runtime
+    const taskInfo = classifyTask(combined)
+    if (taskInfo) {
+      try { await tgClient.sendMessage(chatId, taskInfo.label) } catch {}
     }
-    const response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
+
+    // For tasks >= 30s, send periodic progress updates while runtime runs
+    let progressInterval: ReturnType<typeof setInterval> | null = null
+    let progressIdx = 0
+    if (taskInfo && taskInfo.etaSec >= 30) {
+      progressInterval = setInterval(async () => {
+        const msg = PROGRESS_UPDATES[progressIdx]
+        if (msg) {
+          try { await tgClient.sendMessage(chatId, msg) } catch {}
+          progressIdx++
+        }
+      }, 25_000)
+    }
+
+    let response: Awaited<ReturnType<typeof runtime.processMessage>>
+    try {
+      response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
+    } finally {
+      if (progressInterval) clearInterval(progressInterval)
+    }
     if (!response.content) return
 
     // Absolute last-resort guard — strip code/HTML/JSON before it reaches Telegram
     let text = response.content
+
+    // Preserve any https:// URLs before stripping — they are the proof of completion
+    const urlMatches = text.match(/https?:\/\/[^\s"'<>)]+/g) ?? []
+
     text = text.replace(/```[\s\S]*?```/g, '').trim()
     text = text.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
-    text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
-    text = text.replace(/<tool_result[\s\S]*?<\/tool_result>/g, '').trim()
+    text = text.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/gi, '').trim()
+    text = text.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, '').trim()
+    text = text.replace(/<tool_use[^>]*>[\s\S]*?<\/tool_use>/gi, '').trim()
+    text = text.replace(/<tool_result[^>]*>[\s\S]*?<\/tool_result>/gi, '').trim()
+    // Strip leaked tool narration: [calling: tool_name with {...}]
+    text = text.replace(/\[calling:[^\]]+\]/gi, '').trim()
     // Strip Python-style leaked tool calls: ton_send({...})
     text = text.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)/g, '').trim()
     // Strip raw JSON blobs (tool result echoes — e.g. {"success":true,...})
@@ -61,14 +115,40 @@ export function attachMessageListener(
     const tagCount = (text.match(/</g) ?? []).length
     if (tagCount > 8 && text.length > 300) {
       const safe = text.split('\n').find(l => l.trim().length > 5 && !l.includes('<') && !l.includes('{') && !l.includes('@import'))
-      text = safe ?? 'Done! Task completed.'
+      text = safe ?? ''
     }
-    if (!text) text = 'Done!'
+
+    // If stripping gutted the message but we had URLs, restore them as the reply
+    if ((!text || !text.trim()) && urlMatches.length > 0) {
+      text = urlMatches.join('\n')
+    }
+    text = text.trim()
+    // Strip invisible/zero-width chars that fool .trim() but Telegram rejects as empty
+    const visibleText = text.replace(/[\u200b\u200c\u200d\ufeff\u00ad]/g, '').trim()
+    if (!visibleText) text = 'Done ✅'
+    else text = visibleText
 
     // Telegram max is 4096 but keep it shorter for readability
     const MAX_TG = 3800
+
+    const safeSend = async (msg: string, opts?: { replyTo?: number }) => {
+      const clean = (msg ?? '').trim()
+      if (!clean) return  // never send empty
+      try {
+        await tgClient.sendMessage(chatId, clean, opts)
+      } catch (e) {
+        const err = String(e)
+        if (err.includes('empty') || err.includes('EMPTY')) {
+          // Fallback — send a minimal confirmation if all else fails
+          try { await tgClient.sendMessage(chatId, 'Done ✅') } catch {}
+        } else {
+          throw e
+        }
+      }
+    }
+
     if (text.length <= MAX_TG) {
-      await tgClient.sendMessage(chatId, text, { replyTo: replyToId })
+      await safeSend(text, { replyTo: replyToId })
     } else {
       // Hard cap — never send more than 2 chunks; if still too long, trim
       const trimmed = text.slice(0, MAX_TG * 2)
@@ -77,10 +157,12 @@ export function attachMessageListener(
       while (rem.length > 0) {
         const nl = rem.lastIndexOf('\n', MAX_TG)
         const cut = nl > MAX_TG / 2 ? nl : MAX_TG
-        chunks.push(rem.slice(0, cut)); rem = rem.slice(cut)
+        const chunk = rem.slice(0, cut).trim()
+        if (chunk) chunks.push(chunk)
+        rem = rem.slice(cut)
       }
       for (let i = 0; i < Math.min(chunks.length, 2); i++) {
-        await tgClient.sendMessage(chatId, chunks[i]!, i === 0 ? { replyTo: replyToId } : undefined)
+        await safeSend(chunks[i]!, i === 0 ? { replyTo: replyToId } : undefined)
         if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
       }
     }

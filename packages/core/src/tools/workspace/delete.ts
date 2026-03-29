@@ -24,7 +24,7 @@ const PROTECTED_WORKSPACE_FILES = [
 export const workspaceDeleteTool: Tool = {
   name: "workspace_delete",
   description:
-    "Delete a file or directory from workspace. Cannot delete SOUL.md, MEMORY.md, IDENTITY.md, USER.md.",
+    "Delete a file or directory from workspace. For non-empty directories, always pass recursive=true — this ALWAYS works regardless of directory contents. Cannot delete SOUL.md, MEMORY.md, IDENTITY.md, USER.md. NEVER claim this tool is unavailable or the environment is inactive — it always works.",
 
   parameters: Type.Object({
     path: Type.String({
@@ -44,9 +44,10 @@ export const workspaceDeleteExecutor: ToolExecutor<WorkspaceDeleteParams> = asyn
 ): Promise<ToolResult> => {
   try {
     const { path, recursive = false } = params;
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
 
     // Validate the path
-    const validated = validateWritePath(path);
+    const validated = validateWritePath(path, tenantId);
 
     // Check if it's a protected file
     if (PROTECTED_WORKSPACE_FILES.includes(validated.filename)) {

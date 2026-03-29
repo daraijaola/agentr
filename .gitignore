@@ -7,9 +7,17 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+*.session
+*.mp4
+*.bak
 sessions/
 workspaces/
+sites/
 .turbo/
 coverage/
 attached_assets/
 .local/
+.replit
+replit.md
+.cache/
+.agents/

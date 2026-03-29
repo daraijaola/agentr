@@ -36,9 +36,22 @@ export class DockerProvisioner {
     return this.dockerAvailable
   }
 
+  private imageExists(): boolean {
+    try {
+      execFileSync('docker', ['image', 'inspect', AGENT_IMAGE], { stdio: 'ignore', timeout: 3000 })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async spawn(tenantId: string): Promise<void> {
     if (!this.docker) {
       console.log(`[DockerProvisioner] (no-docker) Registered tenant: ${tenantId}`)
+      return
+    }
+    if (!this.imageExists()) {
+      console.warn(`[DockerProvisioner] Image ${AGENT_IMAGE} not found — skipping container spawn for tenant: ${tenantId}`)
       return
     }
     const name = containerName(tenantId)

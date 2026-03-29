@@ -77,7 +77,10 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
   // Strip unparsed <function_calls> XML blocks (Claude native format that leaked through)
   t = t.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim()
   t = t.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim()
-  t = t.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
+  // Handle all XML tool call formats (with or without attributes)
+  t = t.replace(/<tool_calls?[^>]*>[\s\S]*?<\/tool_calls?>/gi, '').trim()
+  t = t.replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, '').trim()
+  t = t.replace(/<tool_use[^>]*>[\s\S]*?<\/tool_use>/gi, '').trim()
 
   // Strip Python-style leaked tool calls: ton_send({...}) or functionName({...})
   t = t.replace(/\b[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]*?\}\s*\)\s*/g, '').trim()
@@ -88,8 +91,10 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
     try { JSON.parse(match.trim()); return '' } catch { return match }
   }).trim()
 
-  // Strip [Tool: name] headers that bleed through from toAirMessages
+  // Strip internal/leaked tool markers
   t = t.replace(/^\[Tool:[^\]]+\][^\n]*\n?/gm, '').trim()
+  t = t.replace(/\[called:[^\]]+\]/g, '').trim()
+  t = t.replace(/\[calling:[^\]]+\]/gi, '').trim()
 
   // If response still looks like raw HTML/CSS (starts with tag or has many angle brackets)
   const htmlTagDensity = (t.match(/</g) ?? []).length
@@ -111,7 +116,7 @@ function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
       return firstLine.trim()
     }
     return didWebTask
-      ? 'Done! Your page has been created. Use serve_static to get the live URL.'
+      ? 'Done! Your page has been saved.'
       : 'Done! The task has been completed.'
   }
 
@@ -145,6 +150,8 @@ export class AgentRuntime {
   private saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
   private activeLoops = 0
   private readonly maxConcurrentLoops: number
+  /** Optional override — when set, replaces the default system prompt builder */
+  public systemPromptOverride?: () => Promise<string> | string
 
   constructor(
     private config: AgentConfig,
@@ -177,10 +184,12 @@ export class AgentRuntime {
   }
 
   private async sys(): Promise<string> {
+    if (this.systemPromptOverride) return this.systemPromptOverride()
+
     let workspace = ''
     try {
       const raw = await loadWorkspace(this.config.tenantId)
-      workspace = raw.length > 800 ? raw.slice(0, 800) + '\n...[workspace truncated]' : raw
+      workspace = raw.length > 6000 ? raw.slice(0, 6000) + '\n...[workspace truncated]' : raw
     } catch { /* not ready */ }
 
     return buildSystemPrompt(
@@ -189,6 +198,7 @@ export class AgentRuntime {
       process.env['SERVER_PUBLIC_IP'] ?? 'localhost',
       workspace || undefined,
       this.tools.list().length,
+      this.config.agentName,
     )
   }
 
@@ -222,6 +232,8 @@ export class AgentRuntime {
     const toolUrls: string[] = []  // URLs returned by serve_static, dns_link, etc.
     const systemPrompt = await this.sys()
     let toolsRanThisTurn = false
+    let consecutiveMalformedCount = 0   // empty/unparseable <tool_call> blocks in a row
+    const truncationRetries = new Map<string, number>()  // tool name → truncation count
 
     // Cache check — only for short messages with no prior tool context in history
     const hasPriorTools = trimmedHist.some(m => m.role === 'tool')
@@ -261,6 +273,35 @@ export class AgentRuntime {
 
         if (res.toolCalls.length === 0) {
           if (res.text.trim().length > 0) {
+            // LLM generated raw XML tool call format instead of using the API tool call format
+            if (/<tool_calls?[\s>]/i.test(res.text) || /<tool_call[\s>]/i.test(res.text) || /<tool_use[\s>]/i.test(res.text)) {
+              consecutiveMalformedCount++
+              let nudge: string
+              if (consecutiveMalformedCount >= 3) {
+                // Persistent loop — force a completely different strategy
+                nudge = 'SYSTEM: Your tool calls keep failing because the file content is too large to fit in a single response. CHANGE STRATEGY: (1) Call workspace_write with a minimal skeleton version of the file — plain HTML under 2000 characters, no inline styles, no long scripts. (2) Then call serve_static. (3) You can improve the design in a follow-up. Do NOT attempt to write the full design in one shot — it will always fail. Start with the skeleton NOW.'
+              } else if (consecutiveMalformedCount >= 2) {
+                nudge = 'SYSTEM: Your tool call JSON is incomplete — the content is too long and gets cut off. Write a MUCH shorter version of the file (under 3000 characters total). Strip all inline CSS, long scripts, and decorative content. A working minimal page first, then we can improve it.'
+              } else {
+                nudge = 'SYSTEM: Your tool call was not recognized — the JSON arguments were missing or incomplete. Make sure the args are valid complete JSON. If writing a file, keep the content under 4000 characters. Call the required tool now.'
+              }
+              messages = stripReasoning([...messages, { role: 'user', content: nudge }])
+              continue
+            }
+            consecutiveMalformedCount = 0  // reset on clean text response
+            // If first iteration and no tools run yet and response is short,
+            // the LLM is just acknowledging ("On it!", "Sure!", "Give me a moment...")
+            // — nudge it to start executing immediately instead of treating it as done
+            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 120) {
+              messages = stripReasoning([
+                ...messages,
+                {
+                  role: 'user',
+                  content: 'SYSTEM: Do not send acknowledgements — start executing tool calls immediately to complete the task.'
+                }
+              ])
+              continue
+            }
             if (toolsRanThisTurn && !looksLikeFinalReport(res.text) && res.text.trim().length < 50) {
               messages = stripReasoning([
                 ...messages,
@@ -287,11 +328,33 @@ export class AgentRuntime {
 
 
         toolsRanThisTurn = true
+        consecutiveMalformedCount = 0  // valid tool calls arrived — reset malformed counter
         for (const tc of res.toolCalls) {
-          allTC.push({ name: tc.name, input: tc.input })
+          // Truncated tool call — response was cut off before JSON closed; skip execution and retry
+          if (tc.input['__truncated'] === true) {
+            const retries = (truncationRetries.get(tc.name) ?? 0) + 1
+            truncationRetries.set(tc.name, retries)
+            let truncMsg: string
+            if (retries >= 3) {
+              truncMsg = `CRITICAL: ${tc.name} has failed ${retries} times because your content is too long. You MUST write a skeleton version under 1500 characters — no inline CSS, no long scripts, just plain semantic HTML. Write the minimal version NOW. You can always improve it afterwards.`
+            } else if (retries >= 2) {
+              truncMsg = `${tc.name} failed again — still too long. Keep the entire file content under 2500 characters. Remove all decorative CSS, animations, and scripts. Write a clean minimal HTML skeleton now and serve it. Improvements can follow in the next message.`
+            } else {
+              truncMsg = `Response was truncated — your file content is too long for one call. Write a shorter version (under 4000 characters). You can improve it with a second workspace_write afterwards.`
+            }
+            messages = stripReasoning([
+              ...messages,
+              { role: 'tool', content: JSON.stringify({ success: false, error: truncMsg }), tool_call_id: tc.id, name: tc.name }
+            ])
+            continue
+          }
+          // Strip internal meta-flags before passing to the tool
+          const { __salvaged, __truncated: _t, ...cleanInput } = tc.input as Record<string, unknown>
+          void __salvaged; void _t
+          allTC.push({ name: tc.name, input: cleanInput })
           let txt: string
           try {
-            const result = await this.tools.execute(tc.name, tc.input)
+            const result = await this.tools.execute(tc.name, cleanInput)
             // Capture URLs returned by URL-producing tools so they survive sanitization
             if (result.success && result.data && typeof result.data === 'object') {
               const d = result.data as Record<string, unknown>
@@ -324,6 +387,48 @@ export class AgentRuntime {
       } else {
         finalResponse = `Sorry, I ran into an error: ${errStr}. Please try again.`
       }
+    }
+
+    // If agent wrote an HTML/JS/CSS file but never called serve_static, force deploy now
+    const wroteWebFile = allTC.some(tc =>
+      tc.name === 'workspace_write' &&
+      typeof tc.input['path'] === 'string' &&
+      /\.(html|htm|js|css)$/i.test(tc.input['path'] as string)
+    )
+    const didServeStatic = allTC.some(tc => tc.name === 'serve_static')
+
+    if (wroteWebFile && !didServeStatic && iters < MAX_ITER) {
+      try {
+        const htmlFile = allTC.find(tc =>
+          tc.name === 'workspace_write' &&
+          typeof tc.input['path'] === 'string' &&
+          /\.(html|htm)$/i.test(tc.input['path'] as string)
+        )
+        const filePath = (htmlFile?.input['path'] as string) ?? 'index.html'
+        const nudge: ChatMessage = {
+          role: 'user',
+          content: `SYSTEM: You wrote ${filePath} but did not call serve_static. Call serve_static now with path="${filePath}" to publish it and get the live URL. Do it immediately.`
+        }
+        const deployMessages = stripReasoning([...messages, nudge])
+        const deployRes = await this.llm.chat({ systemPrompt, messages: deployMessages, tools: tools.length > 0 ? tools : undefined })
+        if (deployRes.toolCalls.length > 0) {
+          for (const tc of deployRes.toolCalls) {
+            allTC.push({ name: tc.name, input: tc.input })
+            try {
+              const result = await this.tools.execute(tc.name, tc.input)
+              if (result.success && result.data && typeof result.data === 'object') {
+                const d = result.data as Record<string, unknown>
+                const url = (d['url'] ?? d['link'] ?? d['publicUrl'] ?? '') as string
+                if (typeof url === 'string' && url.startsWith('https://')) toolUrls.push(url)
+              }
+            } catch { /* non-blocking */ }
+          }
+          // One final LLM call to get the URL message
+          const finalMessages = stripReasoning([...deployMessages, stripReasoning(deployRes.messages)[deployRes.messages.length - 1]!])
+          const finalRes = await this.llm.chat({ systemPrompt, messages: finalMessages, tools: undefined })
+          if (finalRes.text.trim()) finalResponse = finalRes.text
+        }
+      } catch { /* non-blocking — fall through to URL restore */ }
     }
 
     if (!finalResponse) {

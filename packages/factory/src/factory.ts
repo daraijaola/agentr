@@ -130,6 +130,7 @@ export class AgentFactory {
       walletAddress: address,
       plan: plan as AgentConfig['plan'],
       provisionedAt,
+      agentName: tenantRow?.agent_name || undefined,
     }
 
     // 8. Start agent runtime
@@ -157,7 +158,7 @@ export class AgentFactory {
     return runtime
   }
 
-  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string }): Promise<void> {
+  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string; agent_name?: string }): Promise<void> {
     const plan = tenant.plan ?? 'starter'
     const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
     const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
@@ -170,6 +171,7 @@ export class AgentFactory {
       walletAddress: tenant.wallet_address,
       plan: plan as AgentConfig['plan'],
       provisionedAt,
+      agentName: tenant.agent_name || undefined,
     }
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
       deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
@@ -204,8 +206,9 @@ export class AgentFactory {
       wallet_mnemonic_enc: string
       plan: string
       created_at: string
+      agent_name: string
     }>(
-      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at
+      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at, t.agent_name
        FROM tenants t
        WHERE t.status = 'active'
          AND EXISTS (
@@ -224,9 +227,10 @@ export class AgentFactory {
           await this.resumeOne(tenant)
         } catch (err: any) {
           const msg = String(err)
-          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED')) {
-            console.warn(`[AgentFactory] Session expired for ${tenant.id}, clearing`)
+          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED') || msg.includes('USER_DEACTIVATED')) {
+            console.warn(`[AgentFactory] Session expired for ${tenant.id}, suspending`)
             try { const { unlinkSync, existsSync } = await import('fs'); const { join } = await import('path'); const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenant.id + '.session'); if (existsSync(sf)) unlinkSync(sf) } catch {}
+            await this.db.updateTenantStatus(tenant.id, 'suspended')
           } else {
             console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
           }
