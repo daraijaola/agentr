@@ -34,17 +34,20 @@ export interface ChatResponse {
 // All 10 AIR models
 const AIR_MODELS = {
   // Fast / entry-tier
-  HAIKU:   'claude-haiku-4-5',
-  GPT4O_MINI: 'gpt-4o-mini',
-  FLASH:   'gemini-2.5-flash',
-  GPT5_MINI: 'gpt-5-mini',
+  HAIKU:        'claude-haiku-4-5',
+  GPT4O_MINI:   'gpt-4o-mini',
+  FLASH:        'gemini-2.5-flash',
+  FLASH_LITE:   'gemini-2.5-flash-lite',
+  GPT5_MINI:    'gpt-5-mini',
+  O4_MINI:      'o4-mini',
   // Mid-tier
-  SONNET:  'claude-sonnet-4-6',
-  GPT4O:   'gpt-4o',
-  PRO:     'gemini-2.5-pro',
+  SONNET:        'claude-sonnet-4-6',
+  SONNET_LATEST: 'claude-sonnet-4-5',
+  GPT4O:         'gpt-4o',
+  PRO:           'gemini-2.5-pro',
   // Top-tier
-  OPUS:    'claude-opus-4-6',
-  GPT5:    'gpt-5.2',
+  OPUS:     'claude-opus-4-6',
+  GPT5:     'gpt-5.2',
   PRO_PREV: 'gemini-3.1-pro-preview',
 } as const
 

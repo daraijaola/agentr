@@ -150,6 +150,8 @@ export class AgentRuntime {
   private saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
   private activeLoops = 0
   private readonly maxConcurrentLoops: number
+  /** Optional override — when set, replaces the default system prompt builder */
+  public systemPromptOverride?: () => Promise<string> | string
 
   constructor(
     private config: AgentConfig,
@@ -182,6 +184,8 @@ export class AgentRuntime {
   }
 
   private async sys(): Promise<string> {
+    if (this.systemPromptOverride) return this.systemPromptOverride()
+
     let workspace = ''
     try {
       const raw = await loadWorkspace(this.config.tenantId)

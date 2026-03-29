@@ -5,6 +5,7 @@ import { MarketplaceTab } from './components/MarketplaceTab'
 import { CreditsTab } from './components/CreditsTab'
 import { BotsTab } from './components/BotsTab'
 import { ActivityTab } from './components/ActivityTab'
+import { DevTab } from './components/DevTab'
 import { post, apiGet, detectApiBase, getAuthHeader, type Screen, type LiveTab, type AgentState } from './lib/api'
 import './styles/app.css'
 
@@ -12,6 +13,7 @@ const AGENTR_WALLET = 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M'
 
 const SIDEBAR_ITEMS: [LiveTab, string, boolean][] = [
   ['overview', 'Overview', true],
+  ['developer', 'Developer', true],
   ['marketplace', 'Marketplace', true],
   ['workspace', 'Workspace', true],
   ['activity', 'Activity', true],
@@ -19,7 +21,6 @@ const SIDEBAR_ITEMS: [LiveTab, string, boolean][] = [
   ['credits', 'Credits', true],
   ['miniapps', 'Mini Apps', false],
   ['tonsites', 'TON Sites', false],
-  ['subagents', 'Sub-agents', false],
 ]
 
 const PROVISIONING_STEPS = [
@@ -666,6 +667,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               </div>
             )}
             {liveTab === 'workspace' && <WorkspaceTab tenantId={agent.tenantId} apiBase={detectApiBase()} />}
+            {liveTab === 'developer' && <DevTab tenantId={agent.tenantId} apiBase={detectApiBase()} />}
             {liveTab === 'marketplace' && <MarketplaceTab tenantId={agent.tenantId} />}
             {liveTab === 'credits' && <CreditsTab tenantId={agent.tenantId} tonWallet={tonWallet} tonConnectUI={tonConnectUI} />}
             {liveTab === 'bots' && <BotsTab tenantId={agent.tenantId} />}

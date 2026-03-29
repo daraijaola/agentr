@@ -6,7 +6,7 @@
 <title>AGENTR — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -572,6 +572,198 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   .wallet-addr { font-size:12px; }
 }
 </style>
+
+<style>
+/* ═══ CODER TAB — SCOPED DARK IDE THEME ═══════════════════════════════ */
+#tab-coder {
+  --cr-bg:#0F0F0E; --cr-bg2:#1A1916; --cr-bg3:#1F1E1C; --cr-bg4:#252421;
+  --cr-bdr:#2C2B28; --cr-bdr2:#3A3935;
+  --cr-txt:#F0EFE8; --cr-txt2:#9B9890; --cr-txt3:#5A5852;
+  --cr-accent:#0098EA; --cr-accent2:#007ec4; --cr-glow:rgba(0,152,234,.12);
+  --cr-green:#10b981; --cr-yellow:#fbbf24; --cr-red:#f87171;
+  --cr-mono:'IBM Plex Mono',monospace;
+  background:var(--cr-bg); color:var(--cr-txt); font-family:'Inter',system-ui,sans-serif;
+}
+/* TOPBAR */
+#cr-topbar { height:40px;min-height:40px;background:var(--cr-bg2);border-bottom:1px solid var(--cr-bdr);
+  display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0; }
+.cr-topbar-label { font-size:12px;color:var(--cr-txt2);display:flex;align-items:center;gap:6px; }
+.cr-topbar-sep { color:var(--cr-bdr2);margin:0 2px; }
+.cr-topbar-name { color:var(--cr-txt);font-size:12px;font-weight:500; }
+.cr-spacer { flex:1; }
+.cr-topbar-btn { display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;
+  background:var(--cr-bg3);border:1px solid var(--cr-bdr);color:var(--cr-txt2);
+  cursor:pointer;font-size:11px;transition:all .15s;font-family:inherit; }
+.cr-topbar-btn:hover { background:var(--cr-bg4);color:var(--cr-txt);border-color:var(--cr-bdr2); }
+.cr-topbar-btn.primary { background:var(--cr-accent);border-color:var(--cr-accent2);color:#fff; }
+.cr-topbar-btn.primary:hover { background:var(--cr-accent2); }
+.cr-status-dot { width:6px;height:6px;border-radius:50%;background:var(--cr-green);box-shadow:0 0 6px var(--cr-green); }
+/* WORKSPACE */
+#cr-workspace { flex:1;display:flex;overflow:hidden;min-height:0; }
+/* CHAT PANEL (right column) */
+#cr-chat-panel { width:380px;min-width:280px;height:100%;display:flex;flex-direction:column;
+  border-left:1px solid var(--cr-bdr);background:var(--cr-bg);flex-shrink:0; }
+.cr-chat-hdr { height:36px;padding:0 12px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--cr-bdr);background:var(--cr-bg2);font-size:11px;color:var(--cr-txt3); }
+.cr-chat-tab { padding:0 8px;height:100%;display:flex;align-items:center;
+  border-bottom:2px solid transparent;cursor:pointer;font-size:11px;color:var(--cr-txt3);transition:all .1s; }
+.cr-chat-tab.active { border-bottom-color:var(--cr-accent);color:var(--cr-txt); }
+.cr-chat-tab:hover:not(.active) { color:var(--cr-txt2); }
+.cr-icon-btn { width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--cr-txt3);cursor:pointer;transition:all .1s; }
+.cr-icon-btn:hover { background:var(--cr-bg3);color:var(--cr-txt2); }
+.cr-chat-msgs { flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:12px; }
+.cr-chat-msgs::-webkit-scrollbar { width:4px; }
+.cr-chat-msgs::-webkit-scrollbar-thumb { background:var(--cr-bdr2);border-radius:2px; }
+/* MESSAGES */
+.cr-msg { display:flex;flex-direction:column;gap:4px;max-width:100%; }
+.cr-msg-hdr { display:flex;align-items:center;gap:6px;font-size:11px;color:var(--cr-txt3); }
+.cr-avatar { width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;font-family:var(--cr-mono);flex-shrink:0; }
+.cr-avatar.ai { background:var(--cr-accent);color:#fff; }
+.cr-avatar.user { background:var(--cr-bg4);color:var(--cr-txt2);border:1px solid var(--cr-bdr); }
+.cr-msg-name { font-weight:500;font-size:11px;color:var(--cr-txt2); }
+.cr-msg-time { color:var(--cr-txt3);font-family:var(--cr-mono);font-size:10px;margin-left:auto; }
+.cr-msg-body { padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.6;
+  border:1px solid var(--cr-bdr);background:var(--cr-bg2);color:var(--cr-txt); }
+.cr-msg.user .cr-msg-body { background:var(--cr-bg3);border-color:var(--cr-bdr2); }
+.cr-msg-body code { font-family:var(--cr-mono);font-size:11px;background:var(--cr-bg);
+  border:1px solid var(--cr-bdr);padding:1px 4px;border-radius:3px;color:#33b0f0; }
+.cr-msg-body pre { background:var(--cr-bg);border:1px solid var(--cr-bdr);border-radius:6px;
+  padding:10px 12px;margin:8px 0;overflow-x:auto; }
+.cr-msg-body pre code { background:none;border:none;padding:0;color:var(--cr-txt2); }
+/* THINKING */
+.cr-thinking { display:flex;align-items:center;gap:8px;padding:8px 12px;
+  font-size:11px;color:var(--cr-txt3);font-family:var(--cr-mono); }
+.cr-thinking-dots { display:flex;gap:3px; }
+.cr-thinking-dots span { width:4px;height:4px;border-radius:50%;background:var(--cr-accent);
+  animation:crPulse 1.2s ease-in-out infinite; }
+.cr-thinking-dots span:nth-child(2) { animation-delay:.2s; }
+.cr-thinking-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes crPulse { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+/* COMPOSER */
+.cr-composer { border-top:1px solid var(--cr-bdr);background:var(--cr-bg2);padding:10px; }
+.cr-composer-inner { border:1px solid var(--cr-bdr2);border-radius:8px;background:var(--cr-bg);overflow:hidden;transition:border-color .15s; }
+.cr-composer-inner:focus-within { border-color:var(--cr-accent); }
+.cr-composer-toolbar { display:flex;align-items:center;gap:4px;padding:6px 8px 0; }
+.cr-tool-btn { display:flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;
+  background:var(--cr-bg3);border:1px solid var(--cr-bdr);color:var(--cr-txt3);
+  cursor:pointer;font-size:10px;font-family:inherit;transition:all .1s; }
+.cr-tool-btn:hover { background:var(--cr-bg4);color:var(--cr-txt2);border-color:var(--cr-bdr2); }
+.cr-tool-btn.on { background:var(--cr-glow);border-color:rgba(0,152,234,.35);color:#33b0f0; }
+#cr-textarea { width:100%;background:none;border:none;outline:none;padding:8px 10px;
+  font-size:12px;font-family:inherit;color:var(--cr-txt);resize:none;
+  min-height:64px;max-height:160px;line-height:1.5; }
+#cr-textarea::placeholder { color:var(--cr-txt3); }
+.cr-composer-footer { display:flex;align-items:center;padding:6px 8px 8px;gap:6px; }
+.cr-model-badge { display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;
+  background:var(--cr-bg3);border:1px solid var(--cr-bdr);color:var(--cr-txt2);
+  cursor:pointer;font-size:10px;font-family:var(--cr-mono);transition:all .1s; }
+.cr-model-badge:hover { border-color:var(--cr-bdr2);color:var(--cr-txt); }
+.cr-model-dot { width:5px;height:5px;border-radius:50%;background:var(--cr-green); }
+.cr-send-btn { display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:5px;
+  background:var(--cr-accent);border:none;color:#fff;cursor:pointer;
+  font-size:11px;font-family:inherit;font-weight:500;transition:all .15s; }
+.cr-send-btn:hover { background:var(--cr-accent2); }
+.cr-send-btn:disabled { opacity:.4;cursor:not-allowed; }
+/* EDITOR SECTION (center column) */
+#cr-editor-section { flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden; }
+.cr-code-hdr { height:36px;padding:0 8px 0 0;display:flex;align-items:center;gap:0;
+  border-bottom:1px solid var(--cr-bdr);background:var(--cr-bg2);flex-shrink:0;overflow:hidden; }
+.cr-editor-tab { display:flex;align-items:center;gap:5px;padding:0 10px;height:100%;
+  border-right:1px solid var(--cr-bdr);border-bottom:2px solid transparent;
+  cursor:pointer;font-size:11px;font-family:var(--cr-mono);color:var(--cr-txt3);transition:all .1s;white-space:nowrap; }
+.cr-editor-tab.active { border-bottom-color:var(--cr-accent);color:var(--cr-txt);background:var(--cr-bg); }
+.cr-editor-tab:hover:not(.active) { color:var(--cr-txt2); }
+.cr-editor-tab .cr-close { opacity:0;margin-left:2px;font-size:13px;line-height:1; }
+.cr-editor-tab:hover .cr-close { opacity:.5; }
+/* FILE TREE (left column) */
+#cr-file-tree { width:180px;min-width:140px;border-right:1px solid var(--cr-bdr);
+  background:var(--cr-bg2);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column; }
+#cr-file-tree::-webkit-scrollbar { width:3px; }
+#cr-file-tree::-webkit-scrollbar-thumb { background:var(--cr-bdr); }
+.cr-tree-label { padding:8px 12px 4px;font-size:10px;font-weight:600;
+  color:var(--cr-txt3);letter-spacing:.08em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+.cr-tree-item { display:flex;align-items:center;gap:6px;padding:4px 12px;
+  font-size:11px;font-family:var(--cr-mono);color:var(--cr-txt2);
+  cursor:pointer;transition:all .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0; }
+.cr-tree-item:hover { background:var(--cr-bg3);color:var(--cr-txt); }
+.cr-tree-item.active { background:var(--cr-bg4);color:var(--cr-txt); }
+.cr-tree-item svg { flex-shrink:0;opacity:.7; }
+.cr-file-dot { width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:auto; }
+.cr-file-dot.new { background:var(--cr-green); }
+.cr-file-dot.mod { background:var(--cr-yellow); }
+/* EDITOR AREA */
+#cr-editor-area { flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden; }
+#cr-editor-tabs { display:flex;align-items:center;height:100%;flex:1;overflow-x:auto; }
+#cr-editor-tabs::-webkit-scrollbar { display:none; }
+.cr-code-hdr-btns { display:flex;align-items:center;gap:2px;padding-right:8px;flex-shrink:0; }
+#cr-editor { flex:1;overflow:auto;background:var(--cr-bg);padding:12px 0; }
+#cr-editor::-webkit-scrollbar { width:6px; }
+#cr-editor::-webkit-scrollbar-thumb { background:var(--cr-bdr2);border-radius:3px; }
+.cr-code-line { display:flex;align-items:flex-start;padding:0 16px;min-height:20px;
+  font-size:12px;font-family:var(--cr-mono);line-height:1.6; }
+.cr-code-line:hover { background:rgba(255,255,255,.02); }
+.cr-ln { width:36px;min-width:36px;text-align:right;color:var(--cr-txt3);
+  font-size:11px;margin-right:16px;user-select:none;flex-shrink:0; }
+.cr-lc { flex:1;white-space:pre;color:var(--cr-txt2); }
+.cr-kw{color:#33b0f0}.cr-str{color:#86efac}.cr-fn{color:#7dd3fc}.cr-num{color:#fbbf24}
+.cr-cmt{color:var(--cr-txt3);font-style:italic}.cr-ty{color:#93c5fd}.cr-op{color:var(--cr-txt3)}
+/* EMPTY STATE */
+.cr-empty { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;color:var(--cr-txt3);padding:24px;text-align:center; }
+.cr-empty-icon { width:44px;height:44px;border-radius:10px;background:var(--cr-bg3);
+  border:1px solid var(--cr-bdr);display:flex;align-items:center;justify-content:center;opacity:.6; }
+/* STATUS BAR */
+#cr-statusbar { height:22px;background:var(--cr-green);flex-shrink:0;
+  display:flex;align-items:center;padding:0 10px;gap:12px;
+  font-size:10px;font-family:var(--cr-mono);color:rgba(255,255,255,.85); }
+.cr-si { display:flex;align-items:center;gap:4px; }
+.cr-sep { opacity:.35;margin:0 2px; }
+/* MODEL MODAL */
+#cr-modal { display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center; }
+#cr-modal.open { display:flex; }
+.cr-modal-box { background:var(--cr-bg2);border:1px solid var(--cr-bdr2);border-radius:10px;
+  padding:24px;width:440px;display:flex;flex-direction:column;gap:16px;color:var(--cr-txt); }
+.cr-modal-title { font-size:15px;font-weight:600; }
+.cr-modal-sub { font-size:12px;color:var(--cr-txt2);line-height:1.6; }
+.cr-modal-section { font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--cr-txt3);padding:4px 0; }
+.cr-modal-divider { height:1px;background:var(--cr-bdr);margin:4px 0; }
+.cr-model-opt { display:flex;align-items:center;gap:10px;padding:12px;border-radius:6px;
+  border:1px solid var(--cr-bdr);cursor:pointer;transition:all .15s; }
+.cr-model-opt:hover { border-color:var(--cr-accent);background:var(--cr-glow); }
+.cr-model-opt.sel { border-color:var(--cr-accent);background:var(--cr-glow); }
+.cr-model-icon { width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;font-family:var(--cr-mono);flex-shrink:0; }
+.cr-model-icon.air { background:var(--cr-accent);color:#fff; }
+.cr-model-icon.cla { background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff; }
+.cr-model-icon.oai { background:#1a1a1a;color:#fff;border:1px solid #333; }
+.cr-model-info { flex:1; }
+.cr-model-name { font-size:13px;font-weight:600; }
+.cr-model-desc { font-size:11px;color:var(--cr-txt2);margin-top:2px; }
+.cr-model-tag { font-size:9px;font-family:var(--cr-mono);padding:2px 6px;border-radius:3px; }
+.cr-model-tag.credits { background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25); }
+.cr-model-tag.byok { background:rgba(251,191,36,.12);color:var(--cr-yellow);border:1px solid rgba(251,191,36,.28); }
+.cr-model-tag.on { background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.4); }
+.cr-key-row { display:flex;flex-direction:column;gap:6px; }
+.cr-key-input { padding:8px 10px;border-radius:6px;background:var(--cr-bg);border:1px solid var(--cr-bdr);
+  color:var(--cr-txt);font-family:var(--cr-mono);font-size:11px;width:100%;outline:none;transition:border-color .15s; }
+.cr-key-input:focus { border-color:var(--cr-accent); }
+.cr-key-input::placeholder { color:var(--cr-txt3); }
+.cr-modal-actions { display:flex;gap:8px;justify-content:flex-end; }
+.cr-btn { padding:7px 14px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;
+  border:1px solid var(--cr-bdr);background:var(--cr-bg3);color:var(--cr-txt2);transition:all .15s; }
+.cr-btn:hover { background:var(--cr-bg4);color:var(--cr-txt); }
+.cr-btn.primary { background:var(--cr-accent);border-color:var(--cr-accent2);color:#fff; }
+.cr-btn.primary:hover { background:var(--cr-accent2); }
+/* SB ITEM — Coder branding */
+.sb-item .cr-r { color:#10b981; font-style:normal; }
+.sb-item-sub { font-size:10px;color:var(--text-muted);margin-top:1px;line-height:1.2; }
+</style>
 <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
@@ -815,6 +1007,14 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
       <div class="sb-item" data-tab="bots" onclick="switchTab('bots',this);closeSidebar()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>
         Bots &amp; Processes
+      </div>
+      <div class="sb-item" data-tab="coder" style="flex-direction:column;align-items:flex-start;gap:2px;opacity:.5;cursor:not-allowed;pointer-events:none">
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Code<em class="cr-r">r</em></span>
+          <span style="margin-left:auto;font-size:9px;font-weight:600;letter-spacing:.06em;background:rgba(251,191,36,.12);color:#f59e0b;border:1px solid rgba(251,191,36,.25);padding:1px 6px;border-radius:20px;font-family:var(--mono)">IN PROGRESS</span>
+        </div>
+        <span class="sb-item-sub">Build custom AI agents</span>
       </div>
       <div class="sb-item" data-tab="credits" onclick="switchTab('credits',this);closeSidebar()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1087,6 +1287,246 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <p class="section-label">Transaction history</p>
         <div id="tx-list"><div style="font-size:13px;color:var(--text-muted)">Loading…</div></div>
       </div>
+
+      <!-- CODER TAB -->
+      <div class="tab-pane" id="tab-coder" style="height:calc(100vh - 56px);display:none;flex-direction:column;gap:0;padding:0;overflow:hidden">
+
+        <!-- TOPBAR -->
+        <div id="cr-topbar">
+          <div class="cr-topbar-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            my-agent
+          </div>
+          <span class="cr-topbar-sep">/</span>
+          <span class="cr-topbar-name" id="cr-thread-name">New session</span>
+          <div class="cr-spacer"></div>
+          <div class="cr-topbar-btn">
+            <div class="cr-status-dot" id="cr-status-dot"></div>
+            <span id="cr-status-text">Ready</span>
+          </div>
+          <button class="cr-topbar-btn primary" onclick="crSend()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Build
+          </button>
+        </div>
+
+        <!-- WORKSPACE: file-tree (left) | editor (center) | chat (right) -->
+        <div id="cr-workspace">
+
+          <!-- FILE TREE (left column) -->
+          <div id="cr-file-tree">
+            <div class="cr-tree-label">
+              Explorer
+              <button class="cr-icon-btn" onclick="crRefreshFiles()" style="width:20px;height:20px">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+            </div>
+            <div id="cr-file-list">
+              <div style="padding:16px 12px;font-size:11px;color:var(--cr-txt3);text-align:center">Chat to generate files</div>
+            </div>
+          </div>
+
+          <!-- EDITOR SECTION (center column) -->
+          <div id="cr-editor-section">
+            <div class="cr-code-hdr">
+              <div id="cr-editor-tabs">
+                <div class="cr-editor-tab active" id="cr-tab-welcome">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  welcome.md
+                </div>
+              </div>
+              <div class="cr-code-hdr-btns">
+                <button class="cr-icon-btn" onclick="crCopyFile()" title="Copy">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+                <button class="cr-icon-btn" onclick="crRefreshFiles()" title="Refresh files">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+              </div>
+            </div>
+            <div id="cr-editor-area">
+              <div id="cr-editor">
+                <div class="cr-empty">
+                  <div class="cr-empty-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  </div>
+                  <div style="font-size:13px;font-weight:500;color:var(--cr-txt2)">No file open</div>
+                  <div style="font-size:11px;color:var(--cr-txt3);max-width:220px;line-height:1.6">Chat with the agent to generate code. Files appear in the explorer on the left.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHAT PANEL (right column) -->
+          <div id="cr-chat-panel">
+            <div class="cr-chat-hdr">
+              <div class="cr-chat-tab active">Chat</div>
+              <div class="cr-chat-tab" style="opacity:.5">History</div>
+              <div class="cr-spacer"></div>
+              <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--cr-txt3)" id="cr-model-label">AIR</span>
+              <button class="cr-icon-btn" onclick="crClearSession()" title="Clear session">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+
+            <div class="cr-chat-msgs" id="cr-chat-msgs">
+              <div class="cr-msg">
+                <div class="cr-msg-hdr">
+                  <div class="cr-avatar ai">A</div>
+                  <span class="cr-msg-name">AIR</span>
+                  <span class="cr-msg-time">just now</span>
+                </div>
+                <div class="cr-msg-body">
+                  Welcome to <strong>Code<em style="font-style:normal;color:#10b981">r</em></strong> — your AI agent builder.<br><br>
+                  Describe the agent you want to build. I'll write the code, set up the tools (TON wallet, Telegram bots, web hooks, MCP), and deploy it for you.<br><br>
+                  <span style="color:var(--cr-txt3);font-size:11px">Try: <em>"Build a Telegram bot that monitors my TON wallet and sends alerts"</em></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cr-composer">
+              <div class="cr-composer-inner">
+                <div class="cr-composer-toolbar">
+                  <button class="cr-tool-btn on" id="cr-btn-ton" onclick="crToggleTool(this)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    TON
+                  </button>
+                  <button class="cr-tool-btn" id="cr-btn-tg" onclick="crToggleTool(this)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.18.18 0 0 0-.07-.2c-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.66-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.14-.02.3-.04.42z"/></svg>
+                    Telegram
+                  </button>
+                  <button class="cr-tool-btn" id="cr-btn-mcp" onclick="crToggleTool(this)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    MCP
+                  </button>
+                  <button class="cr-tool-btn" id="cr-btn-wallet" onclick="crToggleTool(this)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 3H8L4 7h16z"/><circle cx="17" cy="13" r="1"/></svg>
+                    Wallet
+                  </button>
+                </div>
+                <textarea id="cr-textarea" placeholder="Describe the agent you want to build…" rows="3" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();crSend()}"></textarea>
+                <div class="cr-composer-footer">
+                  <div class="cr-model-badge" onclick="crOpenModal()">
+                    <div class="cr-model-dot" id="cr-dot"></div>
+                    <span id="cr-model-name">AIR</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  </div>
+                  <div class="cr-spacer"></div>
+                  <span style="font-size:10px;color:var(--cr-txt3);font-family:'IBM Plex Mono',monospace">⏎ send</span>
+                  <button class="cr-send-btn" id="cr-send-btn" onclick="crSend()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /cr-workspace -->
+
+        <!-- STATUS BAR -->
+        <div id="cr-statusbar">
+          <div class="cr-si">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            TypeScript
+          </div>
+          <span class="cr-sep">|</span>
+          <div class="cr-si">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            TON Mainnet
+          </div>
+          <span class="cr-sep">|</span>
+          <div class="cr-si" id="cr-sb-model">AIR · CREDITS</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <div class="cr-si" id="cr-sb-user" style="color:rgba(255,255,255,.9)">AGENTR</div>
+          </div>
+        </div>
+
+        <!-- MODEL MODAL (inside tab-coder so CSS vars resolve; position:fixed still overlays) -->
+        <div id="cr-modal">
+          <div class="cr-modal-box">
+            <div class="cr-modal-title">Choose Model</div>
+            <div class="cr-modal-sub">All AGENTR Credits models are ready to use. Bring your own API key for unlimited usage.</div>
+
+            <div class="cr-modal-section">AGENTR Credits</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="cr-model-opt sel" id="cr-opt-air" onclick="crSelectModel('air','AIR','AIR · FAST · CREDITS')">
+                <div class="cr-model-icon air">A</div>
+                <div class="cr-model-info">
+                  <div class="cr-model-name">AIR</div>
+                  <div class="cr-model-desc">TON &amp; Telegram specialist · Fast · Recommended</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag credits">CREDITS</span>
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
+                </div>
+              </div>
+              <div class="cr-model-opt" id="cr-opt-sonnet" onclick="crSelectModel('claude-sonnet','Claude Sonnet','Sonnet · BALANCED · CREDITS')">
+                <div class="cr-model-icon cla">C</div>
+                <div class="cr-model-info">
+                  <div class="cr-model-name">Claude Sonnet</div>
+                  <div class="cr-model-desc">Anthropic · Balanced reasoning &amp; code</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag credits">CREDITS</span>
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
+                </div>
+              </div>
+              <div class="cr-model-opt" id="cr-opt-codex" onclick="crSelectModel('codex','o4-mini','o4-mini · CODING · CREDITS')">
+                <div class="cr-model-icon oai">o</div>
+                <div class="cr-model-info">
+                  <div class="cr-model-name">o4-mini</div>
+                  <div class="cr-model-desc">OpenAI · Coding specialist · Smart contracts</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag credits">CREDITS</span>
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cr-modal-divider"></div>
+            <div class="cr-modal-section">Bring Your Own Key</div>
+
+            <div class="cr-key-row">
+              <div class="cr-model-opt" id="cr-opt-cla-byok">
+                <div class="cr-model-icon cla" onclick="crToggleByok('anthropic')" style="cursor:pointer">C</div>
+                <div class="cr-model-info" onclick="crToggleByok('anthropic')" style="cursor:pointer">
+                  <div class="cr-model-name">Claude (Anthropic)</div>
+                  <div class="cr-model-desc">Your Anthropic API key — unlimited usage</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag byok" id="cr-cla-tag">CONNECT</span>
+                  <button id="cr-cla-use" onclick="crActivateByok('anthropic')" style="display:none;font-size:9px;font-family:var(--cr-mono);padding:2px 6px;border-radius:3px;background:var(--cr-accent);border:none;color:#fff;cursor:pointer">USE</button>
+                  <div id="cr-cla-dot" style="width:6px;height:6px;border-radius:50%;background:var(--cr-txt3);"></div>
+                </div>
+              </div>
+              <input class="cr-key-input" id="cr-cla-key" type="password" placeholder="sk-ant-api03-…" style="display:none" oninput="crSaveByok('anthropic')"/>
+            </div>
+
+            <div class="cr-key-row">
+              <div class="cr-model-opt" id="cr-opt-oai-byok">
+                <div class="cr-model-icon oai" onclick="crToggleByok('openai')" style="cursor:pointer">o</div>
+                <div class="cr-model-info" onclick="crToggleByok('openai')" style="cursor:pointer">
+                  <div class="cr-model-name">GPT-4o / Codex (OpenAI)</div>
+                  <div class="cr-model-desc">Your OpenAI API key — unlimited usage</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag byok" id="cr-oai-tag">CONNECT</span>
+                  <button id="cr-oai-use" onclick="crActivateByok('openai')" style="display:none;font-size:9px;font-family:var(--cr-mono);padding:2px 6px;border-radius:3px;background:var(--cr-accent);border:none;color:#fff;cursor:pointer">USE</button>
+                  <div id="cr-oai-dot" style="width:6px;height:6px;border-radius:50%;background:var(--cr-txt3);"></div>
+                </div>
+              </div>
+              <input class="cr-key-input" id="cr-oai-key" type="password" placeholder="sk-…" style="display:none" oninput="crSaveByok('openai')"/>
+            </div>
+
+            <div class="cr-modal-actions">
+              <button class="cr-btn" onclick="crCloseModal()">Close</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab-coder -->
 
     </div><!-- /main -->
   </div><!-- /dashboard-body -->
@@ -1363,9 +1803,11 @@ function showErr(id, msg) {
 // ─── TABS ─────────────────────────────────────────
 function switchTab(name, el) {
   document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'))
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab-pane').forEach(p => { p.classList.remove('active'); p.style.display = '' })
   if (el) el.classList.add('active')
-  document.getElementById('tab-' + name).classList.add('active')
+  const pane = document.getElementById('tab-' + name)
+  pane.classList.add('active')
+  if (name === 'coder') pane.style.display = 'flex'
 }
 
 // ─── OVERVIEW ─────────────────────────────────────
@@ -1730,6 +2172,356 @@ async function handleTopup(usd, credits, ton) {
     tonUI.openModal()
   }
 }
+
+// ─── CODER TAB ────────────────────────────────────
+const CR = {
+  model: 'air',
+  modelLabel: 'AIR',
+  statusLabel: 'AIR · CREDITS',
+  inited: false,
+  openFile: null,
+  byok: { anthropic: '', openai: '' },
+  byokActive: '',
+}
+
+function initCoderTab() {
+  if (CR.inited) return
+  CR.inited = true
+  const saved = localStorage.getItem('cr_byok')
+  if (saved) try { Object.assign(CR.byok, JSON.parse(saved)) } catch {}
+  CR.byokActive = localStorage.getItem('cr_byok_active') || ''
+  crRefreshByokDots()
+  const savedModel = localStorage.getItem('cr_model')
+  if (savedModel) {
+    const map = {
+      'air':['air','AIR','AIR · CREDITS'],
+      'claude-sonnet':['claude-sonnet','Claude Sonnet','Sonnet · CREDITS'],
+      'codex':['codex','o4-mini','o4-mini · CREDITS'],
+    }
+    if (map[savedModel]) crApplyModel(...map[savedModel])
+  }
+  crLoadFiles()
+  const user = STATE.tenantId ? '@' + STATE.tenantId.slice(0, 8) : 'AGENTR'
+  document.getElementById('cr-sb-user').textContent = user
+}
+
+function crRefreshByokDots() {
+  const claConnected = CR.byok.anthropic && CR.byok.anthropic.length > 8
+  const oaiConnected = CR.byok.openai && CR.byok.openai.length > 8
+  const claEl = { dot: document.getElementById('cr-cla-dot'), tag: document.getElementById('cr-cla-tag'),
+    key: document.getElementById('cr-cla-key'), use: document.getElementById('cr-cla-use') }
+  const oaiEl = { dot: document.getElementById('cr-oai-dot'), tag: document.getElementById('cr-oai-tag'),
+    key: document.getElementById('cr-oai-key'), use: document.getElementById('cr-oai-use') }
+  if (claConnected) {
+    if (claEl.dot) claEl.dot.style.background = CR.byokActive === 'anthropic' ? 'var(--cr-accent)' : 'var(--cr-green)'
+    if (claEl.tag) { claEl.tag.textContent = 'CONNECTED'; claEl.tag.className = 'cr-model-tag on' }
+    if (claEl.key) { claEl.key.value = CR.byok.anthropic; claEl.key.style.display = 'block' }
+    if (claEl.use) { claEl.use.textContent = CR.byokActive === 'anthropic' ? 'ACTIVE' : 'USE'; claEl.use.style.display = 'block' }
+  } else {
+    if (claEl.dot) claEl.dot.style.background = 'var(--cr-txt3)'
+    if (claEl.use) claEl.use.style.display = 'none'
+  }
+  if (oaiConnected) {
+    if (oaiEl.dot) oaiEl.dot.style.background = CR.byokActive === 'openai' ? 'var(--cr-accent)' : 'var(--cr-green)'
+    if (oaiEl.tag) { oaiEl.tag.textContent = 'CONNECTED'; oaiEl.tag.className = 'cr-model-tag on' }
+    if (oaiEl.key) { oaiEl.key.value = CR.byok.openai; oaiEl.key.style.display = 'block' }
+    if (oaiEl.use) { oaiEl.use.textContent = CR.byokActive === 'openai' ? 'ACTIVE' : 'USE'; oaiEl.use.style.display = 'block' }
+  } else {
+    if (oaiEl.dot) oaiEl.dot.style.background = 'var(--cr-txt3)'
+    if (oaiEl.use) oaiEl.use.style.display = 'none'
+  }
+}
+
+function crActivateByok(provider) {
+  if (CR.byokActive === provider) {
+    CR.byokActive = ''
+    localStorage.removeItem('cr_byok_active')
+    crApplyModel('air', 'AIR', 'AIR · CREDITS')
+  } else {
+    CR.byokActive = provider
+    localStorage.setItem('cr_byok_active', provider)
+    if (provider === 'anthropic') crApplyModel('claude-sonnet', 'Claude (BYOK)', 'Anthropic · BYOK')
+    else crApplyModel('codex', 'GPT-4o (BYOK)', 'OpenAI · BYOK')
+  }
+  crRefreshByokDots()
+  crCloseModal()
+}
+
+async function crLoadFiles() {
+  if (!STATE.tenantId) return
+  const el = document.getElementById('cr-file-list')
+  el.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--cr-txt3)">Loading…</div>'
+  try {
+    const r = await fetch('/dev/files/' + STATE.tenantId, { headers: authGetHdr() })
+    const data = await r.json()
+    const files = (data.files || []).filter(f => f.type === 'file')
+    if (!files.length) {
+      el.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--cr-txt3);text-align:center">Ask the agent to build something — files appear here</div>'
+      return
+    }
+    const nowSec = Date.now() / 1000
+    el.innerHTML = files.map(f => {
+      const age = f.mtime ? (nowSec - f.mtime) : Infinity
+      const dotClass = age < 300 ? 'new' : age < 3600 ? 'mod' : ''
+      const dot = dotClass ? `<div class="cr-file-dot ${dotClass}"></div>` : ''
+      const ps = JSON.stringify(f.path), ns = JSON.stringify(f.name)
+      const dp = JSON.stringify(f.path)
+      return `<div class="cr-tree-item" data-path=${dp} onclick="crOpenFile(${ps},${ns})">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        ${f.name}${dot}
+      </div>`
+    }).join('')
+  } catch(e) {
+    el.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--cr-red)">Error loading files</div>'
+  }
+}
+
+function crRefreshFiles() { crLoadFiles() }
+
+async function crOpenFile(path, name) {
+  CR.openFile = { path, name }
+  const editorEl = document.getElementById('cr-editor')
+  editorEl.innerHTML = '<div style="padding:20px;font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--cr-txt3)">Loading…</div>'
+  document.querySelectorAll('.cr-tree-item').forEach(t => t.classList.remove('active'))
+  const activeItem = document.querySelector(`.cr-tree-item[data-path=${JSON.stringify(path)}]`)
+  if (activeItem) activeItem.classList.add('active')
+  const tabs = document.getElementById('cr-editor-tabs')
+  const existing = tabs.querySelector(`[data-file="${CSS.escape(name)}"]`)
+  if (!existing) {
+    const tab = document.createElement('div')
+    tab.className = 'cr-editor-tab active'
+    tab.dataset.file = name
+    tab.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${name}<span class="cr-close" onclick="event.stopPropagation();this.parentElement.remove()">×</span>`
+    tabs.querySelectorAll('.cr-editor-tab').forEach(t => t.classList.remove('active'))
+    const welcome = tabs.querySelector('#cr-tab-welcome')
+    if (welcome) welcome.remove()
+    tabs.appendChild(tab)
+  } else {
+    tabs.querySelectorAll('.cr-editor-tab').forEach(t => t.classList.remove('active'))
+    existing.classList.add('active')
+  }
+  try {
+    const r = await fetch('/dev/file/' + STATE.tenantId + '?path=' + encodeURIComponent(path), { headers: authGetHdr() })
+    const data = await r.json()
+    crRenderCode(data.content || '', name)
+  } catch(e) {
+    editorEl.innerHTML = '<div style="padding:20px;color:var(--cr-red);font-family:IBM Plex Mono,monospace;font-size:12px">Error reading file.</div>'
+  }
+}
+
+function crEscHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+const CR_KWS = new Set(['const','let','var','function','class','import','export','from','return',
+  'if','else','for','while','async','await','try','catch','new','this','typeof','interface',
+  'type','extends','implements','null','undefined','true','false','of','in','switch','case',
+  'default','break','continue','void','static','readonly','public','private','protected',
+  'throw','finally','delete','instanceof','yield','enum','declare','abstract','override'])
+
+function crHighlight(line) {
+  let out = '', i = 0
+  while (i < line.length) {
+    const ch = line[i]
+    if (ch === '/' && line[i+1] === '/') {
+      out += `<span class="cr-cmt">${crEscHtml(line.slice(i))}</span>`; break
+    }
+    if (ch === '/' && line[i+1] === '*') {
+      let j = i + 2; while (j < line.length - 1 && !(line[j]==='*'&&line[j+1]==='/')) j++
+      j = Math.min(j + 2, line.length)
+      out += `<span class="cr-cmt">${crEscHtml(line.slice(i, j))}</span>`; i = j; continue
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      let j = i + 1
+      while (j < line.length) {
+        if (line[j] === '\\') { j += 2; continue }
+        if (line[j] === ch) { j++; break }
+        j++
+      }
+      out += `<span class="cr-str">${crEscHtml(line.slice(i, j))}</span>`; i = j; continue
+    }
+    if (/[0-9]/.test(ch) && (i === 0 || /\W/.test(line[i-1]))) {
+      let j = i; while (j < line.length && /[0-9._xXa-fA-F]/.test(line[j])) j++
+      out += `<span class="cr-num">${crEscHtml(line.slice(i, j))}</span>`; i = j; continue
+    }
+    if (/[a-zA-Z_$]/.test(ch)) {
+      let j = i; while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++
+      const word = line.slice(i, j)
+      if (CR_KWS.has(word)) out += `<span class="cr-kw">${crEscHtml(word)}</span>`
+      else if (j < line.length && line[j] === '(') out += `<span class="cr-fn">${crEscHtml(word)}</span>`
+      else if (/^[A-Z]/.test(word)) out += `<span class="cr-ty">${crEscHtml(word)}</span>`
+      else out += crEscHtml(word)
+      i = j; continue
+    }
+    out += crEscHtml(ch); i++
+  }
+  return out
+}
+
+function crRenderCode(content, filename) {
+  const ext = (filename || CR.openFile?.name || '').split('.').pop()
+  const noHighlight = ['md','json','txt','yaml','yml','toml','env'].includes(ext)
+  const lines = content.split('\n')
+  const editorEl = document.getElementById('cr-editor')
+  editorEl.innerHTML = lines.map((line, i) => {
+    const lc = noHighlight ? crEscHtml(line) : crHighlight(line)
+    return `<div class="cr-code-line"><span class="cr-ln">${i+1}</span><span class="cr-lc">${lc}</span></div>`
+  }).join('')
+}
+
+function crCopyFile() {
+  const lines = Array.from(document.querySelectorAll('.cr-lc')).map(el => el.textContent).join('\n')
+  navigator.clipboard.writeText(lines).catch(() => {})
+}
+
+async function crSend() {
+  const ta = document.getElementById('cr-textarea')
+  const msg = ta.value.trim()
+  if (!msg) return
+  ta.value = ''
+  ta.style.height = ''
+  document.getElementById('cr-status-text').textContent = 'Thinking…'
+  document.getElementById('cr-status-dot').style.background = '#fbbf24'
+  crAppendMsg('user', msg)
+  const thinkingEl = crAppendThinking()
+  document.getElementById('cr-send-btn').disabled = true
+  const byokKey = CR.byokActive ? (CR.byok[CR.byokActive] || '') : ''
+  const byokProvider = CR.byokActive || ''
+  try {
+    const body = { tenantId: STATE.tenantId, message: msg, model: CR.model }
+    if (byokKey) { body.apiKey = byokKey; body.provider = byokProvider }
+    const r = await fetch('/dev/chat', {
+      method: 'POST',
+      headers: { ...authGetHdr(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    const data = await r.json()
+    thinkingEl.remove()
+    crAppendMsg('agent', data.response || data.error || 'No response')
+    crLoadFiles()
+    document.getElementById('cr-status-text').textContent = 'Ready'
+    document.getElementById('cr-status-dot').style.background = 'var(--cr-green)'
+    const first = (data.response || '').split('\n')[0].slice(0, 40)
+    if (first) document.getElementById('cr-thread-name').textContent = first
+  } catch(e) {
+    thinkingEl.remove()
+    crAppendMsg('agent', 'Error: ' + e.message)
+    document.getElementById('cr-status-text').textContent = 'Error'
+    document.getElementById('cr-status-dot').style.background = 'var(--cr-red)'
+  } finally {
+    document.getElementById('cr-send-btn').disabled = false
+  }
+}
+
+function crAppendMsg(role, text) {
+  const c = document.getElementById('cr-chat-msgs')
+  const userInit = (STATE.tenantId || 'U').slice(0, 1).toUpperCase()
+  const isAI = role === 'agent'
+  const name = isAI ? (CR.modelLabel || 'AIR') : 'You'
+  const now = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
+  const bodyHtml = crFormatText(text)
+  const el = document.createElement('div')
+  el.className = 'cr-msg' + (isAI ? '' : ' user')
+  el.innerHTML = `<div class="cr-msg-hdr">
+    <div class="cr-avatar ${isAI ? 'ai' : 'user'}">${isAI ? 'A' : userInit}</div>
+    <span class="cr-msg-name">${name}</span>
+    <span class="cr-msg-time">${now}</span>
+  </div>
+  <div class="cr-msg-body">${bodyHtml}</div>`
+  c.appendChild(el)
+  c.scrollTop = c.scrollHeight
+  return el
+}
+
+function crFormatText(text) {
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  return escaped.replace(/```([\s\S]*?)```/g, (_, code) =>
+    `<pre><code>${code.trim()}</code></pre>`
+  ).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>')
+}
+
+function crAppendThinking() {
+  const c = document.getElementById('cr-chat-msgs')
+  const el = document.createElement('div')
+  el.className = 'cr-thinking'
+  el.innerHTML = `<div class="cr-avatar ai" style="width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:var(--cr-accent);color:#fff">A</div>
+  <div class="cr-thinking-dots"><span></span><span></span><span></span></div>
+  <span>Thinking…</span>`
+  c.appendChild(el)
+  c.scrollTop = c.scrollHeight
+  return el
+}
+
+async function crClearSession() {
+  await fetch('/dev/session', {
+    method: 'DELETE',
+    headers: { ...authGetHdr(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenantId: STATE.tenantId, model: CR.model })
+  })
+  const c = document.getElementById('cr-chat-msgs')
+  c.innerHTML = `<div class="cr-msg"><div class="cr-msg-hdr"><div class="cr-avatar ai">A</div><span class="cr-msg-name">${CR.modelLabel}</span></div>
+  <div class="cr-msg-body">Session cleared. Describe the agent you want to build.</div></div>`
+  document.getElementById('cr-thread-name').textContent = 'New session'
+  CR.inited = false
+  initCoderTab()
+}
+
+function crToggleTool(btn) { btn.classList.toggle('on') }
+
+function crOpenModal() { document.getElementById('cr-modal').classList.add('open') }
+function crCloseModal() { document.getElementById('cr-modal').classList.remove('open') }
+
+function crSelectModel(val, label, statusLabel) {
+  crApplyModel(val, label, statusLabel)
+  localStorage.setItem('cr_model', val)
+  crCloseModal()
+}
+
+function crApplyModel(val, label, statusLabel) {
+  CR.model = val; CR.modelLabel = label; CR.statusLabel = statusLabel
+  document.getElementById('cr-model-name').textContent = label
+  document.getElementById('cr-model-label').textContent = label
+  document.getElementById('cr-sb-model').textContent = statusLabel
+  document.querySelectorAll('.cr-model-opt').forEach(o => o.classList.remove('sel'))
+  const optMap = { air: 'cr-opt-air', 'claude-sonnet': 'cr-opt-sonnet', codex: 'cr-opt-codex' }
+  if (optMap[val]) document.getElementById(optMap[val])?.classList.add('sel')
+}
+
+function crToggleByok(provider) {
+  const inputId = provider === 'anthropic' ? 'cr-cla-key' : 'cr-oai-key'
+  const tagId = provider === 'anthropic' ? 'cr-cla-tag' : 'cr-oai-tag'
+  const input = document.getElementById(inputId)
+  const tag = document.getElementById(tagId)
+  const currentKey = CR.byok[provider]
+  if (currentKey) {
+    CR.byok[provider] = ''
+    input.value = ''
+    input.style.display = 'none'
+    tag.textContent = 'CONNECT'
+    tag.className = 'cr-model-tag byok'
+    localStorage.setItem('cr_byok', JSON.stringify(CR.byok))
+  } else {
+    input.style.display = 'block'
+    input.focus()
+  }
+}
+
+function crSaveByok(provider) {
+  const inputId = provider === 'anthropic' ? 'cr-cla-key' : 'cr-oai-key'
+  const val = document.getElementById(inputId)?.value.trim() ?? ''
+  CR.byok[provider] = val
+  localStorage.setItem('cr_byok', JSON.stringify(CR.byok))
+  if (val.length <= 8 && CR.byokActive === provider) {
+    CR.byokActive = ''
+    localStorage.removeItem('cr_byok_active')
+    crApplyModel('air', 'AIR', 'AIR · CREDITS')
+  }
+  crRefreshByokDots()
+}
+
+document.getElementById('cr-textarea')?.addEventListener('input', function() {
+  this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 160) + 'px'
+})
 
 // ─── INIT ─────────────────────────────────────────
 // Auto-restore session if tenantId exists

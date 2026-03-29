@@ -8,6 +8,7 @@ import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
+import { devRoutes } from './routes/dev.js'
 import { authMiddleware } from './middleware/auth.js'
 import { healthRoutes } from './routes/health.js'
 import { agentFactory, getPool } from '@agentr/factory'
@@ -100,6 +101,10 @@ app.use('/agent/:tenantId', async (c, next) => {
 app.use('/agent/admin/*', ipRateLimit(10))
 
 app.route('/agent', agentRoutes)
+
+// Developer mode routes (protected by auth)
+app.use('/dev/*', authMiddleware)
+app.route('/dev', devRoutes)
 
 app.onError((err, c) => {
   console.error(err)
