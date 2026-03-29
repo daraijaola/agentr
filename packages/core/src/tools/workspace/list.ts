@@ -1,7 +1,7 @@
 // src/agent/tools/workspace/list.ts
 
 import { Type } from "@sinclair/typebox";
-import { readdirSync, lstatSync } from "fs";
+import { readdirSync, lstatSync, mkdirSync } from "fs";
 import { join } from "path";
 import type { Tool, ToolExecutor, ToolResult } from "../types.js";
 import {
@@ -98,12 +98,15 @@ export const workspaceListExecutor: ToolExecutor<WorkspaceListParams> = async (
     const validated = validateDirectory(path || "", tenantId);
 
     if (!validated.exists) {
+      // Auto-create workspace directory so subsequent writes work
+      try { mkdirSync(validated.absolutePath, { recursive: true }) } catch {}
       return {
         success: true,
         data: {
           path: validated.relativePath || "/",
           files: [],
-          message: "Directory does not exist",
+          count: 0,
+          message: "Your workspace is empty.",
         },
       };
     }
@@ -117,7 +120,6 @@ export const workspaceListExecutor: ToolExecutor<WorkspaceListParams> = async (
         path: validated.relativePath || "/",
         files,
         count: files.length,
-        workspaceRoot: validated.absolutePath,
       },
     };
   } catch (error) {

@@ -6,6 +6,7 @@ export interface AgentConfig {
   walletAddress?: string
   plan?: 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise'
   provisionedAt?: number // Unix ms — used for starter plan 24h expiry
+  agentName?: string
 }
 
 export interface AgentContext {

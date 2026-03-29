@@ -38,7 +38,7 @@ export async function apiGet(path: string) {
 }
 
 export type Screen = 'landing' | 'phone' | 'otp' | 'twofa' | 'provisioning' | 'live' | 'pricing' | 'setup'
-export type LiveTab = 'overview' | 'workspace' | 'bots' | 'activity' | 'credits' | 'miniapps' | 'tonsites' | 'subagents' | 'marketplace'
+export type LiveTab = 'overview' | 'workspace' | 'bots' | 'activity' | 'credits' | 'miniapps' | 'tonsites' | 'subagents' | 'marketplace' | 'developer'
 
 export interface AgentState {
   tenantId: string

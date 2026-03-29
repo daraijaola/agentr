@@ -39,9 +39,10 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
 ): Promise<ToolResult> => {
   try {
     const { from, to, overwrite = false } = params;
+    const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
 
     // Validate source path (must exist)
-    const validatedFrom = validateWritePath(from);
+    const validatedFrom = validateWritePath(from, tenantId);
 
     if (validatedFrom.isDirectory) {
       return {
@@ -51,7 +52,7 @@ export const workspaceRenameExecutor: ToolExecutor<WorkspaceRenameParams> = asyn
     }
 
     // Validate destination path (may not exist yet)
-    const validatedTo = validateWritePath(to);
+    const validatedTo = validateWritePath(to, tenantId);
 
     // Check if destination already exists
     if (validatedTo.exists && !overwrite) {

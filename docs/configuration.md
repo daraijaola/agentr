@@ -63,7 +63,7 @@ Internal OpenAI-compatible proxy — fastest, lowest cost, purpose-built for thi
 ```env
 LLM_PROVIDER=air
 LLM_MODEL=claude-sonnet-4-6
-AIR_BASE_URL=https://air-by-agentr.replit.app/api/v1
+AIR_BASE_URL=https://air.agentr.online/api/v1
 OPENAI_API_KEY=air-your-key-here
 ```
 

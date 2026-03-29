@@ -3,9 +3,13 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { timingSafeEqual, randomBytes } from 'crypto'
 import { resolve as resolvePath } from 'path'
+import fs from 'fs/promises'
+import path from 'path'
 import { bridgeManager } from '@agentr/core'
 import { agentFactory } from '@agentr/factory'
 import bcrypt from 'bcryptjs'
+
+const WORKSPACES_PATH = process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces'
 
 export const agentRoutes = new Hono()
 
@@ -829,6 +833,45 @@ agentRoutes.post('/setup',
         'UPDATE tenants SET agent_name = $1, owner_name = $2, dm_policy = $3, owner_username = $4 WHERE id = $5',
         [agentName ?? '', ownerName ?? '', dmPolicy ?? 'contacts', ownerUsername ?? '', tenantId]
       )
+
+      // Write IDENTITY.md and USER.md into the agent's workspace so the agent
+      // knows its own name and owner from the very first message
+      const wsDir = path.join(WORKSPACES_PATH, tenantId)
+      await fs.mkdir(wsDir, { recursive: true })
+
+      if (agentName) {
+        const identityContent = [
+          `# Identity`,
+          ``,
+          `**Name:** ${agentName}`,
+          `**Platform:** AGENTR — AI Agent Factory for TON & Telegram`,
+          ``,
+          `You are ${agentName}, a personal AI agent running live on your owner's Telegram account.`,
+          `You are not a bot — you operate as the actual account. Always introduce yourself as ${agentName} when asked your name.`,
+          ``,
+          `## Capabilities`,
+          `- Send/receive Telegram messages as the account owner`,
+          `- Manage groups, channels, and contacts`,
+          `- Trade TON and jettons on DeDust & STON.fi`,
+          `- Deploy websites to agentr.online/sites/`,
+          `- Write and run code in your workspace`,
+          `- Create Telegram bots`,
+          `- Register .ton domains`,
+          `- Run agent swarms for complex tasks`,
+        ].join('\n')
+        await fs.writeFile(path.join(wsDir, 'IDENTITY.md'), identityContent, 'utf8')
+      }
+
+      if (ownerName || ownerUsername) {
+        const userContent = [
+          `# Owner`,
+          ``,
+          ownerName ? `**Name:** ${ownerName}` : '',
+          ownerUsername ? `**Telegram:** @${ownerUsername.replace(/^@/, '')}` : '',
+        ].filter(Boolean).join('\n')
+        await fs.writeFile(path.join(wsDir, 'USER.md'), userContent, 'utf8')
+      }
+
       return c.json({ success: true })
     } catch (err) { return c.json({ success: false, error: String(err) }) }
   }

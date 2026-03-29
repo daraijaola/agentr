@@ -13,6 +13,9 @@ import { jettonPriceTool, jettonPriceExecutor } from "./jetton-price.js";
 import { jettonSendTool, jettonSendExecutor } from "./jetton-send.js";
 import { dexQuoteTool, dexQuoteExecutor } from "./dex-quote.js";
 import { nftListTool, nftListExecutor } from "./nft-list.js";
+import { tonCompileTool, tonCompileExecutor } from "./compile.js";
+import { tonDeployTestnetTool, tonDeployTestnetExecutor } from "./deploy-testnet.js";
+import { tonDeployJettonTool, tonDeployJettonExecutor } from "./deploy-jetton.js";
 import type { ToolEntry } from "../types.js";
 
 export { tonGetAddressTool, tonGetAddressExecutor };
@@ -30,6 +33,9 @@ export { jettonPriceTool, jettonPriceExecutor };
 export { jettonSendTool, jettonSendExecutor };
 export { dexQuoteTool, dexQuoteExecutor };
 export { nftListTool, nftListExecutor };
+export { tonCompileTool, tonCompileExecutor };
+export { tonDeployTestnetTool, tonDeployTestnetExecutor };
+export { tonDeployJettonTool, tonDeployJettonExecutor };
 
 export const tools: ToolEntry[] = [
   { tool: tonSendTool,              executor: tonSendExecutor,              scope: "dm-only" },
@@ -47,4 +53,7 @@ export const tools: ToolEntry[] = [
   { tool: jettonPriceTool,          executor: jettonPriceExecutor },
   { tool: dexQuoteTool,             executor: dexQuoteExecutor },
   { tool: nftListTool,              executor: nftListExecutor },
+  { tool: tonCompileTool,           executor: tonCompileExecutor },
+  { tool: tonDeployTestnetTool,     executor: tonDeployTestnetExecutor },
+  { tool: tonDeployJettonTool,      executor: tonDeployJettonExecutor },
 ];
