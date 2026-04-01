@@ -94,6 +94,18 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       free: 'Claude Haiku 4.5', starter: 'Claude Haiku 4.5', pro: 'Claude Sonnet 4.5',
       ultra: 'Gemini 2.5 Pro', elite: 'Claude Opus 4.5', enterprise: 'Claude Opus 4.5',
     }
+    const MODEL_DISPLAY: Record<string,string> = {
+      'claude-haiku-4-5':     'Claude Haiku 4.5',
+      'gemini-2.5-flash':     'Gemini 2.5 Flash',
+      'gpt-4o-mini':          'GPT-4o mini',
+      'claude-sonnet-4-5':    'Claude Sonnet 4.5',
+      'gpt-4o':               'GPT-4o',
+      'gemini-2.5-pro':       'Gemini 2.5 Pro',
+      'claude-opus-4-5':      'Claude Opus 4.5',
+      'gpt-4.1':              'GPT-4.1',
+      'o4-mini':              'GPT o4-mini',
+      'gemini-2.5-pro-preview': 'Gemini 2.5 Pro Preview',
+    }
     const PLAN_NAME: Record<string,string> = {
       free: 'Free', starter: 'Starter', pro: 'Pro',
       ultra: 'Ultra', elite: 'Elite', enterprise: 'Enterprise',
@@ -101,18 +113,23 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     const PLAN_LIMIT: Record<string,number> = {
       free: 500, starter: 1200, pro: 2800, ultra: 4000, elite: 6000, enterprise: 50000,
     }
+    const preferredModelId: string | null = row.preferred_model ?? null
+    const resolvedModelName = preferredModelId
+      ? (MODEL_DISPLAY[preferredModelId] ?? preferredModelId)
+      : (PLAN_MODEL[planKey] ?? 'Claude Haiku 4.5')
     return c.json({
       status: isOnline ? 'online' : 'offline',
       tenantId,
       plan: planKey,
       planName: PLAN_NAME[planKey] ?? planKey,
-      planModel: PLAN_MODEL[planKey] ?? 'Haiku 4.5',
+      planModel: resolvedModelName,
+      planModelDefault: PLAN_MODEL[planKey] ?? 'Claude Haiku 4.5',
       planLimit: PLAN_LIMIT[planKey] ?? 500,
       credits: row.credits ?? 0,
       planExpiresAt: row.plan_expires_at ?? null,
       graceUntil: row.grace_until ?? null,
       walletAddress: row.wallet_address ?? null,
-      preferredModel: row.preferred_model ?? null,
+      preferredModel: preferredModelId,
       telegram: isOnline ? {
         username: row.owner_username || null,
         firstName: row.owner_name || null,
@@ -198,6 +215,9 @@ agentRoutes.post(
       'gpt-4o',
       'gemini-2.5-pro',
       'claude-opus-4-5',
+      'gpt-4.1',
+      'o4-mini',
+      'gemini-2.5-pro-preview',
     ]).optional(),
     // legacy field — kept for backward compat, ignored
     provider: z.string().optional(),

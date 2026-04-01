@@ -1867,7 +1867,7 @@ async function goDashboard() {
       if (modPlan) modPlan.textContent = status.preferredModel ? 'Your selected model' : 'Default for ' + (status.planName || 'Free') + ' plan'
     }
     // Default active model: use saved preference, or fall back to plan's top model
-    var PLAN_DEFAULT_MODEL = { free:'claude-haiku-4-5', starter:'gemini-2.5-flash', pro:'claude-sonnet-4-5', ultra:'gemini-2.5-pro', elite:'claude-opus-4-5', enterprise:'claude-opus-4-5' }
+    var PLAN_DEFAULT_MODEL = { free:'claude-haiku-4-5', starter:'gemini-2.5-flash', pro:'claude-sonnet-4-5', ultra:'gemini-2.5-pro-preview', elite:'claude-opus-4-5', enterprise:'claude-opus-4-5' }
     var activeModelId = status.preferredModel || PLAN_DEFAULT_MODEL[status.plan] || 'claude-haiku-4-5'
     if (typeof renderModelChips === 'function') renderModelChips(activeModelId)
     STATE.preferredModel = activeModelId
@@ -1957,13 +1957,16 @@ function copyWallet() {
 
 // ── MODEL DEFINITIONS ──────────────────────────────────────────────
 const MODELS = [
-  { id:'claude-haiku-4-5',       name:'Claude Haiku 4.5',    sub:'Fast · Efficient',          img:'/claude.webp',   minPlan:0 },
-  { id:'gemini-2.5-flash',       name:'Gemini 2.5 Flash',    sub:'Google · Fast & Balanced',  img:'/gemini.webp',   minPlan:1 },
-  { id:'gpt-4o-mini',            name:'GPT-4o mini',         sub:'OpenAI · Lightweight',      img:'/openai.webp',   minPlan:1 },
-  { id:'claude-sonnet-4-5',      name:'Claude Sonnet 4.5',   sub:'Best quality/speed',        img:'/claude.webp',   minPlan:2 },
-  { id:'gpt-4o',                 name:'GPT-4o',              sub:'OpenAI · Most Capable',     img:'/openai.webp',   minPlan:2 },
-  { id:'gemini-2.5-pro',         name:'Gemini 2.5 Pro',      sub:'Advanced · Multimodal',     img:'/gemini.webp',   minPlan:3 },
-  { id:'claude-opus-4-5',        name:'Claude Opus 4.5',     sub:'Most powerful · Best',      img:'/claude.webp',   minPlan:4 },
+  { id:'claude-haiku-4-5',         name:'Claude Haiku 4.5',        sub:'Fast · Efficient',             img:'/claude.webp',   minPlan:0 },
+  { id:'gemini-2.5-flash',         name:'Gemini 2.5 Flash',        sub:'Google · Fast & Balanced',     img:'/gemini.webp',   minPlan:1 },
+  { id:'gpt-4o-mini',              name:'GPT-4o mini',             sub:'OpenAI · Lightweight',         img:'/openai.webp',   minPlan:1 },
+  { id:'claude-sonnet-4-5',        name:'Claude Sonnet 4.5',       sub:'Exceptional quality/speed',    img:'/claude.webp',   minPlan:2 },
+  { id:'gpt-4o',                   name:'GPT-4o',                  sub:'OpenAI · Flagship',            img:'/openai.webp',   minPlan:2 },
+  { id:'gpt-4.1',                  name:'GPT-4.1',                 sub:'OpenAI · Latest & Capable',    img:'/openai.webp',   minPlan:2 },
+  { id:'o4-mini',                  name:'GPT o4-mini',             sub:'OpenAI · Reasoning Model',     img:'/openai.webp',   minPlan:2 },
+  { id:'gemini-2.5-pro',           name:'Gemini 2.5 Pro',          sub:'Google · Advanced',            img:'/gemini.webp',   minPlan:3 },
+  { id:'gemini-2.5-pro-preview',   name:'Gemini 2.5 Pro Preview',  sub:'Google · Latest Preview',      img:'/gemini.webp',   minPlan:3 },
+  { id:'claude-opus-4-5',          name:'Claude Opus 4.5',         sub:'Most powerful · Best',         img:'/claude.webp',   minPlan:4 },
 ]
 const PLAN_LEVEL = { free:0, starter:1, pro:2, ultra:3, elite:4, enterprise:5 }
 const PLAN_LABEL = { 1:'Starter+', 2:'Pro+', 3:'Ultra+', 4:'Elite+' }

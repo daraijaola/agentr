@@ -302,9 +302,9 @@ export class AgentRuntime {
     const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
     // In Limited Mode: block heavy tools + force cheapest model
-    const _originalModel = this.llm.config.model
+    const _originalModel = this.llm.config?.model
     if (limitedMode) {
-      this.llm.config.model = 'claude-haiku-4-5'
+      if (this.llm.config) this.llm.config.model = 'claude-haiku-4-5'
     }
     const _allTools = this.tools.list()
     const _filteredTools = limitedMode
@@ -462,7 +462,7 @@ export class AgentRuntime {
         }
       }
     // ─── Restore model + low-credit warning ─────────────────────────────────
-    if (limitedMode) this.llm.config.model = _originalModel
+    if (limitedMode) if (this.llm.config) this.llm.config.model = _originalModel
     if (limitedMode && finalResponse) {
       finalResponse += '\n\n💡 Limited Mode (0 credits): cheapest models only, 8 msgs/day max. Top up with TON for full access!'
     } else if (finalResponse && this.config.tenantId && this.getCredits) {
