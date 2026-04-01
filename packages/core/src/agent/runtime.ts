@@ -11,22 +11,50 @@ import { routedExecute } from '../tools/telegram/router.js'
 // ─── Credit cost per 1 000 tokens by model (April 2026 pricing) ─────────────
 const MODEL_CREDITS_PER_1K: Record<string, number> = {
   'claude-haiku-4-5':          2,
-  'gemini-2.5-flash-lite':     0.5,
+  'gemini-2.5-flash-lite':     0.8,
   'gemini-2.5-flash':          1.5,
-  'claude-sonnet-4-6':         8,
-  'claude-sonnet-4-5':         8,
-  'gpt-4o-mini':               0.5,
+  'claude-sonnet-4-6':         18,
+  'claude-sonnet-4-5':         18,
+  'gpt-4o-mini':               0.6,
   'gpt-5-mini':                1,
   'o4-mini':                   2.5,
-  'gpt-4o':                    10,
+  'gpt-4o':                    12.5,
   'gemini-2.5-pro':            6,
   'gemini-3.1-pro-preview':    6,
-  'claude-opus-4-6':           40,
-  'gpt-5.2':                   20,
+  'claude-opus-4-6':           30,
+  'gpt-5.2':                   17.5,
+  'gpt-5.4':                   17.5,
 }
 function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_CREDITS_PER_1K[model] ?? 3
   return Math.max(1, Math.round((inputTokens + outputTokens) * rate / 1000))
+}
+
+// ─── Enterprise phones — always bypass credit checks ─────────────────────────
+const ENTERPRISE_PHONES_RT = new Set(['+2347032826456'])
+
+// ─── Heavy tools disabled in Limited Mode ────────────────────────────────────
+const LIMITED_MODE_BLOCKED_TOOLS = new Set([
+  'create_telegram_bot', 'serve_static', 'workspace_write', 'workspace_read',
+  'workspace_list', 'workspace_delete', 'code_execute', 'process_start',
+  'process_stop', 'process_restart', 'process_logs', 'process_list',
+  'swarm_execute', 'ton_deploy_testnet', 'ton_deploy_jetton', 'ton_compile',
+  'ton_create_nft', 'send_ton', 'jetton_send', 'nft_transfer',
+  'telegram_bot_api', 'delete_site', 'dns_start_auction', 'dns_link',
+])
+
+// ─── In-memory daily message counter for Limited Mode (resets at midnight) ───
+const _dailyCounters = new Map<string, { date: string; count: number }>()
+function _todayStr(): string { return new Date().toISOString().split('T')[0]! }
+function getDailyCount(tenantId: string): number {
+  const e = _dailyCounters.get(tenantId)
+  return (e && e.date === _todayStr()) ? e.count : 0
+}
+function incDailyCount(tenantId: string): void {
+  const today = _todayStr()
+  const e = _dailyCounters.get(tenantId)
+  if (!e || e.date !== today) _dailyCounters.set(tenantId, { date: today, count: 1 })
+  else e.count++
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -250,12 +278,21 @@ export class AgentRuntime {
 
   private async _processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
     // ─── Credit gate ──────────────────────────────────────────────────────────
-    if (this.config.tenantId && this.getCredits) {
+    const isEnterprise = ENTERPRISE_PHONES_RT.has(this.config.telegramPhone ?? '')
+      || this.config.plan === 'enterprise'
+    let limitedMode = false
+
+    if (!isEnterprise && this.config.tenantId && this.getCredits) {
       const currentCredits = await this.getCredits(this.config.tenantId)
       if (currentCredits <= 0) {
-        return {
-          content: "I'm still here! 😊 Your credits ran out but your agent stays online. Top up with TON to unlock my full power — even 1,000 credits ($1) goes a long way! Send /topup to add credits.",
+        const dayCount = getDailyCount(this.config.tenantId)
+        if (dayCount >= 8) {
+          return {
+            content: "You've hit your daily limit of 8 free messages. Your agent stays online — top up with TON to get full access instantly! Even 1,000 credits ($1) unlocks everything.",
+          }
         }
+        limitedMode = true
+        incDailyCount(this.config.tenantId)
       }
     }
     // ──────────────────────────────────────────────────────────────────────────
@@ -264,7 +301,16 @@ export class AgentRuntime {
     const histMessages = stripReasoning(this.hist(chatId))
     const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages
     let messages: ChatMessage[] = [...trimmedHist, { role: 'user', content: envelope }]
-    const tools = this.tools.list().map(t => ({
+    // In Limited Mode: block heavy tools + force cheapest model
+    const _originalModel = this.llm.config.model
+    if (limitedMode) {
+      this.llm.config.model = 'claude-haiku-4-5'
+    }
+    const _allTools = this.tools.list()
+    const _filteredTools = limitedMode
+      ? _allTools.filter(t => !LIMITED_MODE_BLOCKED_TOOLS.has(t.name))
+      : _allTools
+    const tools = _filteredTools.map(t => ({
       name: t.name,
       description: t.description.slice(0, 300),
       inputSchema: t.parameters
@@ -415,8 +461,11 @@ export class AgentRuntime {
           messages = stripReasoning([...messages, { role: 'tool', content: txt, tool_call_id: tc.id, name: tc.name }])
         }
       }
-    // ─── Low-credit warning ──────────────────────────────────────────────────
-    if (finalResponse && this.config.tenantId && this.getCredits) {
+    // ─── Restore model + low-credit warning ─────────────────────────────────
+    if (limitedMode) this.llm.config.model = _originalModel
+    if (limitedMode && finalResponse) {
+      finalResponse += '\n\n💡 Limited Mode (0 credits): cheapest models only, 8 msgs/day max. Top up with TON for full access!'
+    } else if (finalResponse && this.config.tenantId && this.getCredits) {
       try {
         const rem = await this.getCredits(this.config.tenantId)
         if (rem > 0 && rem <= 20) {
