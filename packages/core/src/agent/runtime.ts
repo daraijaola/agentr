@@ -463,7 +463,7 @@ export class AgentRuntime {
     // ─── Restore model + low-credit warning ─────────────────────────────────
     if (limitedMode) if (this.llm.config) this.llm.config.model = _originalModel
     if (limitedMode && finalResponse) {
-      finalResponse += '\n\n💡 Limited Mode (0 credits): cheapest models only, 8 msgs/day max. Top up with TON for full access!'
+      finalResponse += "\n\nI'm still here! 😊 Your credits ran out but your agent stays online. Top up with TON to unlock my full power — even 1,000 credits () goes a long way!"
     } else if (finalResponse && this.config.tenantId && this.getCredits) {
       try {
         const rem = await this.getCredits(this.config.tenantId)
