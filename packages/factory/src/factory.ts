@@ -1,6 +1,7 @@
 import type { AgentConfig } from '@agentr/core'
 import { AgentRuntime, WalletService, bridgeManager, registerMVPTools } from '@agentr/core'
 import type { LLMProvider } from '@agentr/core'
+import { sessionManager } from '@agentr/core'
 import { attachMessageListener } from './listener.js'
 import { DockerProvisioner } from './docker.js'
 import { Database } from './database.js'
@@ -153,6 +154,13 @@ export class AgentFactory {
     }
 
     if (tgClient) attachMessageListener(dbTenantId, tgClient, runtime)
+    // Start 5-minute health monitor for this session
+    if (tgClient) {
+      const _tgClient = tgClient
+      sessionManager.startHealthMonitor(dbTenantId, async () => {
+        try { await _tgClient.getMe(); return true } catch { return false }
+      })
+    }
     this.runtimes.set(dbTenantId, runtime)
     await this.db.updateAgentStatus(dbTenantId, 'running')
 
@@ -195,6 +203,11 @@ export class AgentFactory {
       walletAddress: tenant.wallet_address,
     })
     attachMessageListener(tenant.id, tgClient, runtime)
+    // Start 5-minute health monitor for resumed session
+    const _resumedClient = tgClient
+    sessionManager.startHealthMonitor(tenant.id, async () => {
+      try { await _resumedClient.getMe(); return true } catch { return false }
+    })
     this.runtimes.set(tenant.id, runtime)
     await this.db.updateAgentStatus(tenant.id, 'running').catch(() => {})
     console.log(`[AgentFactory] Resumed: ${tenant.id}`)

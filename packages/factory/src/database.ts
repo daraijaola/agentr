@@ -36,7 +36,7 @@ export class Database {
     console.log('[Database] Connecting to PostgreSQL...')
     const client = await this.pool.connect()
     try {
-      const migrations = ['001_initial.sql', '002_conversation_state.sql']
+      const migrations = ['001_initial.sql', '002_conversation_state.sql', '003_agent_sessions.sql']
       for (const file of migrations) {
         const sql = readFileSync(join(__dirname, 'migrations', file), 'utf-8')
         await client.query(sql)

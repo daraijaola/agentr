@@ -5,6 +5,8 @@ import type { AgentConfig } from '../types/index.js'
 import { loadWorkspace } from '../soul/loader.js'
 import { maskOldToolResults } from './observation-masking.js'
 import { buildSystemPrompt } from './prompts/system.js'
+import { sessionManager } from '../session/manager.js'
+import { routedExecute } from '../tools/telegram/router.js'
 
 // Simple TTL cache for tool-free responses (cuts API credits on repeated queries)
 interface CacheEntry { response: string; expiry: number }
@@ -164,6 +166,11 @@ export class AgentRuntime {
   ) {
     this.llm = new LLMClient(llmConfig)
     this.tools = new ToolRegistry()
+    // Wire session stability: rate limit + jitter + health scoring per tool call
+    const _tenantId = config.tenantId
+    this.tools.setExecuteHook(async (name, execute) => {
+      return routedExecute(name, _tenantId, execute)
+    })
     this.deductCredits = opts?.deductCredits
     this.saveConversation = opts?.saveConversation
     this.maxConcurrentLoops = opts?.maxConcurrentLoops ?? 1
