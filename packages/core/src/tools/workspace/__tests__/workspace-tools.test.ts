@@ -64,12 +64,12 @@ describe("workspace_write", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects content exceeding 50 MB size limit", async () => {
+  it("rejects content exceeding 512 KB write limit", async () => {
     const { workspaceWriteExecutor } = await import("../write.js")
     const hugContent = "x".repeat(51 * 1024 * 1024)
     const result = await workspaceWriteExecutor({ path: "huge.txt", content: hugContent }, { tenantId } as never)
     expect(result.success).toBe(false)
-    expect(result.error).toContain("exceeds maximum write size")
+    expect(result.error).toContain("512 KB write limit")
   })
 })
 
