@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/stage-Beta-orange" alt="Beta">
+  <img src="https://img.shields.io/badge/stage-Live-brightgreen" alt="Beta">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen" alt="Node.js"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-blue" alt="TypeScript"></a>
   <a href="https://agentr.online"><img src="https://img.shields.io/badge/Platform-agentr.online-0098EA" alt="Platform"></a>
@@ -28,13 +28,13 @@ No code. No config. No technical knowledge required.
   <strong><a href="https://t.me/theagent_r1">Demo agent @Theagent_r1</a></strong>
 </p>
 
-> **Status: Public Beta** — The platform is live and accepting users. Core features work end-to-end. Some advanced capabilities are still being refined. Expect rapid iteration.
+> **Status: Live** — The platform is fully operational and accepting users.
 
 ---
 
 ## What Is AGENTR
 
-AGENTR gives every user their own autonomous AI agent that lives on their Telegram account and acts as a real user — not a bot. The agent has access to 40+ tools and can take real actions: write and deploy code, manage Telegram, send TON, swap tokens on DEXes, bid on .ton domains — all from plain conversation.
+AGENTR gives every user their own autonomous AI agent that lives on their Telegram account and acts as a real user — not a bot. The agent has access to 125 tools and can take real actions: write and deploy code, manage Telegram, send TON, swap tokens on DEXes, bid on .ton domains — all from plain conversation.
 
 One deployment, unlimited users. Every user is fully isolated — their own wallet, their own workspace, their own agent.
 
@@ -89,7 +89,7 @@ Agent:
 | Agent runtime — agentic loop, tool dispatch, context management | ✅ Live |
 | Multi-tenant provisioning — OTP → agent live in seconds | ✅ Live |
 | Telegram MTProto integration — GramJS userbot | ✅ Live |
-| 40+ tools — deploy, workspace, Telegram, TON, DNS | ✅ Live |
+| 125 tools — deploy, workspace, Telegram, TON, DNS | ✅ Live |
 | TON wallet per user — AES-256-GCM encrypted mnemonic | ✅ Live |
 | Conversation persistence — survives restarts via PostgreSQL | ✅ Live |
 | JWT authentication — HS256 via jose | ✅ Live |
