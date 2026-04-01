@@ -21,3 +21,5 @@ attached_assets/
 replit.md
 .cache/
 .agents/
+packages.backup.*
+dist/
