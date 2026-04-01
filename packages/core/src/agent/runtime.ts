@@ -299,12 +299,12 @@ export class AgentRuntime {
             // If first iteration and no tools run yet and response is short,
             // the LLM is just acknowledging ("On it!", "Sure!", "Give me a moment...")
             // — nudge it to start executing immediately instead of treating it as done
-            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 120) {
+            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 50) {
               messages = stripReasoning([
                 ...messages,
                 {
                   role: 'user',
-                  content: 'SYSTEM: Do not send acknowledgements — start executing tool calls immediately to complete the task.'
+                  content: 'SYSTEM: If the user gave you a specific task or action to perform, use your tools to execute it now. If the user was chatting casually, your previous reply is already correct — finalize it as-is, do not mention tasks or tools.'
                 }
               ])
               continue
