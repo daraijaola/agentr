@@ -78,7 +78,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
       `SELECT ai.status, t.owner_name, t.owner_username, t.wallet_address,
-              t.phone, t.plan, t.credits, t.plan_expires_at, t.grace_until
+              t.phone, t.plan, t.credits, t.plan_expires_at, t.grace_until, t.preferred_model
        FROM agent_instances ai JOIN tenants t ON t.id = ai.tenant_id
        WHERE ai.tenant_id = $1 ORDER BY ai.created_at DESC LIMIT 1`,
       [tenantId]
@@ -112,6 +112,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       planExpiresAt: row.plan_expires_at ?? null,
       graceUntil: row.grace_until ?? null,
       walletAddress: row.wallet_address ?? null,
+      preferredModel: row.preferred_model ?? null,
       telegram: isOnline ? {
         username: row.owner_username || null,
         firstName: row.owner_name || null,
@@ -204,7 +205,10 @@ agentRoutes.post(
     if (!runtime) return c.json({ success: false, error: 'Agent not found' }, 404)
     try {
       const db = agentFactory.getDb()
-      await db.query('UPDATE tenants SET llm_provider = $1 WHERE id = $2', ['air', tenantId])
+      await db.query(
+        'UPDATE tenants SET llm_provider = $1, preferred_model = $2 WHERE id = $3',
+        ['air', model ?? null, tenantId]
+      )
       runtime.updateLLM({
         provider: 'air',
         model: model ?? undefined,

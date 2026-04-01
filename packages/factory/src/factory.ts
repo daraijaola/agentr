@@ -69,12 +69,13 @@ export class AgentFactory {
     }, 60 * 60 * 1000)
   }
 
-  private getLLMConfig(plan?: string, provisionedAt?: number) {
+  private getLLMConfig(plan?: string, provisionedAt?: number, preferredModel?: string) {
     return {
       provider: 'air' as LLMProvider,
       apiKey: process.env['OPENAI_API_KEY'] ?? '',
       plan: (plan ?? 'free') as 'free' | 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
       provisionedAt,
+      model: preferredModel ?? undefined,
     }
   }
 
@@ -135,13 +136,14 @@ export class AgentFactory {
     const tenantRow = await this.db.getTenant(dbTenantId)
     const plan = tenantRow?.plan ?? 'free'
     const provisionedAt = tenantRow?.created_at ? new Date(tenantRow.created_at).getTime() : Date.now()
+    const preferredModel = (tenantRow as any)?.preferred_model ?? undefined
 
     // 7. Build agent config
     const config: AgentConfig = {
       tenantId: dbTenantId,
       userId,
       telegramPhone: phone,
-      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
+      llmProvider: this.getLLMConfig(plan, provisionedAt, preferredModel).provider as AgentConfig['llmProvider'],
       walletAddress: address,
       plan: plan as AgentConfig['plan'],
       provisionedAt,
@@ -149,7 +151,7 @@ export class AgentFactory {
     }
 
     // 8. Start agent runtime
-    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt, preferredModel), {
       deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
         getCredits:      (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
@@ -189,22 +191,23 @@ export class AgentFactory {
     return runtime
   }
 
-  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string; agent_name?: string }): Promise<void> {
+  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string; agent_name?: string; preferred_model?: string }): Promise<void> {
     const plan = tenant.plan ?? 'free'
     const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
+    const preferredModel = tenant.preferred_model ?? undefined
     const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
     const me = tgClient.getMe()
     const config: AgentConfig = {
       tenantId: tenant.id,
       userId: tenant.id,
       telegramPhone: tenant.phone,
-      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
+      llmProvider: this.getLLMConfig(plan, provisionedAt, preferredModel).provider as AgentConfig['llmProvider'],
       walletAddress: tenant.wallet_address,
       plan: plan as AgentConfig['plan'],
       provisionedAt,
       agentName: tenant.agent_name || undefined,
     }
-    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt, preferredModel), {
       deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
         getCredits:      (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
@@ -252,8 +255,9 @@ export class AgentFactory {
       plan: string
       created_at: string
       agent_name: string
+      preferred_model: string
     }>(
-      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at, t.agent_name
+      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at, t.agent_name, t.preferred_model
        FROM tenants t
        WHERE t.status = 'active'
          AND EXISTS (

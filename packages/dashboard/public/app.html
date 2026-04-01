@@ -571,6 +571,20 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   .overview-greeting { font-size:22px; }
   .wallet-addr { font-size:12px; }
 }
+/* ─── MODEL CHIPS ─────────────────────────────────────────────────── */
+.model-chips { display:flex; flex-direction:column; gap:6px; }
+.model-chip { display:flex; align-items:center; gap:10px; padding:11px 14px; border:.5px solid var(--border-subtle); border-radius:10px; cursor:pointer; transition:border-color .15s, background .15s; background:var(--bg-card); }
+.model-chip:hover:not(.model-locked) { border-color:var(--border-medium); background:var(--warm-100); }
+.model-chip.model-active { border-color:var(--accent); background:var(--accent-tint); }
+.model-chip.model-locked { opacity:.45; cursor:not-allowed; }
+.model-chip-img { width:24px; height:24px; border-radius:6px; object-fit:contain; flex-shrink:0; }
+.model-chip-info { flex:1; min-width:0; }
+.model-chip-name { font-size:13px; font-weight:600; color:var(--text-primary); }
+.model-chip-sub { font-size:11px; color:var(--text-muted); margin-top:1px; }
+.model-chip-badge { font-size:10px; font-weight:600; letter-spacing:.06em; padding:2px 8px; border-radius:999px; }
+.model-chip-badge.active-badge { background:var(--accent); color:#fff; }
+.model-chip-badge.plan-badge { background:var(--warm-200); color:var(--text-muted); }
+
 /* ─── PREMIUM CREDITS TAB ────────────────────────────────────────── */
 .cred-hero { background:var(--text-primary); border-radius:16px; padding:24px; margin-bottom:1.25rem; }
 .cred-hero-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
@@ -1167,27 +1181,10 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 
         <!-- AI Model switcher -->
         <div class="info-card">
-          <div class="info-label">Switch AI Model</div>
-          <div class="provider-grid">
-            <div class="prov-card active" onclick="selectProvider(this,'claude')">
-              <div class="prov-img"><img src="/claude.webp" alt="Claude" onerror="this.parentNode.innerHTML='C'"/></div>
-              <div><div class="prov-name">Claude</div><div class="prov-sub">Exceptional reasoning</div></div>
-              <div class="prov-dot"></div>
-            </div>
-            <div class="prov-card" onclick="selectProvider(this,'openai')">
-              <div class="prov-img"><img src="/openai.webp" alt="GPT-4o" onerror="this.parentNode.innerHTML='G'"/></div>
-              <div><div class="prov-name">GPT-4o</div><div class="prov-sub">OpenAI, full API</div></div>
-            </div>
-            <div class="prov-card" onclick="selectProvider(this,'gemini')">
-              <div class="prov-img"><img src="/gemini.webp" alt="Gemini" onerror="this.parentNode.innerHTML='G'"/></div>
-              <div><div class="prov-name">Gemini</div><div class="prov-sub">Multimodal intelligence</div></div>
-            </div>
-            <div class="prov-card locked">
-              <div class="prov-img"><img src="/kimi.webp" alt="Kimi" onerror="this.parentNode.innerHTML='K'"/></div>
-              <div><div class="prov-name">Kimi</div><div class="prov-sub">Fast and capable</div></div>
-              <div class="prov-badge">Soon</div>
-            </div>
-          </div>
+          <div class="info-label">AI Model</div>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 14px">Select the model your agent uses. Available options depend on your plan.</p>
+          <div class="model-chips" id="model-chips"></div>
+          <div id="model-saving" style="display:none;font-size:12px;color:var(--text-muted);margin-top:10px">Saving…</div>
         </div>
       </div>
 
@@ -1868,6 +1865,10 @@ async function goDashboard() {
       const modPlan = document.getElementById('ov-model-plan')
       if (modPlan) modPlan.textContent = 'Default for ' + (status.planName || 'Free') + ' plan'
     }
+    // Render model picker with current preferred model
+    if (typeof renderModelChips === 'function') renderModelChips(status.preferredModel || null)
+    STATE.preferredModel = status.preferredModel || null
+
     // Populate credits tab hero
     const credPill = document.getElementById('cred-plan-pill')
     if (credPill && status.plan) { credPill.textContent = status.planName || status.plan; credPill.className = 'dash-plan-pill plan-' + status.plan }
@@ -1951,18 +1952,64 @@ function copyWallet() {
   setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok') }, 2000)
 }
 
-async function selectProvider(el, id) {
-  if (el.classList.contains('locked')) return
-  document.querySelectorAll('.prov-card').forEach(c => c.classList.remove('active'))
-  el.classList.add('active')
-  STATE.provider = id
-  try {
-    await fetch(API + '/agent/provider', {
-      method:'POST', headers: authHdr(),
-      body: JSON.stringify({ tenantId: STATE.tenantId, provider: id })
-    })
-  } catch(e) {}
+// ── MODEL DEFINITIONS ──────────────────────────────────────────────
+const MODELS = [
+  { id:'claude-haiku-4-5',   name:'Claude Haiku 4.5',    sub:'Fast · Efficient',       img:'/claude.webp',   minPlan:0 },
+  { id:'gemini-2.5-flash',   name:'Gemini Flash 2.5',    sub:'Google · Balanced',       img:'/gemini.webp',   minPlan:1 },
+  { id:'gpt-4o-mini',        name:'GPT-4o mini',         sub:'OpenAI · Fast',           img:'/openai.webp',   minPlan:1 },
+  { id:'claude-sonnet-4-6',  name:'Claude Sonnet 4.6',   sub:'Best quality/speed',      img:'/claude.webp',   minPlan:2 },
+  { id:'gpt-4o',             name:'GPT-4o',              sub:'OpenAI · Capable',        img:'/openai.webp',   minPlan:2 },
+  { id:'gemini-2.5-pro',     name:'Gemini Pro 2.5',      sub:'Advanced · Multimodal',   img:'/gemini.webp',   minPlan:3 },
+  { id:'claude-opus-4-6',    name:'Claude Opus 4.6',     sub:'Most powerful',           img:'/claude.webp',   minPlan:4 },
+]
+const PLAN_LEVEL = { free:0, starter:1, pro:2, ultra:3, elite:4, enterprise:5 }
+const PLAN_LABEL = { 1:'Starter+', 2:'Pro+', 3:'Ultra+', 4:'Elite+' }
+
+function renderModelChips(activeModelId) {
+  const container = document.getElementById('model-chips')
+  if (!container) return
+  const planLevel = PLAN_LEVEL[STATE.plan] ?? 0
+  container.innerHTML = MODELS.map(m => {
+    const locked = planLevel < m.minPlan
+    const active = m.id === (activeModelId || 'claude-haiku-4-5')
+    return \`<div class="model-chip \${active ? 'model-active' : ''} \${locked ? 'model-locked' : ''}"
+        onclick="\${locked ? '' : 'selectModel(this,\'' + m.id + '\')'}" data-model="\${m.id}">
+      <img class="model-chip-img" src="\${m.img}" alt="\${m.name}" onerror="this.style.display='none'"/>
+      <div class="model-chip-info">
+        <div class="model-chip-name">\${m.name}</div>
+        <div class="model-chip-sub">\${m.sub}</div>
+      </div>
+      \${active ? '<span class="model-chip-badge active-badge">Active</span>' : ''}
+      \${locked ? '<span class="model-chip-badge plan-badge">\${PLAN_LABEL[m.minPlan] || ''}</span>' : ''}
+    </div>\`
+  }).join('')
 }
+
+async function selectModel(el, modelId) {
+  if (el.classList.contains('model-locked')) return
+  document.querySelectorAll('.model-chip').forEach(c => { c.classList.remove('model-active'); c.querySelector('.model-chip-badge.active-badge')?.remove() })
+  el.classList.add('model-active')
+  const badge = document.createElement('span'); badge.className = 'model-chip-badge active-badge'; badge.textContent = 'Active'
+  el.appendChild(badge)
+  STATE.preferredModel = modelId
+  // Update header model card
+  const modName = MODELS.find(m => m.id === modelId)
+  if (modName) {
+    const dn = document.getElementById('ov-model-name'); if (dn) dn.textContent = modName.name
+  }
+  const savingEl = document.getElementById('model-saving'); if (savingEl) { savingEl.style.display = 'block'; savingEl.textContent = 'Saving…' }
+  try {
+    const r = await fetch(API + '/agent/provider', {
+      method:'POST', headers: authHdr(),
+      body: JSON.stringify({ tenantId: STATE.tenantId, model: modelId })
+    })
+    const j = await r.json()
+    if (savingEl) { savingEl.textContent = j.success ? '✓ Saved — agent is now using ' + (modName?.name || modelId) : 'Failed to save'; setTimeout(() => { savingEl.style.display='none' }, 2500) }
+  } catch(e) { if (savingEl) { savingEl.textContent = 'Error saving'; setTimeout(() => { savingEl.style.display='none' }, 2000) } }
+}
+
+// Legacy alias kept for any remaining references
+async function selectProvider(el, id) { return selectModel(el, id) }
 
 // ─── WORKSPACE ────────────────────────────────────
 const CORE_FILES = ['SOUL.md','IDENTITY.md','STRATEGY.md','SECURITY.md','USER.md','MEMORY.md']
