@@ -11,6 +11,7 @@ import { authRoutes } from './routes/auth.js'
 import { devRoutes } from './routes/dev.js'
 import { authMiddleware } from './middleware/auth.js'
 import { healthRoutes } from './routes/health.js'
+import { metricsRoutes } from './routes/metrics.js'
 import { agentFactory, getPool } from '@agentr/factory'
 import { cors } from 'hono/cors'
 
@@ -72,6 +73,7 @@ const allowedOrigins = process.env['NODE_ENV'] === 'production'
 app.use('*', cors({ origin: allowedOrigins, allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }))
 
 app.route('/health', healthRoutes)
+app.route('/metrics', metricsRoutes)
 app.route('/auth', authRoutes)
 // Protected agent endpoints (require auth token)
 app.use('/agent/message', authMiddleware)

@@ -57,6 +57,7 @@ export class SessionManager {
     const cur = this.healthScores.get(tenantId) ?? 100
     this.healthScores.set(tenantId, Math.min(100, cur + 1))
     this.consecutiveFails.set(tenantId, 0)
+    this._syncHealthToDB(tenantId)
   }
 
   recordFailure(tenantId: string): void {
@@ -64,10 +65,39 @@ export class SessionManager {
     this.healthScores.set(tenantId, Math.max(0, cur - 10))
     const fails = (this.consecutiveFails.get(tenantId) ?? 0) + 1
     this.consecutiveFails.set(tenantId, fails)
+    this._syncHealthToDB(tenantId)
   }
 
   getHealthScore(tenantId: string): number {
     return this.healthScores.get(tenantId) ?? 100
+  }
+
+  /** Load health score + consecutive fails from DB into memory (call on agent start). */
+  async loadHealthScore(tenantId: string): Promise<void> {
+    if (!this.pool) return
+    try {
+      const res = await this.pool.query(
+        `SELECT health_score, consecutive_fails FROM agent_sessions WHERE tenant_id = $1`,
+        [tenantId],
+      )
+      if (res.rows[0]) {
+        this.healthScores.set(tenantId, res.rows[0].health_score ?? 100)
+        this.consecutiveFails.set(tenantId, res.rows[0].consecutive_fails ?? 0)
+      }
+    } catch { /* non-blocking */ }
+  }
+
+  /** Fire-and-forget DB sync after every score change. */
+  private _syncHealthToDB(tenantId: string): void {
+    if (!this.pool) return
+    const score = this.healthScores.get(tenantId) ?? 100
+    const fails = this.consecutiveFails.get(tenantId) ?? 0
+    this.pool.query(
+      `UPDATE agent_sessions
+       SET health_score = $1, consecutive_fails = $2, last_ping = NOW(), updated_at = NOW()
+       WHERE tenant_id = $3`,
+      [score, fails, tenantId],
+    ).catch(() => { /* non-blocking */ })
   }
 
   // ── Health monitor ────────────────────────────────────────────────────────
