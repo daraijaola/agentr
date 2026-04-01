@@ -1,3 +1,40 @@
+// ─── Exported TypeScript types ───────────────────────────────────────────────
+
+export interface LLMConfig {
+  apiKey?: string;
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+  plan?: string;
+  provisionedAt?: number;
+  [key: string]: unknown;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | null | unknown[];
+  tool_call_id?: string;
+  name?: string;
+  tool_calls?: unknown[];
+  reasoning_content?: unknown;
+}
+
+export type LLMProvider = 'air' | string;
+
+export interface ChatOptions {
+  messages: ChatMessage[];
+  systemPrompt?: string;
+  tools?: Array<{ name: string; description: string; inputSchema: unknown }>;
+}
+
+export interface ChatResponse {
+  text: string;
+  toolCalls: Array<{ id: string; name: string; input: unknown }>;
+  messages: ChatMessage[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 // AIR LLM client — sole provider for AGENTR
 // All 10 AIR models
 const AIR_MODELS = {
@@ -260,7 +297,7 @@ export class LLMClient {
         const baseUrl = process.env['AIR_BASE_URL'];
         if (!baseUrl)
             throw new Error('AIR_BASE_URL environment variable is not set');
-        const body = {
+        const body: Record<string, any> = {
             model,
             max_tokens: this.config.maxTokens ?? 8192,
             temperature: this.config.temperature ?? 0.7,
@@ -283,7 +320,7 @@ export class LLMClient {
         });
         if (!res.ok)
             throw new Error(`LLM error ${res.status}: ${await res.text()}`);
-        const data = await res.json();
+        const data: any = await res.json();
         const choice = data.choices[0]?.message;
         let text = choice?.content ?? '';
         let rawTC = choice?.tool_calls ?? [];
