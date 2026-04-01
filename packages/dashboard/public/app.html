@@ -1976,10 +1976,19 @@ function renderModelChips(activeModelId) {
   if (!container) return
   const planLevel = PLAN_LEVEL[STATE.plan] ?? 0
   container.innerHTML = ''
+  const TIER_LABELS = { 0:'Free', 1:'Starter', 2:'Pro', 3:'Ultra', 4:'Elite / Enterprise' }
+  let lastTier = -1
   MODELS.forEach(function(m) {
     const locked = planLevel < m.minPlan
     const active = m.id === (activeModelId || 'claude-haiku-4-5')
-
+    if (m.minPlan !== lastTier) {
+      lastTier = m.minPlan
+      const hdr = document.createElement('div')
+      hdr.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding:8px 2px 4px;' + (m.minPlan > 0 ? 'margin-top:6px;' : '')
+      hdr.textContent = TIER_LABELS[m.minPlan] || ('Plan ' + m.minPlan)
+      if (locked) hdr.style.opacity = '0.45'
+      container.appendChild(hdr)
+    }
     const chip = document.createElement('div')
     chip.className = 'model-chip' + (active ? ' model-active' : '') + (locked ? ' model-locked' : '')
     chip.dataset.model = m.id
@@ -1993,7 +2002,7 @@ function renderModelChips(activeModelId) {
 
     const info = document.createElement('div')
     info.className = 'model-chip-info'
-    info.innerHTML = '<div class="model-chip-name">' + m.name + '</div><div class="model-chip-sub">' + m.sub + '</div>'
+    info.innerHTML = '<div class=model-chip-name>' + m.name + '</div><div class=model-chip-sub>' + m.sub + '</div>'
 
     chip.appendChild(img)
     chip.appendChild(info)

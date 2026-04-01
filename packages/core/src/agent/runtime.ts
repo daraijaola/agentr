@@ -255,6 +255,7 @@ export class AgentRuntime {
       workspace || undefined,
       this.tools.list().length,
       this.config.agentName,
+      this.llm.config?.model,
     )
   }
 

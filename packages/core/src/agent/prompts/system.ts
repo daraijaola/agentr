@@ -159,10 +159,20 @@ export function buildSystemPrompt(
   workspace?: string,
   toolCount?: number,
   agentName?: string,
+  modelId?: string,
 ): string {
+  const MODEL_DISPLAY_NAMES: Record<string,string> = {
+    'claude-haiku-4-5': 'Claude Haiku 4.5', 'gemini-2.5-flash': 'Gemini 2.5 Flash',
+    'gpt-4o-mini': 'GPT-4o mini', 'claude-sonnet-4-5': 'Claude Sonnet 4.5',
+    'gpt-4o': 'GPT-4o', 'gpt-4.1': 'GPT-4.1', 'o4-mini': 'GPT o4-mini',
+    'gemini-2.5-pro': 'Gemini 2.5 Pro', 'gemini-2.5-pro-preview': 'Gemini 2.5 Pro Preview',
+    'claude-opus-4-5': 'Claude Opus 4.5',
+  }
+  const activeModelName = modelId ? (MODEL_DISPLAY_NAMES[modelId] ?? modelId) : 'Claude Haiku 4.5'
   const sections = [
     ...criticalOverrides(toolCount ?? 0),
     ...IDENTITY(phone, walletAddress, serverIp, agentName),
+    `You are currently running on the ${activeModelName} model (model ID: ${modelId ?? 'claude-haiku-4-5'}). If a user asks which AI model you use or checks your status, tell them: ${activeModelName}.`,
     ,
     ...PERSONALITY,
     '',
