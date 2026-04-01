@@ -571,6 +571,34 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   .overview-greeting { font-size:22px; }
   .wallet-addr { font-size:12px; }
 }
+/* ─── PREMIUM CREDITS TAB ────────────────────────────────────────── */
+.cred-hero { background:var(--text-primary); border-radius:16px; padding:24px; margin-bottom:1.25rem; }
+.cred-hero-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.cred-hero-eyebrow { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.45); margin-bottom:4px; }
+.cred-model-tag { font-size:12px; color:rgba(255,255,255,.55); font-weight:500; }
+.cred-upgrade-btn { font-size:12px; font-weight:600; color:var(--accent); background:rgba(0,152,234,.15); border:1px solid rgba(0,152,234,.35); border-radius:999px; padding:7px 16px; text-decoration:none; white-space:nowrap; transition:background .15s; }
+.cred-upgrade-btn:hover { background:rgba(0,152,234,.28); }
+.cred-balance-block { margin-bottom:4px; }
+.cred-balance-num { font-family:var(--font-serif); font-size:52px; font-weight:400; line-height:1; color:#fff; letter-spacing:-2px; }
+.cred-balance-lbl { font-size:13px; color:rgba(255,255,255,.45); margin-top:6px; }
+.cred-hero-bar { margin:14px 0 4px; }
+.cred-hero .credits-bar-track { background:rgba(255,255,255,.12); margin:0 0 6px; }
+.cred-hero .credits-bar-fill { background:var(--accent); }
+.cred-bar-row { display:flex; justify-content:space-between; }
+.cred-stats-row { display:flex; align-items:center; padding-top:16px; border-top:.5px solid rgba(255,255,255,.1); margin-top:16px; }
+.cred-stat-item { flex:1; }
+.cred-stat-val { font-size:20px; font-weight:700; color:#fff; letter-spacing:-.4px; }
+.cred-stat-lbl { font-size:11px; color:rgba(255,255,255,.4); margin-top:3px; }
+.cred-stat-sep { width:.5px; height:36px; background:rgba(255,255,255,.12); margin:0 22px; }
+.cred-hero .plan-free { background:rgba(255,255,255,.15); color:#fff; }
+.cred-hero .plan-starter { background:rgba(29,78,216,.3); color:#93C5FD; }
+.cred-hero .plan-pro { background:rgba(124,58,237,.3); color:#C4B5FD; }
+.cred-hero .plan-elite { background:rgba(180,83,9,.3); color:#FCD34D; }
+.cred-hero .plan-enterprise { background:rgba(6,95,70,.3); color:#6EE7B7; }
+.topup-card { position:relative; }
+.topup-popular { border-color:var(--accent) !important; background:var(--accent-tint,#f0f9ff); }
+.topup-badge-pill { position:absolute; top:-11px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; letter-spacing:.04em; background:var(--accent); color:#fff; padding:2px 11px; border-radius:999px; white-space:nowrap; }
+
 /* ─── PREMIUM STATS GRID ────────────────────────────────────── */
 .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:12px; margin-bottom:1.5rem; }
 .dash-card { background:var(--bg-card); border:.5px solid var(--border-subtle); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:6px; transition:box-shadow .15s,border-color .15s; }
@@ -1118,7 +1146,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <span class="dash-card-lbl">Telegram</span>
             </div>
             <div class="dash-card-val" style="font-size:15px" id="ov-tg-handle">—</div>
-            <a class="dash-tg-link" id="tg-link" href="#" target="_blank" rel="noreferrer">Open chat →</a>
+            <a class="dash-tg-link" id="ov-tg-link" href="#" target="_blank" rel="noreferrer">Open chat →</a>
           </div>
         </div>
 
@@ -1302,70 +1330,85 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 
       <!-- CREDITS -->
       <div class="tab-pane" id="tab-credits">
-        <p class="section-label">Credits &amp; billing</p>
-        <div class="credits-stats" id="credits-stats">
-          <div class="credits-stat">
-            <div class="credits-stat-label">Balance</div>
-            <div class="credits-stat-val" style="color:var(--accent)" id="cred-balance">—</div>
-            <div class="credits-stat-sub">credits remaining</div>
+
+        <!-- Hero card -->
+        <div class="cred-hero">
+          <div class="cred-hero-top">
+            <div>
+              <div class="cred-hero-eyebrow">Your Plan</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+                <span class="dash-plan-pill plan-free" id="cred-plan-pill">Free</span>
+                <span class="cred-model-tag" id="cred-model-name">Haiku 4.5</span>
+              </div>
+            </div>
+            <a class="cred-upgrade-btn" href="#" onclick="switchTab('marketplace',document.querySelector('.sb-item[data-tab=marketplace]'));return false">Upgrade →</a>
           </div>
-          <div class="credits-stat">
-            <div class="credits-stat-label">Used this month</div>
-            <div class="credits-stat-val" id="cred-used">—</div>
-            <div class="credits-stat-sub">credits consumed</div>
+          <div class="cred-balance-block">
+            <div class="cred-balance-num" id="cred-balance">—</div>
+            <div class="cred-balance-lbl">credits remaining</div>
           </div>
-          <div class="credits-stat">
-            <div class="credits-stat-label">Added total</div>
-            <div class="credits-stat-val" style="color:var(--ok)" id="cred-added">—</div>
-            <div class="credits-stat-sub">credits received</div>
+          <div class="cred-hero-bar">
+            <div class="credits-bar-track"><div class="credits-bar-fill" id="cred-bar" style="width:0%"></div></div>
+            <div class="cred-bar-row">
+              <span id="cred-pct" style="font-size:11px;color:rgba(255,255,255,.4)">—</span>
+              <span style="font-size:11px;color:rgba(255,255,255,.4)">of <span id="cred-limit-label">—</span> total</span>
+            </div>
+          </div>
+          <div class="cred-stats-row">
+            <div class="cred-stat-item">
+              <div class="cred-stat-val" id="cred-used">—</div>
+              <div class="cred-stat-lbl">used this month</div>
+            </div>
+            <div class="cred-stat-sep"></div>
+            <div class="cred-stat-item">
+              <div class="cred-stat-val" id="cred-added">—</div>
+              <div class="cred-stat-lbl">added all-time</div>
+            </div>
           </div>
         </div>
 
-        <div class="credits-bar-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;font-weight:500">Credit balance</span>
-            <span style="font-size:12px;color:var(--text-muted)" id="cred-pct">—</span>
-          </div>
-          <div class="credits-bar-track"><div class="credits-bar-fill" id="cred-bar" style="width:0%"></div></div>
-          <div class="credits-bar-foot"><span>0</span><span>100,000 total</span></div>
-        </div>
-
-        <div class="card" style="margin-bottom:1.25rem">
+        <!-- Top-up -->
+        <div class="info-card">
           <div class="info-label">Top up credits</div>
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1.25rem">Pay with TON. Credits are added after payment confirms.</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin:6px 0 1rem">Pay with TON. Credits appear within minutes of payment confirming.</p>
           <div class="topup-grid">
             <div class="topup-card" onclick="handleTopup(5,5500,'3.8')">
               <div class="topup-price">$5</div>
-              <div class="topup-credits">5,500 credits</div>
-              <div class="topup-ton">3.8 TON</div>
+              <div class="topup-credits">5,500 cr</div>
+              <div class="topup-ton">≈ 3.8 TON</div>
             </div>
-            <div class="topup-card" onclick="handleTopup(10,12000,'7.5')">
+            <div class="topup-card topup-popular" onclick="handleTopup(10,12000,'7.5')">
+              <div class="topup-badge-pill">Best value</div>
               <div class="topup-price">$10</div>
-              <div class="topup-credits">12,000 credits</div>
-              <div class="topup-ton">7.5 TON</div>
+              <div class="topup-credits">12,000 cr</div>
+              <div class="topup-ton">≈ 7.5 TON</div>
             </div>
             <div class="topup-card" onclick="handleTopup(25,32000,'18.8')">
               <div class="topup-price">$25</div>
-              <div class="topup-credits">32,000 credits</div>
-              <div class="topup-ton">18.8 TON</div>
+              <div class="topup-credits">32,000 cr</div>
+              <div class="topup-ton">≈ 18.8 TON</div>
             </div>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:1.25rem">
+        <!-- Cost reference -->
+        <div class="info-card">
           <div class="info-label">Credit costs</div>
           <div class="costs-table">
-            <div class="costs-row"><div><span class="costs-action">Message (Claude)</span><span class="costs-note">~$0.013</span></div><span class="costs-val">13 credits</span></div>
-            <div class="costs-row"><div><span class="costs-action">Message (GPT-4o)</span><span class="costs-note">~$0.009</span></div><span class="costs-val">9 credits</span></div>
-            <div class="costs-row"><div><span class="costs-action">Message (Gemini)</span><span class="costs-note">~$0.008</span></div><span class="costs-val">8 credits</span></div>
-            <div class="costs-row"><div><span class="costs-action">Message (Kimi)</span><span class="costs-note">~$0.003</span></div><span class="costs-val">3 credits</span></div>
-            <div class="costs-row"><div><span class="costs-action">Tool call</span><span class="costs-note">free tier</span></div><span class="costs-val">1 credit</span></div>
+            <div class="costs-row"><div><span class="costs-action">Claude Haiku 4.5</span><span class="costs-note">~$0.002/1k</span></div><span class="costs-val">2 cr/1k tok</span></div>
+            <div class="costs-row"><div><span class="costs-action">Claude Sonnet 4.6</span><span class="costs-note">~$0.018/1k</span></div><span class="costs-val">18 cr/1k tok</span></div>
+            <div class="costs-row"><div><span class="costs-action">GPT-4o</span><span class="costs-note">~$0.0125/1k</span></div><span class="costs-val">12 cr/1k tok</span></div>
+            <div class="costs-row"><div><span class="costs-action">Gemini Flash-Lite</span><span class="costs-note">~$0.0008/1k</span></div><span class="costs-val">0.8 cr/1k tok</span></div>
+            <div class="costs-row"><div><span class="costs-action">Tool call</span><span class="costs-note">always free</span></div><span class="costs-val">1 credit</span></div>
             <div class="costs-row"><div><span class="costs-action">Bot deployment</span><span class="costs-note">one-time</span></div><span class="costs-val">10 credits</span></div>
           </div>
         </div>
 
-        <p class="section-label">Transaction history</p>
-        <div id="tx-list"><div style="font-size:13px;color:var(--text-muted)">Loading…</div></div>
+        <!-- Transaction history -->
+        <div>
+          <p class="section-label" style="margin-bottom:.75rem">Transaction history</p>
+          <div id="tx-list"><div style="font-size:13px;color:var(--text-muted)">Loading…</div></div>
+        </div>
       </div>
 
       <!-- CODER TAB -->
@@ -1847,6 +1890,15 @@ async function goDashboard() {
       const modPlan = document.getElementById('ov-model-plan')
       if (modPlan) modPlan.textContent = 'Default for ' + (status.planName || 'Free') + ' plan'
     }
+    // Populate credits tab hero
+    const credPill = document.getElementById('cred-plan-pill')
+    if (credPill && status.plan) { credPill.textContent = status.planName || status.plan; credPill.className = 'dash-plan-pill plan-' + status.plan }
+    const credModel = document.getElementById('cred-model-name')
+    if (credModel) credModel.textContent = status.planModel || 'Haiku 4.5'
+    const credLimitLbl = document.getElementById('cred-limit-label')
+    if (credLimitLbl) credLimitLbl.textContent = Number(status.planLimit || 500).toLocaleString()
+    window._planLimit = status.planLimit || 500
+
     if (typeof status.credits === 'number') {
       const limit = status.planLimit || 500
       const el = document.getElementById('ov-credits')
@@ -1863,7 +1915,9 @@ async function goDashboard() {
       if (tgHandle) tgHandle.textContent = status.telegram.username ? '@' + status.telegram.username : (status.telegram.firstName || '—')
       if (status.telegram.username) {
         document.getElementById('overview-sub').textContent = '@' + status.telegram.username + ' is online and ready on Telegram.'
-        document.getElementById('tg-link').href = 'https://t.me/' + status.telegram.username
+        const _tgUrl = 'https://t.me/' + status.telegram.username
+        document.getElementById('tg-link').href = _tgUrl
+        const _ovTg = document.getElementById('ov-tg-link'); if (_ovTg) _ovTg.href = _tgUrl
       }
     } else if (STATE.firstName) {
       document.getElementById('overview-greeting').textContent = 'Hey, ' + STATE.firstName + '.'
@@ -2231,7 +2285,7 @@ async function loadCredits() {
     document.getElementById('cred-used').textContent = Number(data.totalUsed || 0).toLocaleString()
     document.getElementById('cred-added').textContent = Number(data.totalAdded || 0).toLocaleString()
     document.getElementById('credits-pill').textContent = Number(credits).toLocaleString() + ' credits'
-    const pct = Math.min(100, Math.round((credits / 100000) * 100))
+    const pct = Math.min(100, Math.round((credits / (window._planLimit || 100000)) * 100))
     document.getElementById('cred-pct').textContent = pct + '% remaining'
     document.getElementById('cred-bar').style.width = pct + '%'
     if (pct <= 20) document.getElementById('cred-bar').style.background = 'var(--err)'

@@ -78,7 +78,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
       `SELECT ai.status, t.owner_name, t.owner_username, t.wallet_address,
-              t.plan, t.credits, t.plan_expires_at, t.grace_until
+              t.phone, t.plan, t.credits, t.plan_expires_at, t.grace_until
        FROM agent_instances ai JOIN tenants t ON t.id = ai.tenant_id
        WHERE ai.tenant_id = $1 ORDER BY ai.created_at DESC LIMIT 1`,
       [tenantId]
@@ -86,7 +86,10 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     if (!(rows as any[]).length) return c.json({ status: 'offline', tenantId })
     const row = (rows as any[])[0]
     const isOnline = row.status === 'running'
-    const planKey: string = row.plan ?? 'free'
+    const ENTERPRISE_PHONES_API = ['+2347032826456']
+    const planKey: string = ENTERPRISE_PHONES_API.includes(row.phone ?? '')
+      ? 'enterprise'
+      : (row.plan ?? 'free')
     const PLAN_MODEL: Record<string,string> = {
       free: 'Haiku 4.5', starter: 'Haiku 4.5', pro: 'Claude Sonnet 4.6',
       ultra: 'Claude Sonnet 4.5', elite: 'Claude Opus 4.6', enterprise: 'Claude Opus 4.6',
