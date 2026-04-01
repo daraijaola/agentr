@@ -571,6 +571,28 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
   .overview-greeting { font-size:22px; }
   .wallet-addr { font-size:12px; }
 }
+/* ─── PREMIUM STATS GRID ────────────────────────────────────── */
+.dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:12px; margin-bottom:1.5rem; }
+.dash-card { background:var(--bg-card); border:.5px solid var(--border-subtle); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:6px; transition:box-shadow .15s,border-color .15s; }
+.dash-card:hover { box-shadow:0 4px 16px rgba(26,25,22,.07); border-color:var(--border-medium); }
+.dash-card-hd { display:flex; align-items:center; gap:7px; margin-bottom:2px; }
+.dash-card-lbl { font-size:10px; font-weight:600; letter-spacing:.065em; text-transform:uppercase; color:var(--text-muted); }
+.dash-card-val { font-size:20px; font-weight:700; color:var(--text-primary); letter-spacing:-.4px; line-height:1.1; }
+.dash-card-sub { font-size:12px; color:var(--text-secondary); line-height:1.4; }
+.dash-plan-pill { display:inline-flex; align-items:center; padding:3px 12px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.01em; align-self:flex-start; }
+.dash-plan-pill.plan-free       { background:var(--warm-200); color:var(--text-primary); }
+.dash-plan-pill.plan-starter    { background:#EFF6FF; color:#1D4ED8; }
+.dash-plan-pill.plan-pro        { background:#F5F3FF; color:#7C3AED; }
+.dash-plan-pill.plan-ultra      { background:#F5F3FF; color:#7C3AED; }
+.dash-plan-pill.plan-elite      { background:#FFFBEB; color:#B45309; }
+.dash-plan-pill.plan-enterprise { background:#ECFDF5; color:#065F46; }
+.dash-wallet-short { font-size:12px; font-weight:500; font-family:monospace; color:var(--text-secondary); word-break:break-all; line-height:1.5; }
+.dash-copy-btn { font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-tint); border:none; border-radius:999px; padding:5px 12px; cursor:pointer; align-self:flex-start; font-family:var(--font-sans); margin-top:2px; transition:opacity .12s; }
+.dash-copy-btn:hover { opacity:.8; }
+.dash-tg-link { font-size:12px; font-weight:600; color:var(--accent); text-decoration:none; }
+.dash-tg-link:hover { text-decoration:underline; }
+@media (max-width:520px) { .dash-grid { grid-template-columns:1fr 1fr; gap:10px; } }
+
 </style>
 
 <style>
