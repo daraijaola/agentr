@@ -40,20 +40,23 @@ export interface ChatResponse {
 // 10 real models, split across plans
 const AIR_MODELS = {
     // Free
-    HAIKU:     'claude-haiku-4-5',
+    HAIKU:      'claude-haiku-4-5',
     // Starter
-    FLASH:     'gemini-2.5-flash',
-    GPT4O_MINI:'gpt-4o-mini',
+    FLASH:      'gemini-2.5-flash',
+    GPT4O_MINI: 'gpt-4o-mini',
     // Pro
-    SONNET:    'claude-sonnet-4-5',
-    GPT4O:     'gpt-4o',
-    GPT41:     'gpt-4.1',
+    SONNET:     'claude-sonnet-4-5',
+    GPT4O:      'gpt-4o',
+    GPT41:      'gpt-4.1',
     // Ultra
-    O4_MINI:   'o4-mini',
-    PRO:       'gemini-2.5-pro',
+    O4_MINI:    'o4-mini',
+    PRO:        'gemini-2.5-pro',
     // Elite
-    PRO_PREV:  'gemini-2.5-pro-preview',
-    OPUS:      'claude-opus-4-5',
+    SONNET_6:   'claude-sonnet-4-6',
+    GPT5:       'gpt-5.2',
+    OPUS:       'claude-opus-4-5',
+    // Enterprise
+    OPUS_6:     'claude-opus-4-6',
 };
 // Plan model splits — each tier adds to the one below
 const PLAN_MODELS: Record<string, string[]> = {
@@ -64,7 +67,10 @@ const PLAN_MODELS: Record<string, string[]> = {
     ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
                  AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
                  AIR_MODELS.O4_MINI, AIR_MODELS.PRO],
-    elite:      Object.values(AIR_MODELS),
+    elite:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
+                 AIR_MODELS.O4_MINI, AIR_MODELS.PRO,
+                 AIR_MODELS.SONNET_6, AIR_MODELS.GPT5, AIR_MODELS.OPUS],
     enterprise: Object.values(AIR_MODELS),
 };
 // Default model per plan

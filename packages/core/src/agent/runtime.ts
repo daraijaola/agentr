@@ -10,16 +10,18 @@ import { routedExecute } from '../tools/telegram/router.js'
 
 // ─── Credit cost per 1 000 tokens by model (April 2026 pricing) ─────────────
 const MODEL_CREDITS_PER_1K: Record<string, number> = {
-  'claude-haiku-4-5':          2,
-  'gemini-2.5-flash':          1.5,
-  'gpt-4o-mini':               0.6,
-  'claude-sonnet-4-5':         18,
-  'gpt-4o':                    12.5,
-  'gpt-4.1':                   12.5,
-  'o4-mini':                   2.5,
-  'gemini-2.5-pro':            6,
-  'gemini-2.5-pro-preview':    7,
-  'claude-opus-4-5':           30,
+  'claude-haiku-4-5':    2,
+  'gemini-2.5-flash':    1,
+  'gpt-4o-mini':         1,
+  'claude-sonnet-4-5':   15,
+  'claude-sonnet-4-6':   15,
+  'gpt-4o':              10,
+  'gpt-4.1':             10,
+  'o4-mini':              4,
+  'gemini-2.5-pro':       8,
+  'gpt-5.2':             20,
+  'claude-opus-4-5':     25,
+  'claude-opus-4-6':     25,
 }
 function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_CREDITS_PER_1K[model] ?? 3
