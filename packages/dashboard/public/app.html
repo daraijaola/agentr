@@ -2248,9 +2248,9 @@ async function handleTopup(usd, credits, ton) {
 
 // ─── CODER TAB ────────────────────────────────────
 const CR = {
-  model: 'air',
-  modelLabel: 'AIR',
-  statusLabel: 'AIR · CREDITS',
+  model: 'claude-sonnet',
+  modelLabel: 'Claude Sonnet',
+  statusLabel: 'Sonnet · CREDITS',
   inited: false,
   openFile: null,
   byok: { anthropic: '', openai: '' },
@@ -2309,7 +2309,7 @@ function crActivateByok(provider) {
   if (CR.byokActive === provider) {
     CR.byokActive = ''
     localStorage.removeItem('cr_byok_active')
-    crApplyModel('air', 'AIR', 'AIR · CREDITS')
+    crApplyModel('claude-sonnet', 'Claude Sonnet', 'Sonnet · CREDITS')
   } else {
     CR.byokActive = provider
     localStorage.setItem('cr_byok_active', provider)
@@ -2490,7 +2490,7 @@ function crAppendMsg(role, text) {
   const c = document.getElementById('cr-chat-msgs')
   const userInit = (STATE.tenantId || 'U').slice(0, 1).toUpperCase()
   const isAI = role === 'agent'
-  const name = isAI ? (CR.modelLabel || 'AIR') : 'You'
+  const name = isAI ? (CR.modelLabel || 'Claude Sonnet') : 'You'
   const now = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
   const bodyHtml = crFormatText(text)
   const el = document.createElement('div')
@@ -2587,7 +2587,7 @@ function crSaveByok(provider) {
   if (val.length <= 8 && CR.byokActive === provider) {
     CR.byokActive = ''
     localStorage.removeItem('cr_byok_active')
-    crApplyModel('air', 'AIR', 'AIR · CREDITS')
+    crApplyModel('claude-sonnet', 'Claude Sonnet', 'Sonnet · CREDITS')
   }
   crRefreshByokDots()
 }
