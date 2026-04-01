@@ -246,7 +246,17 @@ export function attachMessageListener(
           if (cmd === '/ping') {
             reply = '🏓 Pong!'
           } else if (cmd === '/status') {
-            reply = `🤖 AGENTR Status\n\n✅ Agent: Online\n📱 Account: ${tenantId.slice(0,8)}...\n🧠 Model: ${process.env.LLM_MODEL ?? 'unknown'}\n📬 Runtime: PM2 managed`
+            const _mid = runtime.getModel()
+            const _mnames: Record<string,string> = {
+              'claude-haiku-4-5':'Claude Haiku 4.5','gemini-2.5-flash':'Gemini 2.5 Flash',
+              'gpt-4o-mini':'GPT-4o mini','claude-sonnet-4-5':'Claude Sonnet 4.5',
+              'claude-sonnet-4-6':'Claude Sonnet 4.6','gpt-4o':'GPT-4o',
+              'gpt-4.1':'GPT-4.1','o4-mini':'GPT o4-mini',
+              'gemini-2.5-pro':'Gemini 2.5 Pro','gpt-5.2':'GPT-5.2',
+              'claude-opus-4-5':'Claude Opus 4.5','claude-opus-4-6':'Claude Opus 4.6',
+            }
+            const _mname = _mnames[_mid] ?? _mid
+            reply = `🤖 AGENTR Status\n\n✅ Agent: Online\n📱 Account: ${tenantId.slice(0,8)}...\n🧠 Model: ${_mname}\n📬 Runtime: PM2 managed`
           } else if (cmd === '/clear') {
             runtime.clearHistory(chatId)
             reply = '🗑️ Conversation history cleared.'

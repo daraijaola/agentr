@@ -578,6 +578,10 @@ export class AgentRuntime {
     this.llm = new LLMClient(merged)
   }
 
+  getModel(): string {
+    return this.llm.config?.model ?? 'claude-haiku-4-5'
+  }
+
   clearHistory(chatId: string): void { this.conversations.delete(chatId) }
 
   async stop(): Promise<void> { this.conversations.clear() }
