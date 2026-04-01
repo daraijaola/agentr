@@ -2,7 +2,7 @@
   "name": "agentr",
   "version": "0.1.0",
   "private": true,
-  "description": "AGENTR  AI Agent Factory for TON & Telegram",
+  "description": "AGENTR \u2014 Autonomous AI Agent Infrastructure on TON & Telegram. Multi-tenant platform where every user gets a real agent: hybrid GramJS router, token-accurate credits, per-tenant sandbox, 120+ tools, native TON execution.",
   "scripts": {
     "dev": "pnpm --parallel -r dev",
     "build": "pnpm -r build",
