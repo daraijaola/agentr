@@ -341,18 +341,19 @@ export const processListExecutor: ToolExecutor<Record<string, never>> = async (
   const tenantId = (_context as Record<string, unknown>)["tenantId"] as string
   const short = tenantId.split("-")[0]
   const prefix = `agent-${short}-`
+  const useDocker = containerIsRunning(tenantId)
+  const ctr = tenantContainerName(tenantId)
   try {
-    const output = execSync(`pm2 jlist 2>/dev/null`, { encoding: "utf8" })
-    const all = JSON.parse(output) as Array<{ name: string; pm2_env: { status: string }; pid: number }>
-    const mine = all
-      .filter(p => p.name.startsWith(prefix))
-      .map(p => ({
-        name: p.name.replace(prefix, ""),
-        status: p.pm2_env.status,
-        pid: p.pid,
-      }))
-    return { success: true, data: { processes: mine, count: mine.length } }
+    const raw = useDocker
+      ? execFileSync('docker', ['exec', ctr, 'pm2', 'jlist'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      : execSync('pm2 jlist 2>/dev/null', { encoding: 'utf8' })
+    const all = JSON.parse(raw) as Array<{ name: string; pm2_env: { status: string }; pid: number }>
+    // Docker: all processes belong to this tenant. Host: filter by prefix.
+    const mine = useDocker
+      ? all.map(p => ({ name: p.name, status: p.pm2_env.status, pid: p.pid }))
+      : all.filter(p => p.name.startsWith(prefix)).map(p => ({ name: p.name.replace(prefix, ""), status: p.pm2_env.status, pid: p.pid }))
+    return { success: true, data: { processes: mine, count: mine.length, sandbox: useDocker ? 'docker' : 'host' } }
   } catch {
-    return { success: true, data: { processes: [], count: 0 } }
+    return { success: true, data: { processes: [], count: 0, sandbox: useDocker ? 'docker' : 'host' } }
   }
 }

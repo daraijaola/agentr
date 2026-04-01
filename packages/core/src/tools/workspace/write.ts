@@ -77,7 +77,7 @@ export const workspaceWriteExecutor: ToolExecutor<WorkspaceWriteParams> = async 
     if (contentSize > MAX_WRITE_SIZE) {
       return {
         success: false,
-        error: `File too large: ${contentSize} bytes exceeds maximum write size of ${MAX_WRITE_SIZE} bytes (50 MB)`,
+        error: `File too large: ${contentSize} bytes exceeds the 512 KB write limit`,
       };
     }
 
