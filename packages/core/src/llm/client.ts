@@ -308,7 +308,7 @@ export class LLMClient {
             throw new Error('AIR_BASE_URL environment variable is not set');
         const body: Record<string, any> = {
             model,
-            max_tokens: this.config.maxTokens ?? 8192,
+            max_tokens: this.config.maxTokens ?? 4096,
             temperature: this.config.temperature ?? 0.7,
             messages: airMessages,
         };
