@@ -1034,20 +1034,78 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
       <!-- OVERVIEW -->
       <div class="tab-pane active" id="tab-overview">
         <h1 class="overview-greeting" id="overview-greeting">Hey, your agent is live.</h1>
-        <p class="overview-sub" id="overview-sub">@theagent_r1 is online and ready on Telegram.</p>
+        <p class="overview-sub" id="overview-sub">Your agent is online and ready on Telegram.</p>
 
-        <!-- Wallet -->
-        <div class="info-card">
-          <div class="info-label">TON Wallet</div>
-          <div class="wallet-row">
-            <div class="wallet-addr" id="wallet-addr">UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M</div>
-            <button class="copy-btn" id="copy-btn" onclick="copyWallet()">Copy</button>
+        <!-- Stats grid -->
+        <div class="dash-grid">
+          <!-- Status -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="#16a34a"/><circle cx="8" cy="8" r="7" stroke="#16a34a" stroke-width="1.5" opacity=".3"/></svg>
+              <span class="dash-card-lbl">Agent Status</span>
+            </div>
+            <div class="dash-card-val" style="font-size:16px;color:var(--ok)">Online</div>
+            <div class="dash-card-sub">Running 24/7 on your account</div>
+          </div>
+
+          <!-- Plan -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6H15L11 9.5L12.5 14.5L8 11.5L3.5 14.5L5 9.5L1 6H6L8 1Z" fill="#0098EA" opacity=".85"/></svg>
+              <span class="dash-card-lbl">Current Plan</span>
+            </div>
+            <span class="dash-plan-pill plan-free" id="ov-plan-pill">Free</span>
+            <div class="dash-card-sub" id="ov-plan-model" style="margin-top:4px">Haiku 4.5</div>
+          </div>
+
+          <!-- Credits -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="9" rx="2" stroke="#0098EA" stroke-width="1.5"/><path d="M5 4V3a3 3 0 016 0v1" stroke="#0098EA" stroke-width="1.5"/></svg>
+              <span class="dash-card-lbl">Credits</span>
+            </div>
+            <div class="dash-card-val" id="ov-credits">—</div>
+            <div class="credits-bar-track" style="margin:4px 0 2px"><div class="credits-bar-fill" id="ov-bar" style="width:0%"></div></div>
+            <div class="dash-card-sub">of <span id="ov-limit">—</span> total</div>
+          </div>
+
+          <!-- Wallet -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V4z" stroke="#0098EA" stroke-width="1.5"/><circle cx="11" cy="8" r="1.5" fill="#0098EA"/></svg>
+              <span class="dash-card-lbl">TON Wallet</span>
+            </div>
+            <div class="dash-wallet-short" id="ov-wallet-short">—</div>
+            <button class="dash-copy-btn" id="copy-btn" onclick="copyWallet()">Copy address</button>
+          </div>
+
+          <!-- Model -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2C4.7 2 2 4.7 2 8s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z" stroke="#0098EA" stroke-width="1.5"/><path d="M5 8.5l2 2 4-4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span class="dash-card-lbl">AI Model</span>
+            </div>
+            <div class="dash-card-val" style="font-size:15px;font-weight:600" id="ov-model-name">Claude</div>
+            <div class="dash-card-sub" id="ov-model-plan">Default for your plan</div>
+          </div>
+
+          <!-- Telegram -->
+          <div class="dash-card">
+            <div class="dash-card-hd">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 2L1 7l5 2 2 5 6-12z" stroke="#0098EA" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span class="dash-card-lbl">Telegram</span>
+            </div>
+            <div class="dash-card-val" style="font-size:15px" id="ov-tg-handle">—</div>
+            <a class="dash-tg-link" id="tg-link" href="#" target="_blank" rel="noreferrer">Open chat →</a>
           </div>
         </div>
 
-        <!-- AI Model -->
+        <!-- hidden full wallet for copyWallet() -->
+        <div id="wallet-addr" style="display:none"></div>
+
+        <!-- AI Model switcher -->
         <div class="info-card">
-          <div class="info-label">AI Model</div>
+          <div class="info-label">Switch AI Model</div>
           <div class="provider-grid">
             <div class="prov-card active" onclick="selectProvider(this,'claude')">
               <div class="prov-img"><img src="/claude.webp" alt="Claude" onerror="this.parentNode.innerHTML='C'"/></div>
@@ -1450,18 +1508,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 
             <div class="cr-modal-section">AGENTR Credits</div>
             <div style="display:flex;flex-direction:column;gap:8px">
-              <div class="cr-model-opt sel" id="cr-opt-air" onclick="crSelectModel('air','AIR','AIR · FAST · CREDITS')">
-                <div class="cr-model-icon air">A</div>
-                <div class="cr-model-info">
-                  <div class="cr-model-name">AIR</div>
-                  <div class="cr-model-desc">TON &amp; Telegram specialist · Fast · Recommended</div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-                  <span class="cr-model-tag credits">CREDITS</span>
-                  <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
-                </div>
-              </div>
-              <div class="cr-model-opt" id="cr-opt-sonnet" onclick="crSelectModel('claude-sonnet','Claude Sonnet','Sonnet · BALANCED · CREDITS')">
+              <div class="cr-model-opt sel" id="cr-opt-sonnet" onclick="crSelectModel('claude-sonnet','Claude Sonnet','Sonnet · BALANCED · CREDITS')">
                 <div class="cr-model-icon cla">C</div>
                 <div class="cr-model-info">
                   <div class="cr-model-name">Claude Sonnet</div>
@@ -1762,12 +1809,38 @@ async function goDashboard() {
     if (status.walletAddress) {
       STATE.walletAddress = status.walletAddress
       document.getElementById('wallet-addr').textContent = status.walletAddress
+      const ws = document.getElementById('ov-wallet-short')
+      if (ws) ws.textContent = status.walletAddress.slice(0,10) + '\u2026' + status.walletAddress.slice(-6)
+    } else if (STATE.walletAddress) {
+      const ws = document.getElementById('ov-wallet-short')
+      if (ws) ws.textContent = STATE.walletAddress.slice(0,10) + '\u2026' + STATE.walletAddress.slice(-6)
+    }
+    if (status.plan) {
+      const planPill = document.getElementById('ov-plan-pill')
+      if (planPill) { planPill.textContent = status.planName || status.plan; planPill.className = 'dash-plan-pill plan-' + status.plan }
+      const planMod = document.getElementById('ov-plan-model')
+      if (planMod) planMod.textContent = status.planModel || 'Haiku 4.5'
+      const modName = document.getElementById('ov-model-name')
+      if (modName) modName.textContent = status.planModel || 'Claude'
+      const modPlan = document.getElementById('ov-model-plan')
+      if (modPlan) modPlan.textContent = 'Default for ' + (status.planName || 'Free') + ' plan'
+    }
+    if (typeof status.credits === 'number') {
+      const limit = status.planLimit || 500
+      const el = document.getElementById('ov-credits')
+      if (el) el.textContent = Number(status.credits).toLocaleString()
+      const lim = document.getElementById('ov-limit')
+      if (lim) lim.textContent = Number(limit).toLocaleString()
+      const bar = document.getElementById('ov-bar')
+      if (bar) { const p = Math.min(100,Math.round((status.credits/limit)*100)); bar.style.width = p+'%'; if(p<=20) bar.style.background='var(--err)'; }
     }
     if (status.telegram) {
       const name = status.telegram.firstName || STATE.firstName || 'your agent'
       document.getElementById('overview-greeting').textContent = 'Hey, ' + name + '.'
-      document.getElementById('overview-sub').textContent = (status.telegram.username ? '@' + status.telegram.username : 'Your agent') + ' is online and ready on Telegram.'
+      const tgHandle = document.getElementById('ov-tg-handle')
+      if (tgHandle) tgHandle.textContent = status.telegram.username ? '@' + status.telegram.username : (status.telegram.firstName || '—')
       if (status.telegram.username) {
+        document.getElementById('overview-sub').textContent = '@' + status.telegram.username + ' is online and ready on Telegram.'
         document.getElementById('tg-link').href = 'https://t.me/' + status.telegram.username
       }
     } else if (STATE.firstName) {

@@ -70,7 +70,7 @@ http.createServer((req, res) => {
 
   if (url === '/app' || url === '/app/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-    fs.createReadStream(path.join(dist, 'index.html')).pipe(res)
+    fs.createReadStream(path.join(__dirname, 'public', 'app.html')).pipe(res)
     return
   }
 

@@ -108,6 +108,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       credits: row.credits ?? 0,
       planExpiresAt: row.plan_expires_at ?? null,
       graceUntil: row.grace_until ?? null,
+      walletAddress: row.wallet_address ?? null,
       telegram: isOnline ? {
         username: row.owner_username || null,
         firstName: row.owner_name || null,
