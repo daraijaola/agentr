@@ -140,6 +140,7 @@ export class AgentFactory {
     // 8. Start agent runtime
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
       deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+        getCredits:      (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
     })
 
@@ -194,6 +195,7 @@ export class AgentFactory {
     }
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
       deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+        getCredits:      (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
     })
     // Restore persisted conversations for this tenant (up to last 10 active chats)

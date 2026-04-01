@@ -31,6 +31,7 @@ export interface ChatResponse {
   text: string;
   toolCalls: Array<{ id: string; name: string; input: unknown }>;
   messages: ChatMessage[];
+  usage?: { inputTokens: number; outputTokens: number; model: string };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -523,7 +524,12 @@ export class LLMClient {
             content: text || null,
             ...(rawTC.length > 0 ? { tool_calls: rawTC } : {}),
         };
-        return { text, toolCalls, messages: [...cleanMessages, assistantMsg] };
+        const usage = data.usage ? {
+          inputTokens: data.usage.prompt_tokens ?? data.usage.input_tokens ?? 0,
+          outputTokens: data.usage.completion_tokens ?? data.usage.output_tokens ?? 0,
+          model,
+        } : undefined;
+        return { text, toolCalls, messages: [...cleanMessages, assistantMsg], usage };
     }
     async complete(prompt, systemPrompt) {
         return (await this.chat({ systemPrompt, messages: [{ role: 'user', content: prompt }] })).text;

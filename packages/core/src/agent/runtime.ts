@@ -8,6 +8,28 @@ import { buildSystemPrompt } from './prompts/system.js'
 import { sessionManager } from '../session/manager.js'
 import { routedExecute } from '../tools/telegram/router.js'
 
+// ─── Credit cost per 1 000 tokens by model (April 2026 pricing) ─────────────
+const MODEL_CREDITS_PER_1K: Record<string, number> = {
+  'claude-haiku-4-5':          2,
+  'gemini-2.5-flash-lite':     0.5,
+  'gemini-2.5-flash':          1.5,
+  'claude-sonnet-4-6':         8,
+  'claude-sonnet-4-5':         8,
+  'gpt-4o-mini':               0.5,
+  'gpt-5-mini':                1,
+  'o4-mini':                   2.5,
+  'gpt-4o':                    10,
+  'gemini-2.5-pro':            6,
+  'gemini-3.1-pro-preview':    6,
+  'claude-opus-4-6':           40,
+  'gpt-5.2':                   20,
+}
+function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
+  const rate = MODEL_CREDITS_PER_1K[model] ?? 3
+  return Math.max(1, Math.round((inputTokens + outputTokens) * rate / 1000))
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Simple TTL cache for tool-free responses (cuts API credits on repeated queries)
 interface CacheEntry { response: string; expiry: number }
 const responseCache = new Map<string, CacheEntry>()
@@ -149,6 +171,7 @@ export class AgentRuntime {
   readonly tools: ToolRegistry
   private conversations = new Map<string, ChatMessage[]>()
   private deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
+  private getCredits?: (tenantId: string) => Promise<number>
   private saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
   private activeLoops = 0
   private readonly maxConcurrentLoops: number
@@ -160,6 +183,7 @@ export class AgentRuntime {
     llmConfig: LLMConfig,
     opts?: {
       deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
+      getCredits?: (tenantId: string) => Promise<number>
       saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
       maxConcurrentLoops?: number
     }
@@ -172,6 +196,7 @@ export class AgentRuntime {
       return routedExecute(name, _tenantId, execute)
     })
     this.deductCredits = opts?.deductCredits
+    this.getCredits = opts?.getCredits
     this.saveConversation = opts?.saveConversation
     this.maxConcurrentLoops = opts?.maxConcurrentLoops ?? 1
   }
@@ -224,6 +249,16 @@ export class AgentRuntime {
   }
 
   private async _processMessage(opts: ProcessMessageOptions): Promise<AgentResponse> {
+    // ─── Credit gate ──────────────────────────────────────────────────────────
+    if (this.config.tenantId && this.getCredits) {
+      const currentCredits = await this.getCredits(this.config.tenantId)
+      if (currentCredits <= 0) {
+        return {
+          content: "I'm still here! 😊 Your credits ran out but your agent stays online. Top up with TON to unlock my full power — even 1,000 credits ($1) goes a long way! Send /topup to add credits.",
+        }
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
     const { chatId, userMessage, userName } = opts
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
@@ -271,10 +306,13 @@ export class AgentRuntime {
         const newAssistantMsg = allNext[allNext.length - 1]
         if (newAssistantMsg) messages = [...messages, newAssistantMsg]
 
-        // Deduct credits per LLM call
+        // Deduct credits per LLM call — token-based
         if (this.config.tenantId && this.deductCredits) {
           try {
-            await this.deductCredits(this.config.tenantId, 3, 'LLM call', 'air')
+            const creditCost = res.usage
+              ? calcCredits(res.usage.model, res.usage.inputTokens, res.usage.outputTokens)
+              : 3
+            await this.deductCredits(this.config.tenantId, creditCost, 'LLM call', res.usage?.model ?? 'air')
           } catch { /* non-blocking */ }
         }
 
@@ -377,6 +415,16 @@ export class AgentRuntime {
           messages = stripReasoning([...messages, { role: 'tool', content: txt, tool_call_id: tc.id, name: tc.name }])
         }
       }
+    // ─── Low-credit warning ──────────────────────────────────────────────────
+    if (finalResponse && this.config.tenantId && this.getCredits) {
+      try {
+        const rem = await this.getCredits(this.config.tenantId)
+        if (rem > 0 && rem <= 20) {
+          finalResponse += '\n\n⚠️ Almost out of credits! Top up with TON to keep going uninterrupted.'
+        }
+      } catch { /* non-blocking */ }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
     } catch (e) {
       const errStr = String(e)
       if (errStr.includes('429') || errStr.includes('rate_limit')) {
