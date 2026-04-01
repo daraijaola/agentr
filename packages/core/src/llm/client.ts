@@ -37,41 +37,43 @@ export interface ChatResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // AIR LLM client — sole provider for AGENTR
-// All 10 AIR models
+// 10 real models, split across plans
 const AIR_MODELS = {
-    // Fast / entry-tier
-    HAIKU: 'claude-haiku-4-5',
-    GPT4O_MINI: 'gpt-4o-mini',
-    FLASH: 'gemini-2.5-flash',
-    FLASH_LITE: 'gemini-2.5-flash-lite',
-    GPT5_MINI: 'gpt-5-mini',
-    O4_MINI: 'o4-mini',
-    // Mid-tier
-    SONNET: 'claude-sonnet-4-6',
-    SONNET_LATEST: 'claude-sonnet-4-5',
-    GPT4O: 'gpt-4o',
-    PRO: 'gemini-2.5-pro',
-    // Top-tier
-    OPUS: 'claude-opus-4-6',
-    GPT5: 'gpt-5.2',
-    PRO_PREV: 'gemini-3.1-pro-preview',
+    // Free
+    HAIKU:     'claude-haiku-4-5',
+    // Starter
+    FLASH:     'gemini-2.5-flash',
+    GPT4O_MINI:'gpt-4o-mini',
+    // Pro
+    SONNET:    'claude-sonnet-4-5',
+    GPT4O:     'gpt-4o',
+    GPT41:     'gpt-4.1',
+    // Ultra
+    O4_MINI:   'o4-mini',
+    PRO:       'gemini-2.5-pro',
+    // Elite
+    PRO_PREV:  'gemini-2.5-pro-preview',
+    OPUS:      'claude-opus-4-5',
 };
-// Plan model splits
-const PLAN_MODELS = {
-    free: [AIR_MODELS.HAIKU, AIR_MODELS.FLASH_LITE],
-    starter: [AIR_MODELS.HAIKU, AIR_MODELS.FLASH_LITE],
-    pro: [AIR_MODELS.HAIKU, AIR_MODELS.SONNET, AIR_MODELS.SONNET_LATEST, AIR_MODELS.FLASH, AIR_MODELS.FLASH_LITE, AIR_MODELS.GPT4O_MINI],
-    ultra: [AIR_MODELS.HAIKU, AIR_MODELS.SONNET, AIR_MODELS.SONNET_LATEST, AIR_MODELS.FLASH, AIR_MODELS.FLASH_LITE, AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT4O, AIR_MODELS.O4_MINI, AIR_MODELS.PRO_PREV],
-    elite: Object.values(AIR_MODELS),
+// Plan model splits — each tier adds to the one below
+const PLAN_MODELS: Record<string, string[]> = {
+    free:       [AIR_MODELS.HAIKU],
+    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI],
+    pro:        [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41],
+    ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
+                 AIR_MODELS.O4_MINI, AIR_MODELS.PRO],
+    elite:      Object.values(AIR_MODELS),
     enterprise: Object.values(AIR_MODELS),
 };
 // Default model per plan
-const PLAN_DEFAULTS = {
-    free: AIR_MODELS.HAIKU,
-    starter: AIR_MODELS.HAIKU,
-    pro: AIR_MODELS.SONNET,
-    ultra: AIR_MODELS.SONNET_LATEST,
-    elite: AIR_MODELS.OPUS,
+const PLAN_DEFAULTS: Record<string, string> = {
+    free:       AIR_MODELS.HAIKU,
+    starter:    AIR_MODELS.FLASH,
+    pro:        AIR_MODELS.SONNET,
+    ultra:      AIR_MODELS.PRO,
+    elite:      AIR_MODELS.OPUS,
     enterprise: AIR_MODELS.OPUS,
 };
 const STARTER_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours

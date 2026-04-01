@@ -11,19 +11,15 @@ import { routedExecute } from '../tools/telegram/router.js'
 // ─── Credit cost per 1 000 tokens by model (April 2026 pricing) ─────────────
 const MODEL_CREDITS_PER_1K: Record<string, number> = {
   'claude-haiku-4-5':          2,
-  'gemini-2.5-flash-lite':     0.8,
   'gemini-2.5-flash':          1.5,
-  'claude-sonnet-4-6':         18,
-  'claude-sonnet-4-5':         18,
   'gpt-4o-mini':               0.6,
-  'gpt-5-mini':                1,
-  'o4-mini':                   2.5,
+  'claude-sonnet-4-5':         18,
   'gpt-4o':                    12.5,
+  'gpt-4.1':                   12.5,
+  'o4-mini':                   2.5,
   'gemini-2.5-pro':            6,
-  'gemini-3.1-pro-preview':    6,
-  'claude-opus-4-6':           30,
-  'gpt-5.2':                   17.5,
-  'gpt-5.4':                   17.5,
+  'gemini-2.5-pro-preview':    7,
+  'claude-opus-4-5':           30,
 }
 function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_CREDITS_PER_1K[model] ?? 3
@@ -574,7 +570,9 @@ export class AgentRuntime {
   }
 
   updateLLM(config: LLMConfig): void {
-    this.llm = new LLMClient(config)
+    // Merge into existing config so plan, provisionedAt etc are preserved
+    const merged: LLMConfig = { ...(this.llm.config ?? {}), ...config }
+    this.llm = new LLMClient(merged)
   }
 
   clearHistory(chatId: string): void { this.conversations.delete(chatId) }
