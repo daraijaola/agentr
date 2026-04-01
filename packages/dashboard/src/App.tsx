@@ -259,9 +259,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
   const PLANS = [
     { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, cta: 'Start free', note: 'No credit card required.', features: ['24hr full access', 'AIR — 10+ models', 'TON wallet included', '129 tools'] },
-    { id: 'starter', name: 'Starter', price: '$15', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['7,500 credits/mo', 'All models', 'Bots & mini apps', 'TON payments', 'Cocoon hosting'] },
-    { id: 'pro', name: 'Pro', price: '$29', period: 'mo', highlight: true, cta: 'Subscribe', note: '', features: ['20,000 credits/mo', 'All models', 'Sub-agents (soon)', 'TON Sites & DNS', 'Marketplace'] },
-    { id: 'elite', name: 'Elite', price: '$49', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['40,000 credits/mo', 'All models priority', 'Swarm mode', 'Publish agents & earn 75%', 'Dedicated support'] },
+    { id: 'starter', name: 'Starter', price: '$9', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['1,200 credits/mo', 'All models', 'Bots & mini apps', 'TON payments', 'Cocoon hosting'] },
+    { id: 'pro', name: 'Pro', price: '$19', period: 'mo', highlight: true, cta: 'Subscribe', note: '', features: ['2,800 credits/mo', 'All models', 'Sub-agents (soon)', 'TON Sites & DNS', 'Marketplace'] },
+    { id: 'elite', name: 'Elite', price: '$35', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['6,000 credits/mo', 'All models priority', 'Swarm mode', 'Publish agents & earn 75%', 'Dedicated support'] },
   ]
 
   const PROVIDERS = [
@@ -395,9 +395,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               <div className="plans-grid">
                 {[
                   { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['24hr full access', 'AIR · Claude · GPT-4o', 'TON wallet included', '129 tools available'] },
-                  { id: 'starter', name: 'Starter', price: '$15', period: '/mo', highlight: false, note: '', features: ['7,500 credits/mo', 'All AI models', 'Bot deployment', 'TON payments'] },
-                  { id: 'pro', name: 'Pro', price: '$29', period: '/mo', highlight: true, note: '', features: ['20,000 credits/mo', 'All AI models', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
-                  { id: 'elite', name: 'Elite', price: '$49', period: '/mo', highlight: false, note: '', features: ['40,000 credits/mo', 'Priority models', 'Publish agents & earn', 'Dedicated support'] },
+                  { id: 'starter', name: 'Starter', price: '$9', period: '/mo', highlight: false, note: '', features: ['1,200 credits/mo', 'All AI models', 'Bot deployment', 'TON payments'] },
+                  { id: 'pro', name: 'Pro', price: '$19', period: '/mo', highlight: true, note: '', features: ['2,800 credits/mo', 'All AI models', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
+                  { id: 'elite', name: 'Elite', price: '$35', period: '/mo', highlight: false, note: '', features: ['6,000 credits/mo', 'Priority models', 'Publish agents & earn', 'Dedicated support'] },
                 ].map((plan) => (
                   <div key={plan.id} className={`plan-card${plan.highlight ? ' highlight' : ''}`}>
                     {plan.highlight && <div className="plan-badge">Most popular</div>}

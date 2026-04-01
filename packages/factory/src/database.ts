@@ -175,11 +175,11 @@ export class Database {
     )
     // Give trial credits so the agent can actually respond
     await this.pool.query(
-      `UPDATE tenants SET credits = credits + 1000 WHERE id = $1`,
+      `UPDATE tenants SET credits = credits + 300 WHERE id = $1`,
       [tenantId]
     )
     await this.pool.query(
-      `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 1000, 'topup', 'Free trial — 24hr access')`,
+      `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 300, 'topup', 'Free trial — 24hr access')`,
       [tenantId]
     )
   }
