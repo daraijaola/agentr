@@ -86,11 +86,11 @@ const STARTER_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_INPUT_BYTES = 100 * 1024; // 100 KB
 function checkPlanAccess(config, model) {
     const plan = config.plan ?? 'free';
-    // Free trial: 24h TTL
-    if (plan === 'free' || plan === 'starter') {
+    // Free trial only: 24h TTL. Starter and above are paid — no expiry.
+    if (plan === 'free') {
         const provisionedAt = config.provisionedAt ?? Date.now();
         if (Date.now() - provisionedAt > STARTER_TTL_MS) {
-            throw new Error('Your free trial has expired (24-hour limit). Please upgrade to Pro to continue using your AI agent.');
+            throw new Error('Your free trial has expired (24-hour limit). Upgrade to Starter or above to keep your agent running.');
         }
     }
     const allowed = PLAN_MODELS[plan] ?? PLAN_MODELS['free'];
