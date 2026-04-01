@@ -91,8 +91,8 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       ? 'enterprise'
       : (row.plan ?? 'free')
     const PLAN_MODEL: Record<string,string> = {
-      free: 'Haiku 4.5', starter: 'Haiku 4.5', pro: 'Claude Sonnet 4.6',
-      ultra: 'Claude Sonnet 4.5', elite: 'Claude Opus 4.6', enterprise: 'Claude Opus 4.6',
+      free: 'Claude Haiku 4.5', starter: 'Claude Haiku 4.5', pro: 'Claude Sonnet 4.5',
+      ultra: 'Gemini 2.5 Pro', elite: 'Claude Opus 4.5', enterprise: 'Claude Opus 4.5',
     }
     const PLAN_NAME: Record<string,string> = {
       free: 'Free', starter: 'Starter', pro: 'Pro',
@@ -191,9 +191,13 @@ agentRoutes.post(
   zValidator('json', z.object({
     tenantId: z.string(),
     model: z.enum([
-      'claude-haiku-4-5', 'gpt-4o-mini', 'gemini-2.5-flash', 'gpt-5-mini',
-      'claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-pro',
-      'claude-opus-4-6', 'gpt-5.2', 'gemini-3.1-pro-preview',
+      'claude-haiku-4-5',
+      'gemini-2.5-flash',
+      'gpt-4o-mini',
+      'claude-sonnet-4-5',
+      'gpt-4o',
+      'gemini-2.5-pro',
+      'claude-opus-4-5',
     ]).optional(),
     // legacy field — kept for backward compat, ignored
     provider: z.string().optional(),

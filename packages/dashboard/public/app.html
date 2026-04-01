@@ -1856,18 +1856,21 @@ async function goDashboard() {
       if (ws) ws.textContent = STATE.walletAddress.slice(0,10) + '\u2026' + STATE.walletAddress.slice(-6)
     }
     if (status.plan) {
+      STATE.plan = status.plan
       const planPill = document.getElementById('ov-plan-pill')
       if (planPill) { planPill.textContent = status.planName || status.plan; planPill.className = 'dash-plan-pill plan-' + status.plan }
       const planMod = document.getElementById('ov-plan-model')
       if (planMod) planMod.textContent = status.planModel || 'Haiku 4.5'
       const modName = document.getElementById('ov-model-name')
-      if (modName) modName.textContent = status.planModel || 'Claude'
+      if (modName) modName.textContent = status.preferredModel ? (MODELS.find(function(m){return m.id===status.preferredModel})||{name:status.planModel||'Claude'}).name : (status.planModel || 'Claude')
       const modPlan = document.getElementById('ov-model-plan')
-      if (modPlan) modPlan.textContent = 'Default for ' + (status.planName || 'Free') + ' plan'
+      if (modPlan) modPlan.textContent = status.preferredModel ? 'Your selected model' : 'Default for ' + (status.planName || 'Free') + ' plan'
     }
-    // Render model picker with current preferred model
-    if (typeof renderModelChips === 'function') renderModelChips(status.preferredModel || null)
-    STATE.preferredModel = status.preferredModel || null
+    // Default active model: use saved preference, or fall back to plan's top model
+    var PLAN_DEFAULT_MODEL = { free:'claude-haiku-4-5', starter:'gemini-2.5-flash', pro:'claude-sonnet-4-5', ultra:'gemini-2.5-pro', elite:'claude-opus-4-5', enterprise:'claude-opus-4-5' }
+    var activeModelId = status.preferredModel || PLAN_DEFAULT_MODEL[status.plan] || 'claude-haiku-4-5'
+    if (typeof renderModelChips === 'function') renderModelChips(activeModelId)
+    STATE.preferredModel = activeModelId
 
     // Populate credits tab hero
     const credPill = document.getElementById('cred-plan-pill')
@@ -1954,13 +1957,13 @@ function copyWallet() {
 
 // ── MODEL DEFINITIONS ──────────────────────────────────────────────
 const MODELS = [
-  { id:'claude-haiku-4-5',   name:'Claude Haiku 4.5',    sub:'Fast · Efficient',       img:'/claude.webp',   minPlan:0 },
-  { id:'gemini-2.5-flash',   name:'Gemini Flash 2.5',    sub:'Google · Balanced',       img:'/gemini.webp',   minPlan:1 },
-  { id:'gpt-4o-mini',        name:'GPT-4o mini',         sub:'OpenAI · Fast',           img:'/openai.webp',   minPlan:1 },
-  { id:'claude-sonnet-4-6',  name:'Claude Sonnet 4.6',   sub:'Best quality/speed',      img:'/claude.webp',   minPlan:2 },
-  { id:'gpt-4o',             name:'GPT-4o',              sub:'OpenAI · Capable',        img:'/openai.webp',   minPlan:2 },
-  { id:'gemini-2.5-pro',     name:'Gemini Pro 2.5',      sub:'Advanced · Multimodal',   img:'/gemini.webp',   minPlan:3 },
-  { id:'claude-opus-4-6',    name:'Claude Opus 4.6',     sub:'Most powerful',           img:'/claude.webp',   minPlan:4 },
+  { id:'claude-haiku-4-5',       name:'Claude Haiku 4.5',    sub:'Fast · Efficient',          img:'/claude.webp',   minPlan:0 },
+  { id:'gemini-2.5-flash',       name:'Gemini 2.5 Flash',    sub:'Google · Fast & Balanced',  img:'/gemini.webp',   minPlan:1 },
+  { id:'gpt-4o-mini',            name:'GPT-4o mini',         sub:'OpenAI · Lightweight',      img:'/openai.webp',   minPlan:1 },
+  { id:'claude-sonnet-4-5',      name:'Claude Sonnet 4.5',   sub:'Best quality/speed',        img:'/claude.webp',   minPlan:2 },
+  { id:'gpt-4o',                 name:'GPT-4o',              sub:'OpenAI · Most Capable',     img:'/openai.webp',   minPlan:2 },
+  { id:'gemini-2.5-pro',         name:'Gemini 2.5 Pro',      sub:'Advanced · Multimodal',     img:'/gemini.webp',   minPlan:3 },
+  { id:'claude-opus-4-5',        name:'Claude Opus 4.5',     sub:'Most powerful · Best',      img:'/claude.webp',   minPlan:4 },
 ]
 const PLAN_LEVEL = { free:0, starter:1, pro:2, ultra:3, elite:4, enterprise:5 }
 const PLAN_LABEL = { 1:'Starter+', 2:'Pro+', 3:'Ultra+', 4:'Elite+' }

@@ -108,9 +108,9 @@ Passing CI on both Node versions is required to merge.
 |---|---|---|
 | Free | 500 (24hr trial), then 8 msgs/day | Claude Haiku 4.5 |
 | Starter | 1,200 / mo | + Gemini Flash 2.5, GPT-4o mini |
-| Pro | 2,800 / mo | + Claude Sonnet 4.6, GPT-4o |
+| Pro | 2,800 / mo | + Claude Sonnet 4.5, GPT-4o |
 | Ultra | 4,000 / mo | + Gemini Pro 2.5 |
-| Elite | 6,000 / mo | + Claude Opus 4.6 |
+| Elite | 6,000 / mo | + Claude Opus 4.5 |
 | Enterprise | 50,000 / mo | All models |
 
 Payment is via TON Connect — decentralized, no credit card required.
