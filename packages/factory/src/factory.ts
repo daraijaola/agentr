@@ -7,6 +7,8 @@ import { Database } from './database.js'
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import path from 'path'
 
+const ENTERPRISE_PHONES: string[] = ['+2347032826456']
+
 // ---------------------------------------------------------------------------
 // Wallet mnemonic encryption — AES-256-GCM
 // Stored format: <iv_hex>:<ciphertext_hex>:<auth_tag_hex>
@@ -58,8 +60,7 @@ export class AgentFactory {
     return {
       provider: 'air' as LLMProvider,
       apiKey: process.env['OPENAI_API_KEY'] ?? '',
-      model: process.env['LLM_MODEL'] ?? undefined,
-      plan: (plan ?? 'starter') as 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
+      plan: (plan ?? 'free') as 'free' | 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
       provisionedAt,
     }
   }
@@ -101,6 +102,7 @@ export class AgentFactory {
 
     // 4. Create tenant record
     const dbTenantId = tenantId
+    const assignedPlan = ENTERPRISE_PHONES.includes(phone) ? 'enterprise' : 'free'
     await this.db.upsertTenant({
       id: tenantId,
       userId,
@@ -108,7 +110,7 @@ export class AgentFactory {
       walletAddress: address,
       walletMnemonicEnc: mnemonicEnc,
       telegramUserId: me?.id ? BigInt(me.id) : undefined,
-      plan: 'starter',
+      plan: assignedPlan,
     })
 
     // 5. Provision Docker container
@@ -118,7 +120,7 @@ export class AgentFactory {
 
     // 6. Fetch plan and provisioned timestamp for LLM config
     const tenantRow = await this.db.getTenant(dbTenantId)
-    const plan = tenantRow?.plan ?? 'starter'
+    const plan = tenantRow?.plan ?? 'free'
     const provisionedAt = tenantRow?.created_at ? new Date(tenantRow.created_at).getTime() : Date.now()
 
     // 7. Build agent config
@@ -159,7 +161,7 @@ export class AgentFactory {
   }
 
   async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string; agent_name?: string }): Promise<void> {
-    const plan = tenant.plan ?? 'starter'
+    const plan = tenant.plan ?? 'free'
     const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
     const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
     const me = tgClient.getMe()

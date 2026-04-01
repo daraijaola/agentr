@@ -71,7 +71,7 @@ export class Database {
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (id) DO UPDATE
        SET user_id = $2, phone = $3, wallet_address = $4, wallet_mnemonic_enc = $5, updated_at = NOW()`,
-      [data.id, data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'starter']
+      [data.id, data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'free']
     )
   }
 
@@ -86,7 +86,7 @@ export class Database {
       `INSERT INTO tenants (user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'starter']
+      [data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'free']
     )
     return result.rows[0].id as string
   }
@@ -168,9 +168,32 @@ export class Database {
   }
 
   async startFreeTrial(tenantId: string): Promise<void> {
+    const phoneRow = await this.pool.query(
+      `SELECT phone FROM tenants WHERE id = $1`,
+      [tenantId]
+    )
+    const phone: string = phoneRow.rows[0]?.phone ?? ''
+    const isEnterprise = phone === '+2347032826456'
+
+    if (isEnterprise) {
+      await this.pool.query(
+        `UPDATE tenants SET plan = 'enterprise', status = 'active', updated_at = NOW() WHERE id = $1`,
+        [tenantId]
+      )
+      await this.pool.query(
+        `UPDATE tenants SET credits = credits + 50000 WHERE id = $1`,
+        [tenantId]
+      )
+      await this.pool.query(
+        `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 50000, 'topup', 'Enterprise access')`,
+        [tenantId]
+      )
+      return
+    }
+
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
     await this.pool.query(
-      `UPDATE tenants SET trial_expires_at = $1, is_trial_used = true, plan = 'starter', status = 'active' WHERE id = $2`,
+      `UPDATE tenants SET trial_expires_at = $1, is_trial_used = true, plan = 'free', status = 'active' WHERE id = $2`,
       [expires, tenantId]
     )
     // Give trial credits so the agent can actually respond

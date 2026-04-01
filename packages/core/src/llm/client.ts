@@ -76,15 +76,15 @@ const PLAN_DEFAULTS = {
 const STARTER_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_INPUT_BYTES = 100 * 1024; // 100 KB
 function checkPlanAccess(config, model) {
-    const plan = config.plan ?? 'starter';
-    // Starter plan: 24h TTL
-    if (plan === 'starter') {
+    const plan = config.plan ?? 'free';
+    // Free trial: 24h TTL
+    if (plan === 'free' || plan === 'starter') {
         const provisionedAt = config.provisionedAt ?? Date.now();
         if (Date.now() - provisionedAt > STARTER_TTL_MS) {
             throw new Error('Your free trial has expired (24-hour limit). Please upgrade to Pro to continue using your AI agent.');
         }
     }
-    const allowed = PLAN_MODELS[plan] ?? PLAN_MODELS['starter'];
+    const allowed = PLAN_MODELS[plan] ?? PLAN_MODELS['free'];
     if (!allowed.includes(model)) {
         throw new Error(`Model "${model}" is not available on the ${plan} plan. ` +
             `Available: ${allowed.join(', ')}. Upgrade to access more models.`);
@@ -277,7 +277,7 @@ export class LLMClient {
     }
     getProvider() { return 'air'; }
     async chat(options) {
-        const plan = this.config.plan ?? 'starter';
+        const plan = this.config.plan ?? 'free';
         const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.SONNET;
         checkPlanAccess(this.config, model);
         // Build message list (system + history), strip reasoning_content artifacts
