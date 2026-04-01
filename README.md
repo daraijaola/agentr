@@ -2,120 +2,118 @@
   <img src="./agentr-logo.png" alt="AGENTR" width="600" />
 </p>
 
-<p align="center"><b>Autonomous AI Agent · Telegram + TON</b></p>
+<p align="center"><strong>Autonomous AI Agent · Telegram + TON</strong></p>
 
 <p align="center">
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/stage-Live-brightgreen" alt="Beta">
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen" alt="Node.js"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-blue" alt="TypeScript"></a>
-  <a href="https://agentr.online"><img src="https://img.shields.io/badge/Platform-agentr.online-0098EA" alt="Platform"></a>
-  <a href="https://ton.org"><img src="https://img.shields.io/badge/Built_on-TON-0098EA?logo=ton&logoColor=white" alt="Built on TON"></a>
-  <a href="https://github.com/daraijaola/agentr/actions/workflows/ci.yml"><img src="https://github.com/daraijaola/agentr/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/daraijaola/agentr/actions/workflows/ci.yml">
+    <img src="https://github.com/daraijaola/agentr/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
+  </a>
+  <img src="https://img.shields.io/badge/Node.js-20%20%7C%2022-brightgreen" alt="Node.js 20 | 22">
+  <img src="https://img.shields.io/badge/TypeScript-5.7-blue" alt="TypeScript 5.7">
+  <a href="https://agentr.online">
+    <img src="https://img.shields.io/badge/Platform-agentr.online-0098EA" alt="agentr.online">
+  </a>
+  <a href="https://ton.org">
+    <img src="https://img.shields.io/badge/Built_on-TON-0098EA?logo=ton&logoColor=white" alt="TON">
+  </a>
+</p>
+
+<p align="center">
+  <strong><a href="https://agentr.online">agentr.online</a></strong>
+  &nbsp;·&nbsp;
+  <strong><a href="https://t.me/theagent_r1">@Theagent_r1 — live demo</a></strong>
 </p>
 
 ---
 
-<p align="center">
-AGENTR is a multi-tenant AI agent platform built natively on TON and Telegram.<br/>
-Sign up, connect your Telegram account, and get a fully autonomous AI agent instantly.<br/>
-No code. No config. No technical knowledge required.
-</p>
+AGENTR is a multi-tenant autonomous AI agent platform built natively on TON and Telegram. Every user gets their own agent — provisioned in seconds, isolated by tenant, and able to take real actions across 125 tools with no code required.
 
-<p align="center">
-  <strong><a href="https://agentr.online">Try it at agentr.online</a></strong>
-  &nbsp;&nbsp;·&nbsp;&nbsp;
-  <strong><a href="https://t.me/theagent_r1">Demo agent @Theagent_r1</a></strong>
-</p>
-
-> **Status: Live** — The platform is fully operational and accepting users.
-
----
-
-## What Is AGENTR
-
-AGENTR gives every user their own autonomous AI agent that lives on their Telegram account and acts as a real user — not a bot. The agent has access to 125 tools and can take real actions: write and deploy code, manage Telegram, send TON, swap tokens on DEXes, bid on .ton domains — all from plain conversation.
-
-One deployment, unlimited users. Every user is fully isolated — their own wallet, their own workspace, their own agent.
+One deployment. Unlimited users. Each user has their own wallet, their own sandbox, their own agent running on their actual Telegram account.
 
 ---
 
 ## How It Works
 
-**1. Sign up** at [agentr.online](https://agentr.online) with your Telegram phone number — OTP login, no passwords.
-
-**2. Agent goes live** — a fully autonomous AI agent is running on your Telegram account within seconds.
-
-**3. Talk to it** — message your agent in plain English. It executes everything end to end.
+Sign up at [agentr.online](https://agentr.online) with your Telegram number. Verify with an OTP. Your agent goes live immediately and starts responding in your Telegram messages — it acts as you, not as a bot.
 
 ```
-You → "Build me a crypto price tracker and host it"
+You → "Build a crypto price dashboard and deploy it"
 
 Agent:
-├── workspace_write  → writes the app to your private sandbox
-├── code_execute     → installs dependencies
-├── process_start    → deploys via PM2
-└── "Your tracker is live — TON, ETH, BTC updating every 30s."
+├── workspace_write   → scaffolds the app in your private sandbox
+├── exec_install      → installs dependencies
+├── exec_run          → starts the server via PM2
+├── serve_static      → generates a live public URL
+└── "Done — your dashboard is live at https://abc123.agentr.app"
 ```
 
 ---
 
 ## What Your Agent Can Do
 
-**Build & Deploy**
-- Write and run code (Python, Node.js, bash)
-- Deploy apps with live public URLs
-- Create and manage Telegram bots
-- View logs, restart processes, manage deployments
+**Build & Deploy**  
+Write and run code (Node.js, Python, bash), deploy apps with public URLs, manage processes, create Telegram bots, run tests, serve static sites — all from conversation.
 
-**TON Blockchain**
-- Send and receive TON and jetton tokens
-- Swap tokens on DeDust and STON.fi
-- Register and manage `.ton` domains
-- Check balances, prices, and transaction history
+**TON Blockchain**  
+Send and receive TON and jetton tokens, check balances and transaction history, get token prices and charts, view NFTs, compile and deploy smart contracts to testnet.
 
-**Telegram Automation**
-- Send messages, media, voice, stickers, GIFs
-- Create and manage groups and channels
-- Schedule messages and recurring tasks
-- React, poll, quiz, manage contacts
+**Telegram Automation**  
+Send messages, photos, voice, video, GIFs, stickers. Create groups and channels, manage members and admins, set usernames, schedule messages, send polls and quizzes, manage contacts and folders.
+
+**DNS & Domains**  
+Register `.ton` domains, bid in auctions, link wallets and sites to domains, resolve and manage existing records.
+
+**Memory**  
+Persistent per-user memory written to `MEMORY.md` — your agent remembers context across every session.
 
 ---
 
-## Platform Status
+## Tech Stack
 
-| Component | Status |
+| Layer | What runs there |
 |---|---|
-| Agent runtime — agentic loop, tool dispatch, context management | ✅ Live |
-| Multi-tenant provisioning — OTP → agent live in seconds | ✅ Live |
-| Telegram MTProto integration — GramJS userbot | ✅ Live |
-| 125 tools — deploy, workspace, Telegram, TON, DNS | ✅ Live |
-| TON wallet per user — AES-256-GCM encrypted mnemonic | ✅ Live |
-| Conversation persistence — survives restarts via PostgreSQL | ✅ Live |
-| JWT authentication — HS256 via jose | ✅ Live |
-| Cream dashboard — workspace, marketplace, credits, model picker | ✅ Live |
-| LLM multi-model — Claude, GPT-4o, Gemini via AIR gateway | ✅ Live |
-| Per-user model selection — persisted, plan-gated | ✅ Live |
-| TON Connect payments + credit system | ✅ Live |
-| Agent Marketplace | ✅ Live |
-| CI pipeline | ✅ Live |
-| Agent Swarm — parallel sub-agents | 🔄 Beta |
-| MCP server support | 🗓 Planned |
-| `.ton` domain hosting | 🗓 Planned |
-| Agent-to-agent communication | 🗓 Planned |
+| Agent Runtime | Autonomous agentic loop — tool dispatch, context management, retry logic |
+| Telegram | GramJS over MTProto — full userbot, not bot API |
+| LLM | Claude, GPT-4o, Gemini — routed via AIR gateway, per-user model selection |
+| TON | `@ton/ton` — wallets, jettons, smart contracts, DEX integration |
+| API | Hono on Node.js — JWT auth (HS256), credit gating, multi-tenant routing |
+| Database | PostgreSQL — tenants, sessions, credits, conversation history |
+| Dashboard | Vanilla JS cream UI — workspace, marketplace, model picker, credits |
+| Monorepo | pnpm workspaces — `api`, `core`, `factory`, `dashboard` |
+
+---
+
+## CI
+
+Every push and pull request to `main` runs the full pipeline on **Node.js 20 and 22**:
+
+```
+typecheck → build → test
+```
+
+- **Typecheck** — `tsc --noEmit` across all packages
+- **Build** — `tsc` compilation for `api`, `core`, `factory`
+- **Test** — Vitest unit tests covering tools, LLM client, auth, TON, DNS
+
+Passing CI on both Node versions is required to merge.
 
 ---
 
 ## Plans
 
-| Plan | Credits/mo | Model Access |
+| Plan | Credits | Model Access |
 |---|---|---|
-| Free | 500 (one-time) | Claude Haiku 4.5 |
-| Starter | 1,200 | + Gemini Flash, GPT-4o mini |
-| Pro | 2,800 | + Claude Sonnet, GPT-4o |
-| Ultra | 4,000 | + Gemini Pro |
-| Elite | 6,000 | + Claude Opus |
-| Enterprise | 50,000 | All models |
+| Free | 500 (24hr trial), then 8 msgs/day | Claude Haiku 4.5 |
+| Starter | 1,200 / mo | + Gemini Flash 2.5, GPT-4o mini |
+| Pro | 2,800 / mo | + Claude Sonnet 4.6, GPT-4o |
+| Ultra | 4,000 / mo | + Gemini Pro 2.5 |
+| Elite | 6,000 / mo | + Claude Opus 4.6 |
+| Enterprise | 50,000 / mo | All models |
+
+Payment is via TON Connect — decentralized, no credit card required.
 
 ---
 
@@ -124,18 +122,31 @@ Agent:
 ```bash
 git clone https://github.com/daraijaola/agentr.git
 cd agentr
-cp .env.example .env   # fill in API keys and DB URL
+cp .env.example .env
+# Set OPENAI_API_KEY, DATABASE_URL, JWT_SECRET, TELEGRAM_API_ID, TELEGRAM_API_HASH
 pnpm install
 pnpm build
 pnpm start
 ```
 
-Requires: Node.js 20+, PostgreSQL 15+, Docker (for sandboxing).
+**Requirements:** Node.js 20+, PostgreSQL 15+, pnpm 9+
+
+---
+
+## Repository Layout
+
+```
+packages/
+  api/         Hono HTTP API — auth, agent routes, credits, webhooks
+  core/        Agent runtime, tool registry, 125 tools, LLM client
+  factory/     Multi-tenant provisioner — spawns and resumes agents
+  dashboard/   Cream dashboard UI + landing page (vanilla JS)
+```
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
 
-Demo agent: [@Theagent_r1](https://t.me/theagent_r1) · Platform: [agentr.online](https://agentr.online)
+Demo: [@Theagent_r1](https://t.me/theagent_r1) · Platform: [agentr.online](https://agentr.online)

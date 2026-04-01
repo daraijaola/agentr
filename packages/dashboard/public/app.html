@@ -1969,22 +1969,45 @@ function renderModelChips(activeModelId) {
   const container = document.getElementById('model-chips')
   if (!container) return
   const planLevel = PLAN_LEVEL[STATE.plan] ?? 0
-  container.innerHTML = MODELS.map(m => {
+  container.innerHTML = ''
+  MODELS.forEach(function(m) {
     const locked = planLevel < m.minPlan
     const active = m.id === (activeModelId || 'claude-haiku-4-5')
-    return \`<div class="model-chip \${active ? 'model-active' : ''} \${locked ? 'model-locked' : ''}"
-        onclick="\${locked ? '' : 'selectModel(this,\'' + m.id + '\')'}" data-model="\${m.id}">
-      <img class="model-chip-img" src="\${m.img}" alt="\${m.name}" onerror="this.style.display='none'"/>
-      <div class="model-chip-info">
-        <div class="model-chip-name">\${m.name}</div>
-        <div class="model-chip-sub">\${m.sub}</div>
-      </div>
-      \${active ? '<span class="model-chip-badge active-badge">Active</span>' : ''}
-      \${locked ? '<span class="model-chip-badge plan-badge">\${PLAN_LABEL[m.minPlan] || ''}</span>' : ''}
-    </div>\`
-  }).join('')
-}
 
+    const chip = document.createElement('div')
+    chip.className = 'model-chip' + (active ? ' model-active' : '') + (locked ? ' model-locked' : '')
+    chip.dataset.model = m.id
+    if (!locked) chip.onclick = function() { selectModel(chip, m.id) }
+
+    const img = document.createElement('img')
+    img.className = 'model-chip-img'
+    img.src = m.img
+    img.alt = m.name
+    img.onerror = function() { this.style.display = 'none' }
+
+    const info = document.createElement('div')
+    info.className = 'model-chip-info'
+    info.innerHTML = '<div class="model-chip-name">' + m.name + '</div><div class="model-chip-sub">' + m.sub + '</div>'
+
+    chip.appendChild(img)
+    chip.appendChild(info)
+
+    if (active) {
+      const badge = document.createElement('span')
+      badge.className = 'model-chip-badge active-badge'
+      badge.textContent = 'Active'
+      chip.appendChild(badge)
+    }
+    if (locked && PLAN_LABEL[m.minPlan]) {
+      const badge = document.createElement('span')
+      badge.className = 'model-chip-badge plan-badge'
+      badge.textContent = PLAN_LABEL[m.minPlan]
+      chip.appendChild(badge)
+    }
+
+    container.appendChild(chip)
+  })
+}
 async function selectModel(el, modelId) {
   if (el.classList.contains('model-locked')) return
   document.querySelectorAll('.model-chip').forEach(c => { c.classList.remove('model-active'); c.querySelector('.model-chip-badge.active-badge')?.remove() })
