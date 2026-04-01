@@ -48,6 +48,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const [credits, setCredits] = useState<number | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [agentPlan, setAgentPlan] = useState<string>('free')
+  const [agentModel, setAgentModel] = useState<string>('Haiku 4.5')
+  const [planLimit, setPlanLimit] = useState<number>(500)
 
   const API = detectApiBase()
 
@@ -66,6 +69,8 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             setAgent(updated)
             localStorage.setItem('agentr_tenant', JSON.stringify(updated))
           }
+          if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'Haiku 4.5'); setPlanLimit(d.planLimit ?? 500) }
+          if (typeof d.credits === 'number') setCredits(d.credits)
         }).catch(() => {})
       } catch {
         localStorage.removeItem('agentr_tenant')
@@ -87,6 +92,11 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
     apiGet('/agent/credits/' + agent.tenantId)
       .then((d) => { if (typeof d.credits === 'number') setCredits(d.credits) })
       .catch(() => {})
+    apiGet('/agent/status/' + agent.tenantId)
+      .then((d) => {
+        if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'Haiku 4.5'); setPlanLimit(d.planLimit ?? 500) }
+        if (typeof d.credits === 'number') setCredits(d.credits)
+      }).catch(() => {})
   }, [screen, agent])
 
   const goLive = async (tenantId: string, token?: string) => {
@@ -607,9 +617,14 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             </div>
             <div className="live-topbar-r">
               <div className="status-badge"><div className="status-dot" />Active</div>
-              {credits !== null && (
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text2)', background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 12px', borderRadius: 100 }}>
-                  {credits.toLocaleString()} credits
+              {agentPlan && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={`topbar-plan topbar-plan-${agentPlan}`}>{agentPlan.charAt(0).toUpperCase() + agentPlan.slice(1)}</span>
+                  {credits !== null && (
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text2)', background: 'var(--bg)', border: '1px solid var(--border)', padding: '3px 10px', borderRadius: 100 }}>
+                      {credits.toLocaleString()} cr
+                    </span>
+                  )}
                 </div>
               )}
               <div style={{ transform: 'scale(0.85)', transformOrigin: 'right center' }}><TonConnectButton /></div>
@@ -636,17 +651,84 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
                   <div className="live-greeting">{agent.firstName ? `Hey, ${agent.firstName}.` : 'Your agent is live.'}</div>
                   <div className="live-tagline">{agent.username ? `@${agent.username} is online and ready.` : `${agent.phone} is active.`}</div>
                 </div>
-                {agent.walletAddress && (
-                  <div className="info-card">
-                    <div className="info-label">TON Wallet</div>
-                    <div className="wallet-row">
-                      <div className="wallet-addr">{agent.walletAddress}</div>
-                      <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={copyWallet}>{copied ? 'Copied' : 'Copy'}</button>
+
+                {/* ── Premium stats grid ── */}
+                <div className="dash-grid">
+                  {/* Status */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="var(--ok)"/><circle cx="8" cy="8" r="7" stroke="var(--ok)" strokeWidth="1.5" opacity="0.3"/></svg>
+                      <span className="dash-card-label">Agent Status</span>
                     </div>
+                    <div className="dash-card-value" style={{ color: 'var(--ok)', fontSize: 18 }}>Online</div>
+                    <div className="dash-card-sub">Running 24/7 on your account</div>
                   </div>
-                )}
+
+                  {/* Plan */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6H15L11 9.5L12.5 14.5L8 11.5L3.5 14.5L5 9.5L1 6H6L8 1Z" fill="var(--blue)" opacity="0.85"/></svg>
+                      <span className="dash-card-label">Current Plan</span>
+                    </div>
+                    <span className={`dash-plan-badge dash-plan-${agentPlan}`}>
+                      {agentPlan.charAt(0).toUpperCase() + agentPlan.slice(1)}
+                    </span>
+                    <div className="dash-card-sub" style={{ marginTop: 4 }}>{agentModel}</div>
+                  </div>
+
+                  {/* Credits */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="9" rx="2" stroke="var(--blue)" strokeWidth="1.5"/><path d="M5 4V3a3 3 0 016 0v1" stroke="var(--blue)" strokeWidth="1.5"/></svg>
+                      <span className="dash-card-label">Credits</span>
+                    </div>
+                    <div className="dash-card-value">{credits !== null ? credits.toLocaleString() : '—'}</div>
+                    <div className="dash-bar-track">
+                      <div className="dash-bar-fill" style={{ width: `${credits !== null ? Math.min(100, Math.round((credits / planLimit) * 100)) : 0}%` }} />
+                    </div>
+                    <div className="dash-card-sub">of {planLimit.toLocaleString()} total</div>
+                  </div>
+
+                  {/* TON Wallet */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V4z" stroke="var(--blue)" strokeWidth="1.5"/><circle cx="11" cy="8" r="1.5" fill="var(--blue)"/></svg>
+                      <span className="dash-card-label">TON Wallet</span>
+                    </div>
+                    {agent.walletAddress ? (
+                      <>
+                        <div className="dash-wallet-addr">{agent.walletAddress.slice(0, 10)}…{agent.walletAddress.slice(-6)}</div>
+                        <button className="dash-copy-btn" onClick={copyWallet}>{copied ? '✓ Copied' : 'Copy address'}</button>
+                      </>
+                    ) : <div className="dash-card-sub">No wallet connected</div>}
+                  </div>
+
+                  {/* Model */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2C4.7 2 2 4.7 2 8s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z" stroke="var(--blue)" strokeWidth="1.5"/><path d="M5 8.5l2 2 4-4" stroke="var(--ok)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      <span className="dash-card-label">AI Model</span>
+                    </div>
+                    <div className="dash-card-value" style={{ fontSize: 15, fontWeight: 600 }}>{agentModel}</div>
+                    <div className="dash-card-sub">Default for {agentPlan.charAt(0).toUpperCase() + agentPlan.slice(1)} plan</div>
+                  </div>
+
+                  {/* Telegram */}
+                  {agent.username && (
+                    <div className="dash-card">
+                      <div className="dash-card-header">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L1 7l5 2 2 5 6-12z" stroke="var(--blue)" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                        <span className="dash-card-label">Telegram</span>
+                      </div>
+                      <div className="dash-card-value" style={{ fontSize: 15 }}>@{agent.username}</div>
+                      <a className="dash-tg-link" href={`https://t.me/${agent.username}`} target="_blank" rel="noreferrer">Open chat →</a>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── AI Provider switcher ── */}
                 <div className="info-card">
-                  <div className="info-label" style={{ marginBottom: 14 }}>AI Model</div>
+                  <div className="info-label" style={{ marginBottom: 14 }}>Switch AI Model</div>
                   <div className="provider-grid">
                     {PROVIDERS.map((p) => (
                       <div key={p.id} className={`prov-card${provider === p.id ? ' active' : ''}${!p.available ? ' locked' : ''}`} onClick={() => p.available && !switchingProvider && switchProvider(p.id)}>

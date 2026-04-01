@@ -1,0 +1,265 @@
+import type { AgentConfig } from '@agentr/core'
+import { AgentRuntime, WalletService, bridgeManager, registerMVPTools } from '@agentr/core'
+import type { LLMProvider } from '@agentr/core'
+import { attachMessageListener } from './listener.js'
+import { DockerProvisioner } from './docker.js'
+import { Database } from './database.js'
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+import path from 'path'
+
+// ---------------------------------------------------------------------------
+// Wallet mnemonic encryption — AES-256-GCM
+// Stored format: <iv_hex>:<ciphertext_hex>:<auth_tag_hex>
+// Requires WALLET_ENCRYPTION_KEY env var (min 32 chars)
+// ---------------------------------------------------------------------------
+
+function getEncryptionKey(): Buffer {
+  const raw = process.env['WALLET_ENCRYPTION_KEY']
+  if (!raw || raw.length < 32) {
+    throw new Error('WALLET_ENCRYPTION_KEY must be set and at least 32 characters long')
+  }
+  return Buffer.from(raw.slice(0, 32), 'utf8')
+}
+
+export function encryptMnemonic(mnemonic: string): string {
+  const key = getEncryptionKey()
+  const iv = randomBytes(12) // 96-bit IV for GCM
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(mnemonic, 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return `${iv.toString('hex')}:${encrypted.toString('hex')}:${authTag.toString('hex')}`
+}
+
+export function decryptMnemonic(enc: string): string {
+  const key = getEncryptionKey()
+  const parts = enc.split(':')
+  if (parts.length !== 3) throw new Error('Invalid encrypted mnemonic format')
+  const [ivHex, ciphertextHex, authTagHex] = parts
+  const iv = Buffer.from(ivHex!, 'hex')
+  const ciphertext = Buffer.from(ciphertextHex!, 'hex')
+  const authTag = Buffer.from(authTagHex!, 'hex')
+  const decipher = createDecipheriv('aes-256-gcm', key, iv)
+  decipher.setAuthTag(authTag)
+  return decipher.update(ciphertext).toString('utf8') + decipher.final('utf8')
+}
+
+export class AgentFactory {
+  private provisioner = new DockerProvisioner()
+  private db = new Database()
+  private wallet = new WalletService()
+  private runtimes = new Map<string, AgentRuntime>()
+
+  async init(): Promise<void> {
+    await this.db.init()
+    console.log('[AgentFactory] Initialized')
+  }
+
+  private getLLMConfig(plan?: string, provisionedAt?: number) {
+    return {
+      provider: 'air' as LLMProvider,
+      apiKey: process.env['OPENAI_API_KEY'] ?? '',
+      model: process.env['LLM_MODEL'] ?? undefined,
+      plan: (plan ?? 'starter') as 'starter' | 'pro' | 'ultra' | 'elite' | 'enterprise',
+      provisionedAt,
+    }
+  }
+
+  async provision(tenantId: string, phone: string): Promise<AgentRuntime> {
+    console.log(`[AgentFactory] Provisioning agent for tenant: ${tenantId}`)
+
+    // 1. Generate TON wallet
+    const { address, mnemonic } = await this.wallet.generateWallet()
+    // Encrypt mnemonic with AES-256-GCM before storing — no insecure fallback
+    const mnemonicEnc = encryptMnemonic(mnemonic.join(' '))
+    console.log(`[AgentFactory] Wallet: ${address}`)
+
+    // 2. Get Telegram user info — start gramjs bridge using Telethon-saved session
+    let tgClient = bridgeManager.get(tenantId)
+    if (!tgClient) {
+      try {
+        tgClient = await bridgeManager.resume(tenantId, phone)
+        console.log('[AgentFactory] gramjs bridge started for:', tenantId)
+      } catch (e) {
+        console.warn('[AgentFactory] gramjs bridge failed (no listener):', e)
+      }
+    }
+    const me = tgClient?.getMe()
+
+    // 3. Upsert user in DB
+    await this.db.query(
+      `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
+      [tenantId]
+    )
+    let userId = tenantId
+    if (me) {
+      userId = await this.db.upsertUser({
+        telegramId: me.id,
+        username: me.username,
+        firstName: me.firstName,
+      })
+    }
+
+    // 4. Create tenant record
+    const dbTenantId = tenantId
+    await this.db.upsertTenant({
+      id: tenantId,
+      userId,
+      phone,
+      walletAddress: address,
+      walletMnemonicEnc: mnemonicEnc,
+      telegramUserId: me?.id ? BigInt(me.id) : undefined,
+      plan: 'starter',
+    })
+
+    // 5. Provision Docker container
+    await this.provisioner.spawn(dbTenantId)
+    await this.db.updateTenantStatus(dbTenantId, 'active')
+    await this.db.createAgentInstance(dbTenantId)
+
+    // 6. Fetch plan and provisioned timestamp for LLM config
+    const tenantRow = await this.db.getTenant(dbTenantId)
+    const plan = tenantRow?.plan ?? 'starter'
+    const provisionedAt = tenantRow?.created_at ? new Date(tenantRow.created_at).getTime() : Date.now()
+
+    // 7. Build agent config
+    const config: AgentConfig = {
+      tenantId: dbTenantId,
+      userId,
+      telegramPhone: phone,
+      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
+      walletAddress: address,
+      plan: plan as AgentConfig['plan'],
+      provisionedAt,
+      agentName: tenantRow?.agent_name || undefined,
+    }
+
+    // 8. Start agent runtime
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
+      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
+    })
+
+    // 9. Register MVP tools
+    if (tgClient) {
+      await registerMVPTools(runtime.tools, {
+        client: tgClient,
+        db: null as never,
+        chatId: me?.id.toString() ?? '',
+        tenantId: dbTenantId,
+        walletAddress: address,
+      })
+    }
+
+    if (tgClient) attachMessageListener(dbTenantId, tgClient, runtime)
+    this.runtimes.set(dbTenantId, runtime)
+    await this.db.updateAgentStatus(dbTenantId, 'running')
+
+    console.log(`[AgentFactory] Agent live for tenant: ${dbTenantId}`)
+    return runtime
+  }
+
+  async resumeOne(tenant: { id: string; phone: string; wallet_address: string; plan: string; created_at: string; agent_name?: string }): Promise<void> {
+    const plan = tenant.plan ?? 'starter'
+    const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
+    const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
+    const me = tgClient.getMe()
+    const config: AgentConfig = {
+      tenantId: tenant.id,
+      userId: tenant.id,
+      telegramPhone: tenant.phone,
+      llmProvider: this.getLLMConfig(plan, provisionedAt).provider as AgentConfig['llmProvider'],
+      walletAddress: tenant.wallet_address,
+      plan: plan as AgentConfig['plan'],
+      provisionedAt,
+      agentName: tenant.agent_name || undefined,
+    }
+    const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt), {
+      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
+    })
+    // Restore persisted conversations for this tenant (up to last 10 active chats)
+    try {
+      const rows = await this.db.query<{ chat_id: string; messages: unknown[] }>(
+        `SELECT chat_id, messages FROM conversation_state WHERE tenant_id = $1 ORDER BY updated_at DESC LIMIT 10`,
+        [tenant.id]
+      )
+      for (const row of rows) { runtime.loadHistory(row.chat_id, row.messages) }
+    } catch { /* non-blocking — don't prevent resume on failure */ }
+    await registerMVPTools(runtime.tools, {
+      client: tgClient,
+      db: null as never,
+      chatId: me?.id.toString() ?? '',
+      tenantId: tenant.id,
+      walletAddress: tenant.wallet_address,
+    })
+    attachMessageListener(tenant.id, tgClient, runtime)
+    this.runtimes.set(tenant.id, runtime)
+    await this.db.updateAgentStatus(tenant.id, 'running').catch(() => {})
+    console.log(`[AgentFactory] Resumed: ${tenant.id}`)
+  }
+
+  async resumeAll(): Promise<void> {
+    const activeTenants = await this.db.query<{
+      id: string
+      phone: string
+      wallet_address: string
+      wallet_mnemonic_enc: string
+      plan: string
+      created_at: string
+      agent_name: string
+    }>(
+      `SELECT t.id, t.phone, t.wallet_address, t.wallet_mnemonic_enc, t.plan, t.created_at, t.agent_name
+       FROM tenants t
+       WHERE t.status = 'active'
+         AND EXISTS (
+           SELECT 1 FROM agent_instances ai WHERE ai.tenant_id = t.id
+         )`
+    )
+
+    console.log(`[AgentFactory] Resuming ${activeTenants.length} active agents...`)
+
+    // Run in parallel with a concurrency limit of 5 to avoid exhausting DB / Telegram connections
+    const CONCURRENCY = 5
+    for (let i = 0; i < activeTenants.length; i += CONCURRENCY) {
+      const batch = activeTenants.slice(i, i + CONCURRENCY)
+      await Promise.allSettled(batch.map(async (tenant) => {
+        try {
+          await this.resumeOne(tenant)
+        } catch (err: any) {
+          const msg = String(err)
+          if (msg.includes('AUTH_KEY_UNREGISTERED') || msg.includes('AUTH_KEY_DUPLICATED') || msg.includes('SESSION_REVOKED') || msg.includes('USER_DEACTIVATED')) {
+            console.warn(`[AgentFactory] Session expired for ${tenant.id}, suspending`)
+            try { const { unlinkSync, existsSync } = await import('fs'); const { join } = await import('path'); const sf = join(process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions', tenant.id + '.session'); if (existsSync(sf)) unlinkSync(sf) } catch {}
+            await this.db.updateTenantStatus(tenant.id, 'suspended')
+          } else {
+            console.error(`[AgentFactory] Failed to resume ${tenant.id}:`, err)
+          }
+          await this.db.updateAgentStatus(tenant.id, 'error', msg)
+        }
+      }))
+    }
+  }
+
+  get(tenantId: string): AgentRuntime | undefined {
+    return this.runtimes.get(tenantId)
+  }
+
+  async deprovision(tenantId: string): Promise<void> {
+    const runtime = this.runtimes.get(tenantId)
+    if (runtime) {
+      await runtime.stop()
+      this.runtimes.delete(tenantId)
+    }
+    await bridgeManager.disconnect(tenantId)
+    await this.provisioner.kill(tenantId)
+    await this.db.updateTenantStatus(tenantId, 'cancelled')
+    await this.db.updateAgentStatus(tenantId, 'stopped')
+    console.log(`[AgentFactory] Deprovisioned: ${tenantId}`)
+  }
+
+  activeCount(): number { return this.runtimes.size }
+
+  getDb(): Database { return this.db }
+}
+
+export const agentFactory = new AgentFactory()

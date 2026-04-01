@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Coder · AGENTR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0b;
+  --bg2:#111110;
+  --bg3:#161614;
+  --bg4:#1c1b18;
+  --bg5:#222120;
+  --bd:#232220;
+  --bd2:#2e2d2a;
+  --bd3:#3a3835;
+  --tx:#eeede6;
+  --tx2:#8a8880;
+  --tx3:#4e4c48;
+  --tx4:#2e2c28;
+  --ac:#0098EA;
+  --ac2:#0084cf;
+  --ac3:rgba(0,152,234,.08);
+  --acg:rgba(0,152,234,.15);
+  --gr:#10b981;
+  --gr2:rgba(16,185,129,.12);
+  --ye:#f59e0b;
+  --re:#ef4444;
+  --mo:'IBM Plex Mono',monospace;
+  --sa:'Inter',system-ui,sans-serif;
+  --r:6px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--sa);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* ─── LAYOUT ─────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh;width:100vw;overflow:hidden}
+
+/* ─── TOPBAR ─────────────────────────────────── */
+#topbar{
+  height:46px;min-height:46px;flex-shrink:0;
+  background:var(--bg2);
+  border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 16px;gap:12px;
+  position:relative;z-index:10;
+}
+#topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,152,234,.2),transparent);
+  pointer-events:none;
+}
+.tb-back{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:var(--r);
+  color:var(--tx3);font-size:12px;text-decoration:none;
+  border:1px solid transparent;transition:all .15s;
+  font-weight:500;
+}
+.tb-back:hover{color:var(--tx2);background:var(--bg3);border-color:var(--bd)}
+.tb-back svg{opacity:.6}
+.tb-div{width:1px;height:18px;background:var(--bd2)}
+.tb-logo{
+  display:flex;align-items:center;gap:2px;
+  font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--tx);
+}
+.tb-logo .r{color:var(--ac)}
+.tb-caret{color:var(--tx3);font-size:11px;font-family:var(--mo);margin:0 6px}
+#tb-session{font-size:12px;color:var(--tx2);font-family:var(--mo);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-spacer{flex:1}
+.tb-status{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 11px;border-radius:var(--r);
+  background:var(--bg3);border:1px solid var(--bd);
+  font-size:11px;color:var(--tx2);font-family:var(--mo);
+}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--gr);flex-shrink:0;transition:all .3s}
+.sdot.busy{background:var(--ye);animation:sdp 1s ease-in-out infinite}
+.sdot.err{background:var(--re);animation:none}
+@keyframes sdp{0%,100%{opacity:.4}50%{opacity:1}}
+.tb-model{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 11px;border-radius:var(--r);
+  background:var(--bg3);border:1px solid var(--bd);
+  color:var(--tx2);font-size:11px;cursor:pointer;
+  transition:all .15s;
+}
+.tb-model:hover{border-color:var(--bd3);color:var(--tx);background:var(--bg4)}
+.tb-model svg{opacity:.5}
+.tb-build{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:var(--r);
+  background:var(--ac);border:none;color:#fff;
+  font-size:12px;font-weight:600;font-family:var(--sa);cursor:pointer;
+  transition:all .15s;letter-spacing:-.01em;
+}
+.tb-build:hover{background:var(--ac2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,152,234,.3)}
+.tb-build:active{transform:translateY(0)}
+
+/* ─── MAIN WORKSPACE ─────────────────────────── */
+#ws{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ─── FILE TREE ──────────────────────────────── */
+#tree{
+  width:210px;min-width:170px;flex-shrink:0;
+  background:var(--bg2);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.tree-hdr{
+  height:36px;padding:0 14px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  border-bottom:1px solid var(--bd);
+}
+.tree-hdr-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+.tree-hdr-btn{
+  width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--tx3);cursor:pointer;transition:all .1s;
+}
+.tree-hdr-btn:hover{background:var(--bg4);color:var(--tx2)}
+#tree-list{flex:1;overflow-y:auto;padding:6px 0}
+#tree-list::-webkit-scrollbar{width:3px}
+#tree-list::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.ti{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 14px;font-size:11.5px;font-family:var(--mo);
+  color:var(--tx2);cursor:pointer;transition:all .08s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;
+}
+.ti:hover{background:var(--bg3);color:var(--tx)}
+.ti.active{background:var(--bg4);color:var(--tx)}
+.ti.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--ac);border-radius:0 2px 2px 0}
+.ti svg{flex-shrink:0;opacity:.6}
+.ti-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:auto}
+.ti-dot.n{background:var(--gr)}.ti-dot.m{background:var(--ye)}
+.tree-empty{padding:28px 14px;font-size:11px;color:var(--tx3);text-align:center;line-height:1.7}
+
+/* ─── EDITOR ─────────────────────────────────── */
+#editor{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;background:var(--bg)}
+.ed-tabs-bar{
+  height:36px;min-height:36px;flex-shrink:0;
+  background:var(--bg2);border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;overflow:hidden;
+}
+#ed-tabs{display:flex;align-items:center;height:100%;flex:1;overflow-x:auto}
+#ed-tabs::-webkit-scrollbar{display:none}
+.et{
+  display:flex;align-items:center;gap:6px;
+  padding:0 14px;height:100%;min-width:max-content;
+  border-right:1px solid var(--bd);border-bottom:2px solid transparent;
+  font-size:11px;font-family:var(--mo);color:var(--tx3);
+  cursor:pointer;transition:color .08s;user-select:none;
+}
+.et.active{border-bottom-color:var(--ac);color:var(--tx);background:var(--bg)}
+.et:hover:not(.active){color:var(--tx2)}
+.et-x{opacity:0;margin-left:4px;color:var(--tx3);font-size:14px;line-height:1;transition:opacity .1s}
+.et:hover .et-x{opacity:.5}.et .et-x:hover{opacity:1;color:var(--tx2)}
+.ed-tabs-actions{display:flex;align-items:center;padding:0 8px;gap:2px;flex-shrink:0}
+.ia{
+  width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--tx3);cursor:pointer;transition:all .1s;
+}
+.ia:hover{background:var(--bg4);color:var(--tx2)}
+#ed-content{flex:1;overflow:auto;background:var(--bg);padding:16px 0}
+#ed-content::-webkit-scrollbar{width:6px;height:6px}
+#ed-content::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.cl{display:flex;align-items:flex-start;padding:0 18px;min-height:21px;font-size:12px;font-family:var(--mo);line-height:1.7}
+.cl:hover{background:rgba(255,255,255,.015)}
+.ln{width:40px;min-width:40px;text-align:right;color:var(--tx4);font-size:11px;margin-right:20px;user-select:none;flex-shrink:0;padding-top:1px}
+.lc{flex:1;white-space:pre}
+.kw{color:#4db8ff}.str{color:#7dd9a0}.fn{color:#7cc8f5}.nu{color:#f5a623}
+.cm{color:var(--tx3);font-style:italic}.ty{color:#9fa8db}.op{color:var(--tx3)}
+.ed-empty{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:14px;text-align:center;padding:40px;
+}
+.ed-empty-ico{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--bg3);border:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--tx3);
+}
+.ed-empty-title{font-size:14px;font-weight:600;color:var(--tx2)}
+.ed-empty-sub{font-size:12px;color:var(--tx3);max-width:260px;line-height:1.7}
+
+/* ─── CHAT ───────────────────────────────────── */
+#chat{
+  width:400px;min-width:320px;flex-shrink:0;
+  display:flex;flex-direction:column;
+  border-left:1px solid var(--bd);
+  background:var(--bg);
+}
+.ch-tabs{
+  height:36px;padding:0 14px;flex-shrink:0;
+  display:flex;align-items:center;gap:2px;
+  border-bottom:1px solid var(--bd);background:var(--bg2);
+}
+.cht{
+  padding:0 10px;height:100%;display:flex;align-items:center;
+  border-bottom:2px solid transparent;font-size:12px;color:var(--tx3);
+  cursor:pointer;transition:all .1s;
+}
+.cht.on{border-bottom-color:var(--ac);color:var(--tx)}
+.cht:hover:not(.on){color:var(--tx2)}
+.ch-tabs-r{margin-left:auto;display:flex;align-items:center;gap:2px}
+.ch-msgs{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.ch-msgs::-webkit-scrollbar{width:3px}
+.ch-msgs::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+/* MESSAGES */
+.msg{display:flex;flex-direction:column;gap:5px}
+.msg-h{display:flex;align-items:center;gap:7px}
+.av{
+  width:20px;height:20px;border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;font-family:var(--mo);
+  letter-spacing:-.02em;
+}
+.av.ai{background:var(--ac);color:#fff;box-shadow:0 2px 8px rgba(0,152,234,.3)}
+.av.u{background:var(--bg4);border:1px solid var(--bd2);color:var(--tx2)}
+.m-name{font-size:12px;font-weight:600;color:var(--tx2)}
+.m-time{font-size:10px;color:var(--tx3);font-family:var(--mo);margin-left:auto}
+.m-body{
+  padding:11px 13px;border-radius:8px;font-size:12.5px;line-height:1.7;
+  border:1px solid var(--bd);background:var(--bg2);color:var(--tx);
+  word-break:break-word;
+}
+.msg.u .m-body{background:var(--bg3);border-color:var(--bd2)}
+.m-body code{
+  font-family:var(--mo);font-size:11px;
+  background:rgba(0,152,234,.08);border:1px solid rgba(0,152,234,.2);
+  padding:1px 5px;border-radius:4px;color:#4db8ff;
+}
+.m-body pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:10px 0;overflow-x:auto}
+.m-body pre code{background:none;border:none;padding:0;color:var(--tx2)}
+.m-body strong{color:var(--tx);font-weight:600}
+.m-body em{color:var(--ac);font-style:normal;font-weight:600}
+
+/* THINKING */
+.thinking{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 13px;font-size:11px;color:var(--tx3);font-family:var(--mo);
+  background:var(--bg2);border:1px solid var(--bd);border-radius:8px;
+}
+.dots span{width:4px;height:4px;border-radius:50%;background:var(--ac);display:inline-block;margin-right:3px;animation:dp 1.2s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dp{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* COMPOSER */
+.composer{border-top:1px solid var(--bd);background:var(--bg2);padding:12px;flex-shrink:0}
+.comp-wrap{
+  border:1px solid var(--bd2);border-radius:10px;
+  background:var(--bg);overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+}
+.comp-wrap:focus-within{
+  border-color:rgba(0,152,234,.5);
+  box-shadow:0 0 0 3px rgba(0,152,234,.06);
+}
+.comp-pills{display:flex;align-items:center;gap:4px;padding:8px 10px 0}
+.cpill{
+  display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);
+  cursor:pointer;font-size:10px;font-family:var(--sa);font-weight:500;
+  transition:all .12s;
+}
+.cpill:hover{background:var(--bg4);color:var(--tx2);border-color:var(--bd2)}
+.cpill.on{background:var(--ac3);border-color:rgba(0,152,234,.3);color:#4db8ff}
+.cpill svg{opacity:.7}
+textarea#cin{
+  width:100%;background:none;border:none;outline:none;
+  padding:10px 12px;font-size:12.5px;font-family:var(--sa);color:var(--tx);
+  resize:none;min-height:66px;max-height:180px;line-height:1.6;
+}
+textarea#cin::placeholder{color:var(--tx3)}
+.comp-footer{display:flex;align-items:center;padding:8px 10px 10px;gap:8px}
+.comp-model{
+  display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);
+  cursor:pointer;font-size:10.5px;font-weight:500;transition:all .12s;
+}
+.comp-model:hover{border-color:var(--bd3);color:var(--tx)}
+.cmd{width:5px;height:5px;border-radius:50%;background:var(--gr)}
+.cf-spacer{flex:1}
+.cf-hint{font-size:10px;color:var(--tx3);font-family:var(--mo)}
+.sbtn{
+  display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;
+  background:var(--ac);border:none;color:#fff;cursor:pointer;
+  font-size:12px;font-weight:600;font-family:var(--sa);transition:all .15s;
+}
+.sbtn:hover{background:var(--ac2);box-shadow:0 3px 10px rgba(0,152,234,.3)}
+.sbtn:disabled{opacity:.3;cursor:not-allowed;box-shadow:none}
+
+/* ─── BOTTOM STATUS ──────────────────────────── */
+#sbar{
+  height:24px;flex-shrink:0;
+  background:var(--bg2);border-top:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 14px;gap:14px;
+  font-size:10px;font-family:var(--mo);color:var(--tx3);
+}
+.si{display:flex;align-items:center;gap:5px}
+.si-ac{color:var(--ac)}
+.sdiv{width:1px;height:12px;background:var(--bd);margin:0 2px}
+
+/* ─── MODEL MODAL ────────────────────────────── */
+#modal{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;
+}
+#modal.open{display:flex}
+.mwrap{
+  background:var(--bg2);border:1px solid var(--bd2);border-radius:14px;
+  width:480px;max-height:88vh;overflow-y:auto;
+  display:flex;flex-direction:column;gap:0;
+  box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04);
+}
+.mwrap::-webkit-scrollbar{width:4px}
+.mwrap::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+.m-head{padding:22px 24px 16px;border-bottom:1px solid var(--bd)}
+.m-title{font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.m-sub{font-size:12px;color:var(--tx2);line-height:1.65}
+.m-body-pad{padding:16px 24px;display:flex;flex-direction:column;gap:8px}
+.m-section{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin:8px 0 4px}
+.mopt{
+  display:flex;align-items:center;gap:14px;padding:14px;border-radius:10px;
+  border:1px solid var(--bd);cursor:pointer;transition:all .15s;position:relative;
+  overflow:hidden;
+}
+.mopt::before{
+  content:'';position:absolute;inset:0;opacity:0;
+  background:linear-gradient(135deg,var(--acg),transparent);
+  transition:opacity .2s;
+}
+.mopt:hover{border-color:rgba(0,152,234,.4)}
+.mopt:hover::before{opacity:1}
+.mopt.sel{border-color:rgba(0,152,234,.5);background:var(--ac3)}
+.mopt.sel::before{opacity:.5}
+.mlogo{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;position:relative;z-index:1;
+}
+.logo-air{background:#0d0d0c;border:1px solid var(--bd2);display:flex;align-items:center;font-family:var(--mo);font-weight:700;font-size:12px}
+.air-ai{color:#fff}.air-r{color:var(--ac)}
+.logo-cla{background:linear-gradient(135deg,#c96820 0%,#e8813a 100%);box-shadow:0 4px 12px rgba(200,100,30,.3)}
+.logo-cla img{width:24px;height:24px;filter:invert(1);object-fit:contain}
+.logo-oai{background:#fff;border:1px solid #e5e5e5;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.logo-oai img{width:24px;height:24px;object-fit:contain}
+.mopt-info{flex:1;position:relative;z-index:1}
+.mopt-name{font-size:13px;font-weight:600;margin-bottom:2px;letter-spacing:-.01em}
+.mopt-desc{font-size:11px;color:var(--tx2)}
+.mopt-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px;position:relative;z-index:1}
+.tag{font-size:9px;font-weight:600;font-family:var(--mo);padding:2px 7px;border-radius:20px;letter-spacing:.04em}
+.tag-c{background:var(--gr2);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.tag-b{background:rgba(245,158,11,.1);color:var(--ye);border:1px solid rgba(245,158,11,.2)}
+.tag-on{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.35)}
+.mdot2{width:6px;height:6px;border-radius:50%}
+.m-divider{height:1px;background:var(--bd);margin:4px 0}
+/* BYOK */
+.byok-row{display:flex;flex-direction:column;gap:6px}
+.bkey{
+  padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--bd);
+  color:var(--tx);font-family:var(--mo);font-size:11px;width:100%;outline:none;
+  transition:border-color .15s;
+}
+.bkey:focus{border-color:rgba(0,152,234,.5)}
+.use-btn{
+  font-size:9px;font-weight:700;font-family:var(--mo);padding:2px 8px;border-radius:20px;
+  background:var(--ac);border:none;color:#fff;cursor:pointer;letter-spacing:.04em;display:none;
+}
+.m-footer{padding:16px 24px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end}
+.m-close-btn{
+  padding:8px 18px;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);
+  color:var(--tx2);font-size:12px;font-family:var(--sa);font-weight:500;cursor:pointer;transition:all .12s;
+}
+.m-close-btn:hover{background:var(--bg4);color:var(--tx);border-color:var(--bd2)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── TOPBAR ─────────────────────────── -->
+  <div id="topbar">
+    <a class="tb-back" href="/app">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Dashboard
+    </a>
+    <div class="tb-div"></div>
+    <div class="tb-logo">AGENT<span class="r">R</span></div>
+    <div class="tb-caret">/</div>
+    <div id="tb-session">New session</div>
+    <div class="tb-spacer"></div>
+    <div class="tb-status">
+      <div class="sdot" id="sdot"></div>
+      <span id="stxt">Ready</span>
+    </div>
+    <div class="tb-model" onclick="openModal()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <span id="tb-m-label">AIR</span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <button class="tb-build" onclick="send()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Build
+    </button>
+  </div>
+
+  <!-- ─── WORKSPACE ─────────────────────── -->
+  <div id="ws">
+
+    <!-- FILE TREE -->
+    <div id="tree">
+      <div class="tree-hdr">
+        <span class="tree-hdr-label">Explorer</span>
+        <button class="tree-hdr-btn" onclick="loadFiles()" title="Refresh">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+      <div id="tree-list">
+        <div class="tree-empty">Chat with the agent to generate files</div>
+      </div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="editor">
+      <div class="ed-tabs-bar">
+        <div id="ed-tabs">
+          <div class="et active" id="et-welcome">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            welcome.md
+          </div>
+        </div>
+        <div class="ed-tabs-actions">
+          <button class="ia" onclick="copyContent()" title="Copy">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="ia" onclick="loadFiles()" title="Refresh files">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="ed-content">
+        <div class="ed-empty">
+          <div class="ed-empty-ico">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div class="ed-empty-title">No file selected</div>
+          <div class="ed-empty-sub">Select a file from the explorer, or ask the agent to start building your bot.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="chat">
+      <div class="ch-tabs">
+        <div class="cht on">Chat</div>
+        <div class="cht" style="opacity:.4;cursor:default">History</div>
+        <div class="ch-tabs-r">
+          <button class="ia" onclick="clearSess()" title="New session" style="color:var(--tx3)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="ch-msgs" id="msgs">
+        <div class="msg">
+          <div class="msg-h">
+            <div class="av ai">A</div>
+            <span class="m-name">AIR</span>
+            <span class="m-time">just now</span>
+          </div>
+          <div class="m-body">
+            Welcome to <strong>Coder</strong> — your AI agent builder.<br><br>
+            Describe the agent you want to build. I'll write the code, configure your tools (TON, Telegram, MCP), and deploy it for you.<br><br>
+            <span style="color:var(--tx3);font-size:11px"><em>Try:</em> "Build a Telegram bot that monitors my TON wallet and sends alerts"</span>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="comp-wrap">
+          <div class="comp-pills">
+            <button class="cpill on" onclick="this.classList.toggle('on')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>TON
+            </button>
+            <button class="cpill" onclick="this.classList.toggle('on')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.2c-.08-.05-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.66-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.14-.02.3-.04.42z"/></svg>Telegram
+            </button>
+            <button class="cpill" onclick="this.classList.toggle('on')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>MCP
+            </button>
+            <button class="cpill" onclick="this.classList.toggle('on')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="17" cy="13" r="1"/></svg>Wallet
+            </button>
+          </div>
+          <textarea id="cin" placeholder="Describe the agent you want to build…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"
+            oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,180)+'px'"></textarea>
+          <div class="comp-footer">
+            <div class="comp-model" onclick="openModal()">
+              <div class="cmd" id="cmd-dot"></div>
+              <span id="cmd-label">AIR</span>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="cf-spacer"></div>
+            <span class="cf-hint">⏎ send · shift+⏎ newline</span>
+            <button class="sbtn" id="sbtn" onclick="send()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── STATUS BAR ────────────────────── -->
+  <div id="sbar">
+    <div class="si">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      TypeScript
+    </div>
+    <div class="sdiv"></div>
+    <div class="si">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+      TON Mainnet
+    </div>
+    <div class="sdiv"></div>
+    <div class="si si-ac" id="sb-model">AIR · CREDITS</div>
+    <div style="margin-left:auto">
+      <div class="si" id="sb-user"></div>
+    </div>
+  </div>
+
+  <!-- ─── MODEL MODAL ───────────────────── -->
+  <div id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="mwrap">
+      <div class="m-head">
+        <div class="m-title">Choose a model</div>
+        <div class="m-sub">AGENTR Credits models are always on. Or connect your own API key for direct access.</div>
+      </div>
+      <div class="m-body-pad">
+
+        <div class="m-section">AGENTR Credits</div>
+
+        <!-- AIR -->
+        <div class="mopt sel" id="opt-air" onclick="selectModel('air','AIR','AIR · CREDITS')">
+          <div class="mlogo logo-air">
+            <span class="air-ai">AI</span><span class="air-r">r</span>
+          </div>
+          <div class="mopt-info">
+            <div class="mopt-name">AIR</div>
+            <div class="mopt-desc">AGENTR's model gateway — TON &amp; Telegram specialist · Recommended</div>
+          </div>
+          <div class="mopt-r">
+            <span class="tag tag-c">CREDITS</span>
+            <div class="mdot2" style="background:var(--gr)"></div>
+          </div>
+        </div>
+
+        <!-- Claude Sonnet -->
+        <div class="mopt" id="opt-sonnet" onclick="selectModel('claude-sonnet','Claude Sonnet','Claude · CREDITS')">
+          <div class="mlogo logo-cla">
+            <img src="/claude-logo.png" alt="Claude"/>
+          </div>
+          <div class="mopt-info">
+            <div class="mopt-name">Claude Sonnet</div>
+            <div class="mopt-desc">Anthropic · Deep reasoning &amp; superior code quality</div>
+          </div>
+          <div class="mopt-r">
+            <span class="tag tag-c">CREDITS</span>
+            <div class="mdot2" style="background:var(--gr)"></div>
+          </div>
+        </div>
+
+        <!-- o4-mini -->
+        <div class="mopt" id="opt-codex" onclick="selectModel('codex','o4-mini','o4-mini · CREDITS')">
+          <div class="mlogo logo-oai">
+            <img src="/openai-logo.png" alt="OpenAI"/>
+          </div>
+          <div class="mopt-info">
+            <div class="mopt-name">o4-mini</div>
+            <div class="mopt-desc">OpenAI · Smart contract &amp; coding specialist</div>
+          </div>
+          <div class="mopt-r">
+            <span class="tag tag-c">CREDITS</span>
+            <div class="mdot2" style="background:var(--gr)"></div>
+          </div>
+        </div>
+
+        <div class="m-divider"></div>
+        <div class="m-section">Bring Your Own Key</div>
+
+        <!-- Anthropic BYOK -->
+        <div class="byok-row">
+          <div class="mopt" id="opt-cla-byok">
+            <div class="mlogo logo-cla" onclick="toggleByok('anthropic')" style="cursor:pointer">
+              <img src="/claude-logo.png" alt="Claude"/>
+            </div>
+            <div class="mopt-info" onclick="toggleByok('anthropic')" style="cursor:pointer">
+              <div class="mopt-name">Claude (BYOK)</div>
+              <div class="mopt-desc">Your Anthropic API key — unlimited, direct access</div>
+            </div>
+            <div class="mopt-r">
+              <span class="tag tag-b" id="tag-cla">CONNECT</span>
+              <button class="use-btn" id="use-cla" onclick="activateByok('anthropic')">USE</button>
+              <div class="mdot2" id="dot-cla" style="background:var(--tx3)"></div>
+            </div>
+          </div>
+          <input class="bkey" id="key-cla" type="password" placeholder="sk-ant-api03-…" style="display:none" oninput="saveByok('anthropic')"/>
+        </div>
+
+        <!-- OpenAI BYOK -->
+        <div class="byok-row">
+          <div class="mopt" id="opt-oai-byok">
+            <div class="mlogo logo-oai" onclick="toggleByok('openai')" style="cursor:pointer">
+              <img src="/openai-logo.png" alt="OpenAI"/>
+            </div>
+            <div class="mopt-info" onclick="toggleByok('openai')" style="cursor:pointer">
+              <div class="mopt-name">GPT-4o (BYOK)</div>
+              <div class="mopt-desc">Your OpenAI API key — unlimited, direct access</div>
+            </div>
+            <div class="mopt-r">
+              <span class="tag tag-b" id="tag-oai">CONNECT</span>
+              <button class="use-btn" id="use-oai" onclick="activateByok('openai')">USE</button>
+              <div class="mdot2" id="dot-oai" style="background:var(--tx3)"></div>
+            </div>
+          </div>
+          <input class="bkey" id="key-oai" type="password" placeholder="sk-…" style="display:none" oninput="saveByok('openai')"/>
+        </div>
+
+      </div>
+      <div class="m-footer">
+        <button class="m-close-btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ─── AUTH ────────────────────────────────────────────────
+const _raw = localStorage.getItem('agentr_tenant')
+const S = _raw ? (() => { try { return JSON.parse(_raw) } catch { return {} } })() : {}
+if (!S.token || !S.tenantId) { location.href = '/app'; throw '' }
+const hdr = () => ({ Authorization: 'Bearer ' + S.token })
+
+// ─── STATE ───────────────────────────────────────────────
+const M = { model:'air', label:'AIR', sbLabel:'AIR · CREDITS', byok:{anthropic:'',openai:''}, byokActive:'' }
+
+// ─── INIT ────────────────────────────────────────────────
+;(function init(){
+  try { Object.assign(M.byok, JSON.parse(localStorage.getItem('cr_byok')||'{}')) } catch{}
+  M.byokActive = localStorage.getItem('cr_byok_active') || ''
+  const sm = localStorage.getItem('cr_model')
+  const MAP = { air:['air','AIR','AIR · CREDITS'], 'claude-sonnet':['claude-sonnet','Claude Sonnet','Claude · CREDITS'], codex:['codex','o4-mini','o4-mini · CREDITS'] }
+  if (MAP[sm]) _applyModel(...MAP[sm])
+  document.getElementById('sb-user').textContent = '@' + (S.tenantId||'').slice(0,10)
+  refreshByokUI()
+  loadFiles()
+})()
+
+// ─── MODEL ───────────────────────────────────────────────
+function _applyModel(val, label, sb){
+  M.model=val; M.label=label; M.sbLabel=sb
+  document.getElementById('tb-m-label').textContent = label
+  document.getElementById('cmd-label').textContent = label
+  document.getElementById('sb-model').textContent = sb
+  document.querySelectorAll('.mopt').forEach(o=>o.classList.remove('sel'))
+  const map={air:'opt-air','claude-sonnet':'opt-sonnet',codex:'opt-codex'}
+  if(map[val]) document.getElementById(map[val])?.classList.add('sel')
+}
+function selectModel(val,label,sb){ _applyModel(val,label,sb); M.byokActive=''; localStorage.setItem('cr_model',val); localStorage.removeItem('cr_byok_active'); refreshByokUI(); closeModal() }
+
+// ─── BYOK ────────────────────────────────────────────────
+function toggleByok(p){
+  const inp = document.getElementById(p==='anthropic'?'key-cla':'key-oai')
+  if(M.byok[p]&&M.byok[p].length>8){ M.byok[p]=''; inp.value=''; if(M.byokActive===p){M.byokActive='';localStorage.removeItem('cr_byok_active');_applyModel('air','AIR','AIR · CREDITS')} localStorage.setItem('cr_byok',JSON.stringify(M.byok)); refreshByokUI() }
+  else { inp.style.display='block'; inp.focus() }
+}
+function saveByok(p){ M.byok[p]=document.getElementById(p==='anthropic'?'key-cla':'key-oai').value.trim(); localStorage.setItem('cr_byok',JSON.stringify(M.byok)); refreshByokUI() }
+function activateByok(p){
+  if(M.byokActive===p){ M.byokActive=''; localStorage.removeItem('cr_byok_active'); _applyModel('air','AIR','AIR · CREDITS') }
+  else { M.byokActive=p; localStorage.setItem('cr_byok_active',p); p==='anthropic'?_applyModel('claude-sonnet','Claude (BYOK)','Anthropic · BYOK'):_applyModel('codex','GPT-4o (BYOK)','OpenAI · BYOK') }
+  refreshByokUI(); closeModal()
+}
+function refreshByokUI(){
+  const set=(dotId,tagId,useId,keyId,ok,act)=>{
+    const d=document.getElementById(dotId),t=document.getElementById(tagId),u=document.getElementById(useId),k=document.getElementById(keyId)
+    if(ok){if(d)d.style.background=act?'var(--ac)':'var(--gr)';if(t){t.textContent='CONNECTED';t.className='tag tag-on'};if(u){u.style.display='block';u.textContent=act?'ACTIVE':'USE'};if(k)k.style.display='block'}
+    else{if(d)d.style.background='var(--tx3)';if(t){t.textContent='CONNECT';t.className='tag tag-b'};if(u)u.style.display='none'}
+  }
+  set('dot-cla','tag-cla','use-cla','key-cla',M.byok.anthropic&&M.byok.anthropic.length>8,M.byokActive==='anthropic')
+  set('dot-oai','tag-oai','use-oai','key-oai',M.byok.openai&&M.byok.openai.length>8,M.byokActive==='openai')
+}
+
+// ─── MODAL ───────────────────────────────────────────────
+function openModal(){ document.getElementById('modal').classList.add('open') }
+function closeModal(){ document.getElementById('modal').classList.remove('open') }
+
+// ─── FILES ───────────────────────────────────────────────
+async function loadFiles(){
+  const el=document.getElementById('tree-list')
+  el.innerHTML='<div class="tree-empty" style="opacity:.5">Loading…</div>'
+  try{
+    const r=await fetch('/dev/files/'+S.tenantId,{headers:hdr()})
+    const d=await r.json()
+    const files=(d.files||[]).filter(f=>f.type==='file')
+    if(!files.length){el.innerHTML='<div class="tree-empty">Ask the agent to build something<br>— files appear here</div>';return}
+    const now=Date.now()/1000
+    el.innerHTML=files.map(f=>{
+      const age=f.mtime?(now-f.mtime):Infinity
+      const dc=age<300?'n':age<3600?'m':''
+      const dot=dc?`<span class="ti-dot ${dc}"></span>`:''
+      const ps=JSON.stringify(f.path),ns=JSON.stringify(f.name),dp=JSON.stringify(f.path)
+      return `<div class="ti" data-path=${dp} onclick="openFile(${ps},${ns})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${f.name}${dot}</div>`
+    }).join('')
+  }catch{el.innerHTML='<div class="tree-empty" style="color:var(--re)">Error loading files</div>'}
+}
+
+// ─── EDITOR ──────────────────────────────────────────────
+const KW=new Set(['const','let','var','function','class','import','export','from','return','if','else','for','while','async','await','try','catch','new','this','typeof','interface','type','extends','implements','null','undefined','true','false','of','in','switch','case','default','break','void','static','readonly','public','private','protected','throw','finally','delete','yield','enum','declare','abstract'])
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function hl(line){
+  let o='',i=0
+  while(i<line.length){
+    const c=line[i]
+    if(c==='/'&&line[i+1]==='/')return o+`<span class="cm">${esc(line.slice(i))}</span>`
+    if(c==='"'||c==="'"||c==='`'){let j=i+1;while(j<line.length){if(line[j]==='\\'){j+=2;continue}if(line[j]===c){j++;break}j++};o+=`<span class="str">${esc(line.slice(i,j))}</span>`;i=j;continue}
+    if(/[0-9]/.test(c)&&(i===0||/\W/.test(line[i-1]))){let j=i;while(j<line.length&&/[0-9._]/.test(line[j]))j++;o+=`<span class="nu">${esc(line.slice(i,j))}</span>`;i=j;continue}
+    if(/[a-zA-Z_$]/.test(c)){let j=i;while(j<line.length&&/[a-zA-Z0-9_$]/.test(line[j]))j++;const w=line.slice(i,j);if(KW.has(w))o+=`<span class="kw">${esc(w)}</span>`;else if(j<line.length&&line[j]==='(')o+=`<span class="fn">${esc(w)}</span>`;else if(/^[A-Z]/.test(w))o+=`<span class="ty">${esc(w)}</span>`;else o+=esc(w);i=j;continue}
+    o+=esc(c);i++
+  }
+  return o
+}
+function renderCode(content,name){
+  const ext=(name||'').split('.').pop()
+  const plain=['md','json','txt','yaml','yml','toml','env'].includes(ext)
+  const lines=content.split('\n')
+  document.getElementById('ed-content').innerHTML=lines.map((l,i)=>`<div class="cl"><span class="ln">${i+1}</span><span class="lc">${plain?esc(l):hl(l)}</span></div>`).join('')
+}
+async function openFile(path,name){
+  document.querySelectorAll('.ti').forEach(t=>t.classList.remove('active'))
+  const ai=document.querySelector(`.ti[data-path=${JSON.stringify(path)}]`)
+  if(ai)ai.classList.add('active')
+  const tabs=document.getElementById('ed-tabs')
+  document.querySelectorAll('.et').forEach(t=>t.classList.remove('active'))
+  const ex=tabs.querySelector(`[data-file="${name}"]`)
+  if(!ex){
+    const t=document.createElement('div');t.className='et active';t.dataset.file=name
+    t.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${name}<span class="et-x" onclick="event.stopPropagation();this.parentElement.remove()">×</span>`
+    document.getElementById('et-welcome')?.remove()
+    tabs.appendChild(t)
+  }else ex.classList.add('active')
+  document.getElementById('ed-content').innerHTML='<div style="padding:20px;font-family:var(--mo);font-size:11px;color:var(--tx3)">Loading…</div>'
+  try{
+    const r=await fetch('/dev/file/'+S.tenantId+'?path='+encodeURIComponent(path),{headers:hdr()})
+    const d=await r.json()
+    renderCode(d.content||'',name)
+  }catch{document.getElementById('ed-content').innerHTML='<div style="padding:20px;color:var(--re);font-family:var(--mo);font-size:12px">Error reading file</div>'}
+}
+function copyContent(){
+  const text=Array.from(document.querySelectorAll('.lc')).map(e=>e.textContent).join('\n')
+  navigator.clipboard.writeText(text).catch(()=>{})
+}
+
+// ─── CHAT ────────────────────────────────────────────────
+function fmtTime(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) }
+function fmtMsg(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/```([\s\S]*?)```/g,(_,c)=>`<pre><code>${c.trim()}</code></pre>`).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') }
+function appendMsg(role,text){
+  const c=document.getElementById('msgs'),ai=role==='agent'
+  const name=ai?M.label:'You',init=ai?'A':(S.tenantId||'U').slice(0,1).toUpperCase()
+  const el=document.createElement('div');el.className='msg'+(ai?'':' u')
+  el.innerHTML=`<div class="msg-h"><div class="av ${ai?'ai':'u'}">${init}</div><span class="m-name">${name}</span><span class="m-time">${fmtTime()}</span></div><div class="m-body">${fmtMsg(text)}</div>`
+  c.appendChild(el);c.scrollTop=c.scrollHeight;return el
+}
+function appendThinking(){
+  const c=document.getElementById('msgs')
+  const el=document.createElement('div');el.className='thinking'
+  el.innerHTML=`<div class="av ai" style="width:20px;height:20px;border-radius:5px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--ac);color:#fff">A</div><div class="dots"><span></span><span></span><span></span></div><span>Thinking…</span>`
+  c.appendChild(el);c.scrollTop=c.scrollHeight;return el
+}
+function setStatus(s){
+  const d=document.getElementById('sdot'),t=document.getElementById('stxt')
+  if(s==='ready'){d.className='sdot';t.textContent='Ready'}
+  else if(s==='busy'){d.className='sdot busy';t.textContent='Building…'}
+  else{d.className='sdot err';t.textContent='Error'}
+}
+async function send(){
+  const ta=document.getElementById('cin'),msg=ta.value.trim();if(!msg)return
+  ta.value='';ta.style.height=''
+  setStatus('busy');appendMsg('user',msg)
+  const th=appendThinking()
+  document.getElementById('sbtn').disabled=true
+  try{
+    const body={tenantId:S.tenantId,message:msg,model:M.model}
+    if(M.byokActive&&M.byok[M.byokActive]){body.apiKey=M.byok[M.byokActive];body.provider=M.byokActive}
+    const r=await fetch('/dev/chat',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(body)})
+    const d=await r.json();th.remove()
+    appendMsg('agent',d.response||d.error||'No response')
+    loadFiles();setStatus('ready')
+    const first=(d.response||'').replace(/<[^>]+>/g,'').split('\n')[0].slice(0,50)
+    if(first)document.getElementById('tb-session').textContent=first
+  }catch(e){th.remove();appendMsg('agent','Error: '+e.message);setStatus('err')}
+  finally{document.getElementById('sbtn').disabled=false}
+}
+async function clearSess(){
+  try{await fetch('/dev/session',{method:'DELETE',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify({tenantId:S.tenantId,model:M.model})})}catch{}
+  document.getElementById('msgs').innerHTML=`<div class="msg"><div class="msg-h"><div class="av ai">A</div><span class="m-name">${M.label}</span><span class="m-time">${fmtTime()}</span></div><div class="m-body">Session cleared. What would you like to build?</div></div>`
+  document.getElementById('tb-session').textContent='New session'
+}
+</script>
+</body>
+</html>

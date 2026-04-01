@@ -1,6 +1,8 @@
 import React from 'react'
 import { detectApiBase, getAuthHeader } from '../lib/api'
 
+const AGENTR_WALLET = 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M'
+
 interface Transaction {
   amount: number
   type: string
@@ -14,6 +16,10 @@ interface CreditsData {
   totalUsed: number
   totalAdded: number
   transactions: Transaction[]
+  plan?: string
+  planName?: string
+  planModel?: string
+  planLimit?: number
 }
 
 interface Props {
@@ -22,249 +28,228 @@ interface Props {
   tonConnectUI: any
 }
 
+const PLAN_COLORS: Record<string, { bg: string; color: string }> = {
+  free:       { bg: '#F3F4F6', color: '#374151' },
+  starter:    { bg: '#EFF6FF', color: '#1D4ED8' },
+  pro:        { bg: '#F5F3FF', color: '#7C3AED' },
+  ultra:      { bg: '#F5F3FF', color: '#7C3AED' },
+  elite:      { bg: '#FFFBEB', color: '#B45309' },
+  enterprise: { bg: '#ECFDF5', color: '#065F46' },
+}
+
+const CREDIT_PACKS = [
+  { usd: 5,  credits: 5500,  ton: '3.8',  label: '$5' },
+  { usd: 10, credits: 12000, ton: '7.5',  label: '$10', popular: true },
+  { usd: 25, credits: 32000, ton: '18.8', label: '$25' },
+]
+
+const MODEL_COSTS: { action: string; cost: string; note: string }[] = [
+  { action: 'Chat — Haiku 4.5',      cost: '~2 cr/1k tokens',  note: '$0.002/1k' },
+  { action: 'Chat — Flash-Lite',     cost: '~0.8 cr/1k tokens', note: '$0.0008/1k' },
+  { action: 'Chat — Sonnet 4.6',     cost: '~18 cr/1k tokens', note: '$0.018/1k' },
+  { action: 'Chat — Opus 4.6',       cost: '~30 cr/1k tokens', note: '$0.030/1k' },
+  { action: 'Chat — GPT-4o',         cost: '~12.5 cr/1k tokens', note: '$0.0125/1k' },
+]
+
 export function CreditsTab({ tenantId, tonWallet, tonConnectUI }: Props) {
   const [data, setData] = React.useState<CreditsData>({
-    credits: 0,
-    totalUsed: 0,
-    totalAdded: 0,
-    transactions: [],
+    credits: 0, totalUsed: 0, totalAdded: 0, transactions: [],
   })
+  const [statusData, setStatusData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
   const API = detectApiBase()
 
   React.useEffect(() => {
-    fetch(API + '/agent/credits-usage/' + tenantId, { headers: getAuthHeader() })
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch(API + '/agent/credits-usage/' + tenantId, { headers: getAuthHeader() }).then(r => r.json()),
+      fetch(API + '/agent/status/' + tenantId, { headers: getAuthHeader() }).then(r => r.json()),
+    ]).then(([usage, status]) => {
+      setData(usage)
+      setStatusData(status)
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [tenantId])
 
-  const planLimit = 100000
-  const pct = Math.min(100, Math.round((data.credits / planLimit) * 100))
+  const plan = statusData?.plan ?? 'free'
+  const planName = statusData?.planName ?? (plan.charAt(0).toUpperCase() + plan.slice(1))
+  const planModel = statusData?.planModel ?? 'Haiku 4.5'
+  const planLimit = statusData?.planLimit ?? 500
+  const credits = data.credits
+  const pct = Math.min(100, Math.round((credits / planLimit) * 100))
+  const planColor = PLAN_COLORS[plan] ?? PLAN_COLORS.free
 
-  const CREDIT_PACKS = [
-    { usd: 5, credits: 5500, ton: '3.8' },
-    { usd: 10, credits: 12000, ton: '7.5' },
-    { usd: 25, credits: 32000, ton: '18.8' },
-  ]
-
-  const CREDIT_COSTS = [
-    { action: 'Message (Kimi)', cost: '3 credits', note: '~$0.003' },
-    { action: 'Message (GPT-4o)', cost: '9 credits', note: '~$0.009' },
-    { action: 'Message (Claude)', cost: '13 credits', note: '~$0.013' },
-    { action: 'Message (Gemini)', cost: '8 credits', note: '~$0.008' },
-    { action: 'Tool call', cost: '1 credit', note: 'free tier' },
-    { action: 'Bot deployment', cost: '10 credits', note: 'one-time' },
-    { action: 'Codex (free tier)', cost: '0 credits', note: 'no charge' },
-  ]
-
-  const handleTopUp = async (pack: (typeof CREDIT_PACKS)[0]) => {
-    if (!tonWallet) {
-      tonConnectUI.openModal()
-      return
-    }
+  const handleTopUp = async (pack: typeof CREDIT_PACKS[0]) => {
+    if (!tonWallet) { tonConnectUI.openModal(); return }
     const nanoton = Math.ceil(parseFloat(pack.ton) * 1_000_000_000)
     try {
       await tonConnectUI.sendTransaction({
         validUntil: Math.floor(Date.now() / 1000) + 300,
-        messages: [
-          {
-            address: 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M',
-            amount: String(nanoton),
-          },
-        ],
+        messages: [{ address: AGENTR_WALLET, amount: String(nanoton) }],
       })
-      alert(
-        'Payment sent! ' + pack.credits.toLocaleString() + ' credits will be added within a few minutes.'
-      )
+      alert(`Payment sent! ${pack.credits.toLocaleString()} credits will be added within a few minutes.`)
     } catch (e: any) {
       if (String(e).includes('reject') || String(e).includes('cancel')) return
       tonConnectUI.openModal()
     }
   }
 
+  if (loading) return (
+    <div style={{ padding: 32, color: 'var(--text3)', fontSize: 14 }}>Loading credits…</div>
+  )
+
   return (
-    <div style={{ padding: '32px', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ padding: '24px 28px', maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, letterSpacing: '-.3px' }}>
-        Credits
+        Credits & Plan
       </div>
 
-      {/* Balance card */}
-      <div
-        style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '24px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: 0,
-        }}
-      >
-        {[
-          { label: 'Balance', value: data.credits.toLocaleString(), sub: 'credits remaining', color: 'var(--blue)' },
-          { label: 'Used this month', value: data.totalUsed.toLocaleString(), sub: 'credits consumed', color: 'var(--text)' },
-          { label: 'Added total', value: data.totalAdded.toLocaleString(), sub: 'credits received', color: 'var(--ok)' },
-        ].map((item, i) => (
-          <div
-            key={item.label}
-            style={{
-              padding: '0 20px',
-              borderRight: i < 2 ? '1px solid var(--border)' : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-            }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text3)' }}>
-              {item.label}
+      {/* ── Plan + balance hero card ── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.6px', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 6 }}>Current Plan</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ background: planColor.bg, color: planColor.color, padding: '4px 14px', borderRadius: 100, fontSize: 14, fontWeight: 700, letterSpacing: '.2px' }}>
+                {planName}
+              </span>
+              <span style={{ fontSize: 13, color: 'var(--text2)' }}>{planModel}</span>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 600, color: item.color, letterSpacing: '-.5px' }}>
-              {item.value}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text3)' }}>{item.sub}</div>
           </div>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Credit balance</span>
-          <span style={{ fontSize: 13, color: 'var(--text3)' }}>{pct}% remaining</span>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.6px', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 4 }}>Balance</div>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px', color: credits <= 20 ? 'var(--err)' : 'var(--blue)' }}>
+              {credits.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text3)' }}>credits remaining</div>
+          </div>
         </div>
-        <div style={{ background: 'var(--bg2)', borderRadius: 100, height: 8, overflow: 'hidden' }}>
-          <div
-            style={{
+
+        {/* Progress bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text2)', marginBottom: 6 }}>
+            <span>{credits.toLocaleString()} remaining</span>
+            <span>{planLimit.toLocaleString()} total</span>
+          </div>
+          <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 100, overflow: 'hidden' }}>
+            <div style={{
               height: '100%',
+              width: `${pct}%`,
+              background: pct < 20 ? 'var(--err)' : pct < 50 ? 'var(--warn)' : 'var(--blue)',
               borderRadius: 100,
-              background: pct > 20 ? 'var(--blue)' : 'var(--err)',
-              width: pct + '%',
-              transition: 'width .4s',
-            }}
-          />
+              transition: 'width 0.5s ease',
+            }} />
+          </div>
+          {credits <= 20 && (
+            <div style={{ marginTop: 8, fontSize: 13, color: 'var(--err)', fontWeight: 500 }}>
+              ⚠️ Almost out! Top up now to avoid Limited Mode.
+            </div>
+          )}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-          <span style={{ fontSize: 11, color: 'var(--text3)' }}>0</span>
-          <span style={{ fontSize: 11, color: 'var(--text3)' }}>{planLimit.toLocaleString()} total</span>
-        </div>
-      </div>
 
-      {/* Credit costs */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
-        <div style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text3)', marginBottom: 14 }}>
-          Credit costs
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {CREDIT_COSTS.map((item, i) => (
-            <div
-              key={item.action}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottom: i < CREDIT_COSTS.length - 1 ? '1px solid var(--border)' : 'none',
-              }}
-            >
-              <div>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{item.action}</span>
-                <span style={{ fontSize: 12, color: 'var(--text3)', marginLeft: 8 }}>{item.note}</span>
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 500 }}>{item.cost}</span>
+        {/* Stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+          {[
+            { label: 'Used this month', value: data.totalUsed.toLocaleString(), color: 'var(--text)' },
+            { label: 'All-time added', value: data.totalAdded.toLocaleString(), color: 'var(--ok)' },
+          ].map(stat => (
+            <div key={stat.label}>
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text3)', marginBottom: 4 }}>{stat.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px', color: stat.color }}>{stat.value}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Top up */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>Top up credits</div>
-        <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
-          Pay with TON. Credits are added instantly after payment confirms.
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
-          {CREDIT_PACKS.map((pack) => (
+      {/* ── Top-up packs ── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Top up with TON</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+          {CREDIT_PACKS.map(pack => (
             <button
               key={pack.usd}
               onClick={() => handleTopUp(pack)}
               style={{
-                fontFamily: 'var(--f)',
-                padding: '14px 10px',
-                borderRadius: 10,
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
+                position: 'relative',
+                background: pack.popular ? 'var(--blue)' : 'var(--bg)',
+                color: pack.popular ? '#fff' : 'var(--text)',
+                border: pack.popular ? 'none' : '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '14px 16px',
                 cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'border-color .15s',
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                fontFamily: 'var(--f)',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--blue)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
             >
-              <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--blue)', marginBottom: 2 }}>
-                ${pack.usd}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{pack.credits.toLocaleString()} credits</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{pack.ton} TON</div>
+              {pack.popular && (
+                <span style={{ position: 'absolute', top: -8, right: 10, background: '#F59E0B', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100 }}>BEST VALUE</span>
+              )}
+              <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>{pack.credits.toLocaleString()}</span>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>credits</span>
+              <span style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{pack.label} · {pack.ton} TON</span>
             </button>
           ))}
         </div>
         {!tonWallet && (
-          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>
-            Connect your TON wallet in the top bar to pay
+          <div style={{ fontSize: 13, color: 'var(--text2)', padding: '10px 14px', background: 'var(--bg2)', borderRadius: 8 }}>
+            Connect your TON wallet above to pay with TON.
           </div>
         )}
       </div>
 
-      {/* Transaction history */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text3)', marginBottom: 12 }}>
-          Transaction history
+      {/* ── Model cost reference ── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 24px' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>Credit costs by model</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {MODEL_COSTS.map((row, i) => (
+            <div key={row.action} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 0',
+              borderBottom: i < MODEL_COSTS.length - 1 ? '1px solid var(--border)' : 'none',
+              gap: 12,
+            }}>
+              <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{row.action}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>{row.cost}</span>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{row.note}</span>
+              </div>
+            </div>
+          ))}
         </div>
-        {loading ? (
-          <div style={{ fontSize: 13, color: 'var(--text3)' }}>Loading...</div>
-        ) : data.transactions.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text2)', padding: '24px 0' }}>
-            No transactions yet. Credits will be deducted as you use your agent.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {data.transactions.map((tx, i) => (
-              <div
-                key={i}
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 10,
-                  padding: '14px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{tx.description || tx.type}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                    {tx.model ? tx.model + ' · ' : ''}
-                    {new Date(tx.created_at).toLocaleString()}
-                  </div>
+      </div>
+
+      {/* ── Transaction history ── */}
+      {data.transactions.length > 0 && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 24px' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>Recent transactions</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {data.transactions.slice(0, 20).map((tx, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '9px 0',
+                borderBottom: i < Math.min(data.transactions.length, 20) - 1 ? '1px solid var(--border)' : 'none',
+                gap: 12,
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {tx.description || 'LLM call'}
+                  </span>
+                  {tx.model && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{tx.model}</span>}
                 </div>
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: tx.amount > 0 ? 'var(--ok)' : 'var(--err)',
-                  }}
-                >
-                  {tx.amount > 0 ? '+' : ''}
-                  {tx.amount}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: tx.amount < 0 ? 'var(--err)' : 'var(--ok)' }}>
+                    {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+                    {new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

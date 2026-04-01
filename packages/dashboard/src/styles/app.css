@@ -456,3 +456,152 @@ html, body, #root {
 .dev-send-btn { background: #0098EA; border: none; color: #fff; font-size: 16px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; align-self: flex-end; transition: background 0.15s; flex-shrink: 0; }
 .dev-send-btn:hover { background: #007bc4; }
 .dev-send-btn:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM DASHBOARD — stats grid, plan badges, progress bars
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Stats grid ─────────────────────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 520px) {
+  .dash-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* ── Stat card ───────────────────────────────────────────────────── */
+.dash-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.dash-card:hover {
+  box-shadow: var(--shadow);
+  border-color: var(--border2);
+}
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+.dash-card-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .65px;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.dash-card-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -.6px;
+  line-height: 1.1;
+}
+.dash-card-sub {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+/* ── Plan badge inside dash card ─────────────────────────────────── */
+.dash-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 13px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+.dash-plan-free       { background: #F3F4F6; color: #374151; }
+.dash-plan-starter    { background: #EFF6FF; color: #1D4ED8; }
+.dash-plan-pro        { background: #F5F3FF; color: #7C3AED; }
+.dash-plan-ultra      { background: #F5F3FF; color: #7C3AED; }
+.dash-plan-elite      { background: #FFFBEB; color: #B45309; }
+.dash-plan-enterprise { background: #ECFDF5; color: #065F46; }
+
+/* ── Credits progress bar ────────────────────────────────────────── */
+.dash-bar-track {
+  height: 7px;
+  background: var(--bg2);
+  border-radius: 100px;
+  overflow: hidden;
+  margin: 2px 0;
+}
+.dash-bar-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 100px;
+  transition: width .5s ease;
+}
+
+/* ── Wallet display in card ──────────────────────────────────────── */
+.dash-wallet-addr {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: JetBrains Mono, Courier New, monospace;
+  color: var(--text);
+  word-break: break-all;
+  line-height: 1.5;
+}
+.dash-copy-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  align-self: flex-start;
+  font-family: var(--f);
+  margin-top: 4px;
+  transition: opacity 0.1s;
+}
+.dash-copy-btn:hover { opacity: 0.8; }
+
+.dash-tg-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  text-decoration: none;
+}
+.dash-tg-link:hover { text-decoration: underline; }
+
+/* ── Topbar plan pill ────────────────────────────────────────────── */
+.topbar-plan {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.topbar-plan-free       { background: #F3F4F6; color: #374151; }
+.topbar-plan-starter    { background: #EFF6FF; color: #1D4ED8; }
+.topbar-plan-pro        { background: #EDE9FE; color: #7C3AED; }
+.topbar-plan-ultra      { background: #EDE9FE; color: #7C3AED; }
+.topbar-plan-elite      { background: #FEF3C7; color: #B45309; }
+.topbar-plan-enterprise { background: #D1FAE5; color: #065F46; }
+
+/* ── Dark mode overrides for plan badges ─────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .dash-plan-free, .topbar-plan-free             { background: #1f2937; color: #9CA3AF; }
+  .dash-plan-starter, .topbar-plan-starter       { background: #1e3a5f; color: #60A5FA; }
+  .dash-plan-pro, .dash-plan-ultra,
+  .topbar-plan-pro, .topbar-plan-ultra           { background: #2e1065; color: #A78BFA; }
+  .dash-plan-elite, .topbar-plan-elite           { background: #451a03; color: #FCD34D; }
+  .dash-plan-enterprise, .topbar-plan-enterprise { background: #064e3b; color: #34D399; }
+  .dash-copy-btn { background: rgba(0,152,234,0.12); }
+}

@@ -283,6 +283,39 @@ export class Database {
     return res.rows[0]?.credits ?? 0
   }
   // Conversation state persistence
+  async setPlanExpiry(tenantId: string, expiresAt: Date): Promise<void> {
+    const graceUntil = new Date(expiresAt.getTime() + 7 * 24 * 60 * 60 * 1000)
+    await this.pool.query(
+      'UPDATE tenants SET plan_expires_at = $1, grace_until = $2 WHERE id = $3',
+      [expiresAt, graceUntil, tenantId]
+    )
+  }
+
+  async checkAndSuspendExpired(): Promise<string[]> {
+    const res = await this.pool.query<any>(
+      `UPDATE tenants SET status = 'suspended'
+       WHERE status = 'active'
+         AND grace_until IS NOT NULL
+         AND grace_until < NOW()
+       RETURNING id, phone`
+    )
+    return (res.rows as any[]).map((r: any) => r.id as string)
+  }
+
+  async getPlanExpiry(tenantId: string): Promise<{ planExpiresAt: Date | null; graceUntil: Date | null; suspended: boolean }> {
+    const res = await this.pool.query<any>(
+      'SELECT plan_expires_at, grace_until, status FROM tenants WHERE id = $1',
+      [tenantId]
+    )
+    const row = res.rows[0]
+    if (!row) return { planExpiresAt: null, graceUntil: null, suspended: false }
+    return {
+      planExpiresAt: row.plan_expires_at ?? null,
+      graceUntil: row.grace_until ?? null,
+      suspended: row.status === 'suspended',
+    }
+  }
+
   async saveConversationState(tenantId: string, chatId: string, messages: unknown[]): Promise<void> {
     await this.pool.query(
       `INSERT INTO conversation_state (tenant_id, chat_id, messages, updated_at)

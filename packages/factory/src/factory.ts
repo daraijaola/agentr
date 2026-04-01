@@ -56,6 +56,17 @@ export class AgentFactory {
     await this.db.init()
     sessionManager.setPool(getPool())
     console.log('[AgentFactory] Initialized')
+    // Hourly plan expiry sweep
+    setInterval(async () => {
+      try {
+        const suspended = await this.db.checkAndSuspendExpired()
+        if (suspended.length > 0) {
+          console.log('[AgentFactory] Auto-suspended expired tenants:', suspended)
+        }
+      } catch (e) {
+        console.error('[AgentFactory] Expiry sweep error:', e)
+      }
+    }, 60 * 60 * 1000)
   }
 
   private getLLMConfig(plan?: string, provisionedAt?: number) {
