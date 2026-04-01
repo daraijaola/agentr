@@ -11,6 +11,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.81.0",
     "@dedust/sdk": "latest",
     "@mariozechner/pi-ai": "latest",
     "@sinclair/typebox": "^0.34.48",
