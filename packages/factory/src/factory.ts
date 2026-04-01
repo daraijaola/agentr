@@ -4,7 +4,7 @@ import type { LLMProvider } from '@agentr/core'
 import { sessionManager } from '@agentr/core'
 import { attachMessageListener } from './listener.js'
 import { DockerProvisioner } from './docker.js'
-import { Database } from './database.js'
+import { Database, getPool } from './database.js'
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import path from 'path'
 
@@ -54,6 +54,7 @@ export class AgentFactory {
 
   async init(): Promise<void> {
     await this.db.init()
+    sessionManager.setPool(getPool())
     console.log('[AgentFactory] Initialized')
   }
 
@@ -154,11 +155,19 @@ export class AgentFactory {
     }
 
     if (tgClient) attachMessageListener(dbTenantId, tgClient, runtime)
-    // Start 5-minute health monitor for this session
+    // Save session to DB and start health monitor
     if (tgClient) {
       const _tgClient = tgClient
+      const sessStr = _tgClient.getSessionString()
+      if (sessStr) sessionManager.saveSessionToDB(dbTenantId, phone, sessStr).catch(() => {})
       sessionManager.startHealthMonitor(dbTenantId, async () => {
-        try { await _tgClient.getMe(); return true } catch { return false }
+        try {
+          await _tgClient.getMe()
+          const s = _tgClient.getSessionString()
+          if (s) sessionManager.saveSessionToDB(dbTenantId, phone, s).catch(() => {})
+          sessionManager.persistHealthScore(dbTenantId).catch(() => {})
+          return true
+        } catch { return false }
       })
     }
     this.runtimes.set(dbTenantId, runtime)
@@ -203,10 +212,18 @@ export class AgentFactory {
       walletAddress: tenant.wallet_address,
     })
     attachMessageListener(tenant.id, tgClient, runtime)
-    // Start 5-minute health monitor for resumed session
+    // Save resumed session to DB and start health monitor
     const _resumedClient = tgClient
+    const resumedSess = _resumedClient.getSessionString()
+    if (resumedSess) sessionManager.saveSessionToDB(tenant.id, tenant.phone, resumedSess).catch(() => {})
     sessionManager.startHealthMonitor(tenant.id, async () => {
-      try { await _resumedClient.getMe(); return true } catch { return false }
+      try {
+        await _resumedClient.getMe()
+        const s = _resumedClient.getSessionString()
+        if (s) sessionManager.saveSessionToDB(tenant.id, tenant.phone, s).catch(() => {})
+        sessionManager.persistHealthScore(tenant.id).catch(() => {})
+        return true
+      } catch { return false }
     })
     this.runtimes.set(tenant.id, runtime)
     await this.db.updateAgentStatus(tenant.id, 'running').catch(() => {})

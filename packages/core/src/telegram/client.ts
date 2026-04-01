@@ -291,4 +291,11 @@ export class TelegramUserClient {
   getMe(): TelegramUser | undefined { return this.me }
   isConnected(): boolean { return this.connected }
   getClient(): TelegramClient { return this.client }
+  getSessionString(): string {
+    try {
+      return (this.client.session.save() as unknown as string) ?? ''
+    } catch {
+      return ''
+    }
+  }
 }
