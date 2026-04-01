@@ -1896,13 +1896,18 @@ function showErr(id, msg) {
 }
 
 // ─── TABS ─────────────────────────────────────────
+const TAB_PATHS = {overview:'/dashboard',workspace:'/workspace',marketplace:'/marketplace',activity:'/activity',bots:'/bots',credits:'/credits'}
+const PATH_TABS  = Object.fromEntries(Object.entries(TAB_PATHS).map(([t,p])=>[p,t]))
+
 function switchTab(name, el) {
   document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'))
   document.querySelectorAll('.tab-pane').forEach(p => { p.classList.remove('active'); p.style.display = '' })
   if (el) el.classList.add('active')
   const pane = document.getElementById('tab-' + name)
-  pane.classList.add('active')
-  if (name === 'coder') pane.style.display = 'flex'
+  if (pane) pane.classList.add('active')
+  if (name === 'coder') { if (pane) pane.style.display = 'flex' }
+  const tabPath = TAB_PATHS[name]
+  if (tabPath) window.history.pushState(null, '', tabPath)
 }
 
 // ─── OVERVIEW ─────────────────────────────────────
@@ -2620,7 +2625,16 @@ document.getElementById('cr-textarea')?.addEventListener('input', function() {
 
 // ─── INIT ─────────────────────────────────────────
 // Auto-restore session if tenantId exists
-if (STATE.tenantId) { show('live'); goDashboard() }
+if (STATE.tenantId) {
+  show('live')
+  goDashboard()
+  // Restore tab from URL path on page refresh
+  const _tab = PATH_TABS[window.location.pathname]
+  if (_tab) {
+    const _el = document.querySelector('.sb-item[data-tab="' + _tab + '"]')
+    switchTab(_tab, _el)
+  }
+}
 initTonConnect()
 </script>
 </body>

@@ -23,6 +23,22 @@ const SIDEBAR_ITEMS: [LiveTab, string, boolean][] = [
   ['tonsites', 'TON Sites', false],
 ]
 
+const TAB_PATHS: Partial<Record<LiveTab, string>> = {
+  overview:    '/dashboard',
+  workspace:   '/workspace',
+  credits:     '/credits',
+  activity:    '/activity',
+  bots:        '/bots',
+  marketplace: '/marketplace',
+  developer:   '/developer',
+  miniapps:    '/miniapps',
+  tonsites:    '/tonsites',
+}
+
+const PATH_TO_TAB: Record<string, LiveTab> = Object.fromEntries(
+  Object.entries(TAB_PATHS).map(([tab, p]) => [p, tab as LiveTab])
+) as Record<string, LiveTab>
+
 const PROVISIONING_STEPS = [
   'Setting up your TON wallet',
   'Connecting to Telegram',
@@ -54,6 +70,12 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
   const API = detectApiBase()
 
+  const switchTab = (id: LiveTab) => {
+    setLiveTab(id)
+    const p = TAB_PATHS[id]
+    if (p && typeof window !== 'undefined') window.history.pushState(null, '', p)
+  }
+
   // Restore session
   useEffect(() => {
     const saved = localStorage.getItem('agentr_tenant')
@@ -63,6 +85,10 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
         setAgent(a)
         setProvider(a.provider ?? 'claude')
         setScreen('live')
+        // Restore active tab from URL path on hard refresh
+        const _path = typeof window !== 'undefined' ? window.location.pathname : '/'
+        const _tab = PATH_TO_TAB[_path]
+        if (_tab) setLiveTab(_tab)
         apiGet('/agent/status/' + a.tenantId).then((d) => {
           if (d.status === 'online' && d.telegram) {
             const updated = { ...a, username: d.telegram.username, firstName: d.telegram.firstName }
@@ -637,7 +663,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
           <div className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
             {SIDEBAR_ITEMS.map(([id, label, avail]) => (
-              <div key={id} className={`sb-item${liveTab === id ? ' active' : ''}${!avail ? ' locked' : ''}`} onClick={() => { avail && setLiveTab(id); setSidebarOpen(false) }}>
+              <div key={id} className={`sb-item${liveTab === id ? ' active' : ''}${!avail ? ' locked' : ''}`} onClick={() => { avail && switchTab(id); setSidebarOpen(false) }}>
                 <span>{label}</span>
                 {!avail && <span className="sb-soon">Soon</span>}
               </div>

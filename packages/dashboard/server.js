@@ -81,6 +81,14 @@ http.createServer((req, res) => {
     return
   }
 
+  // Cream dashboard tab routes — serve public/app.html for all tab paths
+  const CREAM_PATHS = ['/dashboard', '/workspace', '/marketplace', '/activity', '/bots', '/credits', '/developer']
+  if (CREAM_PATHS.includes(url)) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    fs.createReadStream(path.join(__dirname, 'public', 'app.html')).pipe(res)
+    return
+  }
+
   // Serve agent-published static sites from /sites/<tenantId>/...
   if (url.startsWith('/sites/')) {
     const sitePath = path.join(SITES_ROOT, url.slice('/sites/'.length))
