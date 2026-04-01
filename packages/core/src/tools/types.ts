@@ -27,10 +27,13 @@ export type ToolExecutor<T = Record<string, unknown>> = (
   }
 ) => Promise<ToolResult>
 
+export type TelegramMode = 'bot' | 'userbot' | 'hybrid'
+
 export interface ToolEntry {
   tool: Tool
   executor: ToolExecutor<any>
   scope?: 'dm-only' | 'all' | 'group-only' | 'always'
+  telegram_mode?: TelegramMode
 }
 
 export type ToolContext = {
