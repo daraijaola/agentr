@@ -937,69 +937,23 @@ footer {
   .proof-bar-divider { display: none; }
 }
 
-/* ─── 20-day offer banner ─── */
-#offer-banner {
-  width: 100%;
-  background: linear-gradient(90deg, #FF2D2D 0%, #FF6B00 50%, #FF2D2D 100%);
-  background-size: 200% 100%;
-  animation: bannerShimmer 3s linear infinite;
-  color: #fff;
-  text-align: center;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: .03em;
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-@keyframes bannerShimmer {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
-}
-#offer-banner .banner-label {
-  white-space: nowrap;
-}
-#offer-banner .banner-timer {
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  background: rgba(0,0,0,.22);
-  padding: 2px 10px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-#offer-banner .banner-cta {
-  background: #fff;
-  color: #FF2D2D;
-  font-weight: 800;
+/* nav offer badge */
+.nav-offer-badge {
   font-size: 11px;
-  padding: 4px 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #fff;
+  background: #0098EA;
   border-radius: 999px;
-  text-decoration: none;
+  padding: 4px 12px;
   white-space: nowrap;
-  transition: opacity .15s;
 }
-#offer-banner .banner-cta:hover { opacity: .85; }
 @media (max-width: 600px) {
-  #offer-banner { font-size: 11px; gap: 6px; padding: 8px 12px; }
-  #offer-banner .banner-timer { font-size: 13px; }
-  #offer-banner .banner-label { font-size: 11px; }
+  .nav-offer-badge { display: none; }
 }
 </style>
 </head>
 <body>
-<!-- 20-DAY OFFER BANNER -->
-<div id="offer-banner">
-  <span class="banner-label">🔥 1,000 FREE CREDITS — Limited launch offer ending in</span>
-  <span class="banner-timer" id="offer-countdown">Loading…</span>
-  <a href="/app" class="banner-cta">Claim now →</a>
-</div>
 
 
 <!-- NAV -->
@@ -1013,6 +967,7 @@ footer {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.744 0 .267.18.579.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>GitHub
     </a>
     <a href="https://x.com/theagent_r" target="_blank" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>@theagent_r</a>
+    <span class="nav-offer-badge">Free 1K Credits for Starters</span>
     <a href="/app" class="btn-nav-primary">Launch agent <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
   </div>
 </nav>
@@ -1403,27 +1358,6 @@ footer {
 </footer>
 
 
-<script>
-/* 20-day offer countdown — deadline: April 22 2026 00:00 UTC */
-(function(){
-  var deadline = Date.UTC(2026, 3, 22, 0, 0, 0); /* month is 0-indexed, 3=April */
-  var el = document.getElementById('offer-countdown');
-  if (!el) return;
-  function tick() {
-    var diff = deadline - Date.now();
-    if (diff <= 0) { el.textContent = 'OFFER ENDED'; return; }
-    var d = Math.floor(diff / 86400000);
-    var h = Math.floor((diff % 86400000) / 3600000);
-    var m = Math.floor((diff % 3600000) / 60000);
-    var s = Math.floor((diff % 60000) / 1000);
-    el.textContent = d + 'd ' +
-      String(h).padStart(2,'0') + 'h ' +
-      String(m).padStart(2,'0') + 'm ' +
-      String(s).padStart(2,'0') + 's';
-  }
-  tick();
-  setInterval(tick, 1000);
-})();
-</script>
+
 </body>
 </html>
