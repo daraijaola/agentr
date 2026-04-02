@@ -113,7 +113,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       ultra: 'Ultra', elite: 'Elite', enterprise: 'Enterprise',
     }
     const PLAN_LIMIT: Record<string,number> = {
-      free: 500, starter: 1200, pro: 2800, ultra: 4000, elite: 6000, enterprise: 50000,
+      free: 1000, starter: 1200, pro: 2800, ultra: 4000, elite: 6000, enterprise: 50000,
     }
     const preferredModelId: string | null = row.preferred_model ?? null
     const resolvedModelName = preferredModelId
@@ -126,7 +126,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       planName: PLAN_NAME[planKey] ?? planKey,
       planModel: resolvedModelName,
       planModelDefault: PLAN_MODEL[planKey] ?? 'Claude Haiku 4.5',
-      planLimit: PLAN_LIMIT[planKey] ?? 500,
+      planLimit: PLAN_LIMIT[planKey] ?? 1000,
       credits: row.credits ?? 0,
       planExpiresAt: row.plan_expires_at ?? null,
       graceUntil: row.grace_until ?? null,

@@ -954,7 +954,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div class="plan-name">Free Trial</div>
         <div class="plan-price">$0</div>
         <div class="plan-period">/ one-time</div>
-        <div class="plan-note">No credit card required.</div>
+        <div class="plan-note">1,000 credits · 24-hour trial</div>
         <div class="plan-divider"></div>
         <div class="plan-feats">
           <div class="plan-feat"><span class="plan-check">✓</span> 300 free credits</div>
@@ -1878,11 +1878,11 @@ async function goDashboard() {
     const credModel = document.getElementById('cred-model-name')
     if (credModel) credModel.textContent = status.planModel || 'Haiku 4.5'
     const credLimitLbl = document.getElementById('cred-limit-label')
-    if (credLimitLbl) credLimitLbl.textContent = Number(status.planLimit || 500).toLocaleString()
-    window._planLimit = status.planLimit || 500
+    if (credLimitLbl) credLimitLbl.textContent = Number(status.planLimit || 1000).toLocaleString()
+    window._planLimit = status.planLimit || 1000
 
     if (typeof status.credits === 'number') {
-      const limit = status.planLimit || 500
+      const limit = status.planLimit || 1000
       const el = document.getElementById('ov-credits')
       if (el) el.textContent = Number(status.credits).toLocaleString()
       const lim = document.getElementById('ov-limit')

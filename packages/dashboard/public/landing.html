@@ -1215,7 +1215,7 @@ footer {
     <p class="section-label">Pricing</p>
     <div class="pricing-head">
       <h2 class="section-title">Start free. Scale when ready.</h2>
-      <p style="font-size:15px;color:var(--text-secondary);line-height:1.75;max-width:480px;">Pay with TON via TON Connect — decentralized, instant, no credit card. Free trial gives you 500 credits for 24 hours — no card required. After that, 8 free messages every day, forever.</p>
+      <p style="font-size:15px;color:var(--text-secondary);line-height:1.75;max-width:480px;">Pay with TON via TON Connect — decentralized, instant, no credit card. Free trial gives you 1,000 credits for 24 hours — no card required. After that, 8 free messages every day, forever.</p>
     </div>
     <div class="plans-grid">
 
@@ -1226,15 +1226,16 @@ footer {
         </div>
         <div class="plan-price">$0</div>
         <div class="plan-period">/ trial</div>
-        <div class="plan-note" style="color:#FF4040;font-weight:600;">500 credits · expires in 24 hours</div>
+        <div class="plan-note" style="color:#FF4040;font-weight:600;">1,000 credits · expires in 24 hours</div>
+        <div id="trial-countdown" style="font-size:12px;font-weight:700;color:#FF4040;letter-spacing:.04em;margin:4px 0 2px;font-variant-numeric:tabular-nums;"></div>
         <div class="plan-divider"></div>
         <div class="plan-features">
-          <div class="plan-feat"><span class="plan-check">✓</span> <strong>500 credits</strong> — active for 24 hours</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> <strong>1,000 credits</strong> — active for 24 hours</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Then <strong>8 free messages/day</strong> forever</div>
           <div class="plan-feat"><span class="plan-check">✓</span> TON wallet included</div>
           <div class="plan-feat"><span class="plan-check">✓</span> No card. No commitment.</div>
         </div>
-        <a href="/app" class="plan-btn plan-btn-default" style="text-decoration:none;display:block;text-align:center;background:#0098EA;color:#fff;">Claim your 500 credits →</a>
+        <a href="/app" class="plan-btn plan-btn-default" style="text-decoration:none;display:block;text-align:center;background:#0098EA;color:#fff;">Claim your 1,000 credits →</a>
       </div>
 
       <div class="plan">
@@ -1340,5 +1341,23 @@ footer {
   <div class="footer-right">MIT License · Built on TON</div>
 </footer>
 
+<script>
+/* Free trial countdown timer — counts to midnight UTC daily */
+(function(){
+  var el = document.getElementById('trial-countdown');
+  if (!el) return;
+  function tick() {
+    var now = new Date();
+    var midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    var diff = midnight - now;
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    el.textContent = '⏱ ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ' remaining';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
 </body>
 </html>
