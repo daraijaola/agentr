@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -7,41 +7,40 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles/premium-liquid-2026.css"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --bg-page:     #04070D;
-  --bg-surface:  #0A0F1A;
-  --bg-card:     rgba(16,22,36,0.85);
-  --bg-hover:    rgba(255,255,255,0.07);
-  --warm-100:    rgba(255,255,255,0.04);
-  --warm-200:    rgba(255,255,255,0.07);
-  --warm-300:    rgba(255,255,255,0.11);
-  --warm-400:    rgba(255,255,255,0.16);
-  --text-primary:   #F0F4FF;
-  --text-secondary: #8B93A8;
-  --text-muted:     #4A5268;
-  --border-subtle:  rgba(255,255,255,0.07);
-  --border-medium:  rgba(255,255,255,0.13);
-  --border-strong:  rgba(255,255,255,0.22);
-  --accent:      #00B0FF;
-  --accent-d:    #0090D4;
-  --accent-tint: rgba(0,176,255,0.10);
-  --accent-mid:  rgba(0,176,255,0.35);
-  --ok:          #22D3A5;
-  --ok-bg:       rgba(34,211,165,0.10);
-  --ok-bdr:      rgba(34,211,165,0.25);
-  --err:         #F87171;
-  --err-bg:      rgba(248,113,113,0.10);
-  --warn:        #FBBF24;
-  --warn-bg:     rgba(251,191,36,0.10);
+  --bg-page:     #F5F1EB;
+  --bg-surface:  #FAF8F4;
+  --bg-card:     #FFFFFF;
+  --bg-hover:    #EDE7DC;
+  --warm-100:    #F5F1EB;
+  --warm-200:    #EDE7DC;
+  --warm-300:    #DED6C8;
+  --warm-400:    #C8BFB0;
+  --text-primary:   #1A1916;
+  --text-secondary: #6B6860;
+  --text-muted:     #9C9A94;
+  --border-subtle:  rgba(26,25,22,0.10);
+  --border-medium:  rgba(26,25,22,0.18);
+  --border-strong:  rgba(26,25,22,0.30);
+  --accent:      #0098EA;
+  --accent-d:    #007EC5;
+  --accent-tint: #EBF6FE;
+  --accent-mid:  #A8D8F5;
+  --ok:          #16a34a;
+  --ok-bg:       #f0fdf4;
+  --ok-bdr:      #bbf7d0;
+  --err:         #dc2626;
+  --err-bg:      #fef2f2;
+  --warn:        #b45309;
+  --warn-bg:     #fffbeb;
   --font-serif: 'Instrument Serif', Georgia, serif;
   --font-sans:  'DM Sans', system-ui, sans-serif;
 }
 
-html,body { height:100%; font-family:var(--font-sans); background:#04070D; color:var(--text-primary); -webkit-font-smoothing:antialiased; }
+html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page); color:var(--text-primary); -webkit-font-smoothing:antialiased; }
 
 /* ─── SHARED ─────────────────────────────────────────────── */
 .screen { display:none; }
@@ -2767,32 +2766,6 @@ if (STATE.tenantId) {
   }
 }
 initTonConnect()
-</script>
-
-<script>
-/* 2026 Premium — Intersection Observer scroll reveal */
-(function(){
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting){
-        e.target.classList.add('reveal-visible');
-        io.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
-  document.querySelectorAll('.reveal-ready').forEach(function(el){ io.observe(el); });
-
-  /* Topbar hide-on-scroll */
-  var lastY = 0, topbar = document.querySelector('.topbar');
-  if(topbar){
-    window.addEventListener('scroll', function(){
-      var y = window.scrollY;
-      topbar.classList.toggle('scrolled-hidden', y > lastY && y > 80);
-      lastY = y;
-    }, { passive: true });
-  }
-})();
 </script>
 </body>
 </html>
