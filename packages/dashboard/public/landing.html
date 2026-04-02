@@ -936,9 +936,71 @@ footer {
   .swarm-inner { padding: 0 1rem; }
   .proof-bar-divider { display: none; }
 }
+
+/* ─── 20-day offer banner ─── */
+#offer-banner {
+  width: 100%;
+  background: linear-gradient(90deg, #FF2D2D 0%, #FF6B00 50%, #FF2D2D 100%);
+  background-size: 200% 100%;
+  animation: bannerShimmer 3s linear infinite;
+  color: #fff;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@keyframes bannerShimmer {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+#offer-banner .banner-label {
+  white-space: nowrap;
+}
+#offer-banner .banner-timer {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  background: rgba(0,0,0,.22);
+  padding: 2px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+#offer-banner .banner-cta {
+  background: #fff;
+  color: #FF2D2D;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity .15s;
+}
+#offer-banner .banner-cta:hover { opacity: .85; }
+@media (max-width: 600px) {
+  #offer-banner { font-size: 11px; gap: 6px; padding: 8px 12px; }
+  #offer-banner .banner-timer { font-size: 13px; }
+  #offer-banner .banner-label { font-size: 11px; }
+}
 </style>
 </head>
 <body>
+<!-- 20-DAY OFFER BANNER -->
+<div id="offer-banner">
+  <span class="banner-label">🔥 1,000 FREE CREDITS — Limited launch offer ending in</span>
+  <span class="banner-timer" id="offer-countdown">Loading…</span>
+  <a href="/app" class="banner-cta">Claim now →</a>
+</div>
+
 
 <!-- NAV -->
 <nav>
@@ -1227,7 +1289,6 @@ footer {
         <div class="plan-price">$0</div>
         <div class="plan-period">/ trial</div>
         <div class="plan-note" style="color:#FF4040;font-weight:600;">1,000 credits · expires in 24 hours</div>
-        <div id="trial-countdown" style="font-size:12px;font-weight:700;color:#FF4040;letter-spacing:.04em;margin:4px 0 2px;font-variant-numeric:tabular-nums;"></div>
         <div class="plan-divider"></div>
         <div class="plan-features">
           <div class="plan-feat"><span class="plan-check">✓</span> <strong>1,000 credits</strong> — active for 24 hours</div>
@@ -1341,19 +1402,24 @@ footer {
   <div class="footer-right">MIT License · Built on TON</div>
 </footer>
 
+
 <script>
-/* Free trial countdown timer — counts to midnight UTC daily */
+/* 20-day offer countdown — deadline: April 22 2026 00:00 UTC */
 (function(){
-  var el = document.getElementById('trial-countdown');
+  var deadline = Date.UTC(2026, 3, 22, 0, 0, 0); /* month is 0-indexed, 3=April */
+  var el = document.getElementById('offer-countdown');
   if (!el) return;
   function tick() {
-    var now = new Date();
-    var midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-    var diff = midnight - now;
-    var h = Math.floor(diff / 3600000);
+    var diff = deadline - Date.now();
+    if (diff <= 0) { el.textContent = 'OFFER ENDED'; return; }
+    var d = Math.floor(diff / 86400000);
+    var h = Math.floor((diff % 86400000) / 3600000);
     var m = Math.floor((diff % 3600000) / 60000);
     var s = Math.floor((diff % 60000) / 1000);
-    el.textContent = '⏱ ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ' remaining';
+    el.textContent = d + 'd ' +
+      String(h).padStart(2,'0') + 'h ' +
+      String(m).padStart(2,'0') + 'm ' +
+      String(s).padStart(2,'0') + 's';
   }
   tick();
   setInterval(tick, 1000);
