@@ -6,6 +6,7 @@ loadEnv({ path: resolve(process.cwd(), '.env'), override: true })
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
+import { secureHeaders } from 'hono/secure-headers'
 import { agentRoutes } from './routes/agent.js'
 import { authRoutes } from './routes/auth.js'
 import { devRoutes } from './routes/dev.js'
@@ -65,6 +66,7 @@ function tenantRateLimit(max: number, windowMs = 60_000) {
 const app = new Hono()
 
 app.use('*', logger())
+app.use('*', secureHeaders())
 app.use('*', ipRateLimit(120))
 const allowedOrigins = process.env['NODE_ENV'] === 'production'
   ? ['https://agentr.online']
