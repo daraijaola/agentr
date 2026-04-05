@@ -8,7 +8,7 @@ import { Database, getPool } from './database.js'
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import path from 'path'
 
-const ENTERPRISE_PHONES: string[] = ['+2347032826456']
+const ENTERPRISE_PHONES: string[] = process.env["ENTERPRISE_PHONE"] ? [process.env["ENTERPRISE_PHONE"]!] : []
 
 // ---------------------------------------------------------------------------
 // Wallet mnemonic encryption — AES-256-GCM
@@ -152,9 +152,11 @@ export class AgentFactory {
 
     // 8. Start agent runtime
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt, preferredModel), {
-      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
-        getCredits:      (tid) => this.db.getCredits(tid),
+      deductCredits:    (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      getCredits:       (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
+      getDailyCount:    (tid) => this.db.getDailyMessageCount(tid),
+      incDailyCount:    (tid) => this.db.incDailyMessageCount(tid),
     })
 
     // 9. Register MVP tools
@@ -208,9 +210,11 @@ export class AgentFactory {
       agentName: tenant.agent_name || undefined,
     }
     const runtime = new AgentRuntime(config, this.getLLMConfig(plan, provisionedAt, preferredModel), {
-      deductCredits:   (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
-        getCredits:      (tid) => this.db.getCredits(tid),
+      deductCredits:    (tid, amt, desc, model) => this.db.deductCredits(tid, amt, desc, model).then(() => {}),
+      getCredits:       (tid) => this.db.getCredits(tid),
       saveConversation: (tid, chatId, msgs) => this.db.saveConversationState(tid, chatId, msgs),
+      getDailyCount:    (tid) => this.db.getDailyMessageCount(tid),
+      incDailyCount:    (tid) => this.db.incDailyMessageCount(tid),
     })
     // Restore persisted conversations for this tenant (up to last 10 active chats)
     try {

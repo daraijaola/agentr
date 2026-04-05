@@ -86,7 +86,7 @@ agentRoutes.get('/status/:tenantId', async (c) => {
     if (!(rows as any[]).length) return c.json({ status: 'offline', tenantId })
     const row = (rows as any[])[0]
     const isOnline = row.status === 'running'
-    const ENTERPRISE_PHONES_API = ['+2347032826456']
+    const ENTERPRISE_PHONES_API = process.env["ENTERPRISE_PHONE"] ? [process.env["ENTERPRISE_PHONE"]!] : []
     const planKey: string = ENTERPRISE_PHONES_API.includes(row.phone ?? '')
       ? 'enterprise'
       : (row.plan ?? 'free')

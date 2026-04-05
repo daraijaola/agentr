@@ -43,10 +43,10 @@ async function pgRateLimit(key: string, max: number, windowMs = 60_000): Promise
   }
 }
 
-function ipRateLimit(max: number) {
+function ipRateLimit(max: number, windowMs = 60_000) {
   return async (c: any, next: any) => {
     const ip = c.req.header('x-forwarded-for') ?? c.req.header('cf-connecting-ip') ?? 'unknown'
-    const allowed = await pgRateLimit(ip, max)
+    const allowed = await pgRateLimit(ip, max, windowMs)
     if (!allowed) return c.json({ error: 'Too many requests' }, 429)
     await next()
   }
@@ -76,6 +76,8 @@ app.use('*', cors({ origin: allowedOrigins, allowMethods: ['GET', 'POST', 'PUT',
 
 app.route('/health', healthRoutes)
 app.route('/metrics', metricsRoutes)
+// Tighter rate limit on OTP request — 10 per IP per 5 min (prevents Telegram flood)
+app.use('/auth/request-otp', ipRateLimit(10, 5 * 60_000))
 app.route('/auth', authRoutes)
 // Protected agent endpoints (require auth token)
 app.use('/agent/message', authMiddleware)
@@ -94,6 +96,9 @@ app.use('/agent/logs/*', authMiddleware)
 app.use('/agent/process/stop', authMiddleware)
 app.use('/agent/marketplace/deploy', authMiddleware)
 app.use('/agent/trial-expire/*', authMiddleware)
+
+// Protect GET /agent/status — prevents leaking wallet/phone/credits without auth
+app.use('/agent/status/*', authMiddleware)
 
 // Protect DELETE /agent/:tenantId — prevents unauthenticated deprovisioning
 app.use('/agent/:tenantId', async (c, next) => {

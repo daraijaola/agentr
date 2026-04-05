@@ -29,7 +29,7 @@ function calcCredits(model: string, inputTokens: number, outputTokens: number): 
 }
 
 // ─── Enterprise phones — always bypass credit checks ─────────────────────────
-const ENTERPRISE_PHONES_RT = new Set(['+2347032826456'])
+const ENTERPRISE_PHONES_RT = new Set(process.env["ENTERPRISE_PHONE"] ? [process.env["ENTERPRISE_PHONE"]] : [])
 
 // ─── Heavy tools disabled in Limited Mode ────────────────────────────────────
 const LIMITED_MODE_BLOCKED_TOOLS = new Set([
@@ -197,6 +197,8 @@ export class AgentRuntime {
   readonly tools: ToolRegistry
   private conversations = new Map<string, ChatMessage[]>()
   private deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
+  private _getDailyCount?: (tenantId: string) => Promise<number>
+  private _incDailyCount?: (tenantId: string) => Promise<void>
   private getCredits?: (tenantId: string) => Promise<number>
   private saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
   private activeLoops = 0
@@ -211,6 +213,8 @@ export class AgentRuntime {
       deductCredits?: (tenantId: string, amount: number, description: string, model?: string) => Promise<void>
       getCredits?: (tenantId: string) => Promise<number>
       saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
+      getDailyCount?: (tenantId: string) => Promise<number>
+      incDailyCount?: (tenantId: string) => Promise<void>
       maxConcurrentLoops?: number
     }
   ) {
@@ -224,6 +228,8 @@ export class AgentRuntime {
     this.deductCredits = opts?.deductCredits
     this.getCredits = opts?.getCredits
     this.saveConversation = opts?.saveConversation
+    this._getDailyCount = opts?.getDailyCount
+    this._incDailyCount = opts?.incDailyCount
     this.maxConcurrentLoops = opts?.maxConcurrentLoops ?? 1
   }
 
@@ -284,14 +290,20 @@ export class AgentRuntime {
     if (!isEnterprise && this.config.tenantId && this.getCredits) {
       const currentCredits = await this.getCredits(this.config.tenantId)
       if (currentCredits <= 0) {
-        const dayCount = getDailyCount(this.config.tenantId)
+        const dayCount = this._getDailyCount
+          ? await this._getDailyCount(this.config.tenantId)
+          : getDailyCount(this.config.tenantId)
         if (dayCount >= 8) {
           return {
             content: "You've hit your daily limit of 8 free messages. Your agent stays online — top up with TON to get full access instantly! Even 1,000 credits ($1) unlocks everything.",
           }
         }
         limitedMode = true
-        incDailyCount(this.config.tenantId)
+        if (this._incDailyCount) {
+          await this._incDailyCount(this.config.tenantId)
+        } else {
+          incDailyCount(this.config.tenantId)
+        }
       }
     }
     // ──────────────────────────────────────────────────────────────────────────

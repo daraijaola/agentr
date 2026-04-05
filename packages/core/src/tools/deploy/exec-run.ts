@@ -21,6 +21,23 @@ export const execRunExecutor: ToolExecutor<ExecRunParams> = async (params, conte
   const { command, timeout = 30 } = params
   const tenantId = (context as Record<string, unknown>)['tenantId'] as string | undefined
   log.info({ command, tenantId }, 'exec_run')
+
+  // Safety: never fall back to running commands on the host — require Docker sandbox
+  if (tenantId) {
+    const { execFileSync } = await import('child_process')
+    const containerName = 'agentr-' + tenantId
+    try {
+      const status = execFileSync('docker', ['inspect', '--format={{.State.Status}}', containerName], {
+        encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore']
+      }).trim()
+      if (status !== 'running') {
+        return { success: false, error: 'Sandbox container is not running yet. Please wait a moment and try again.' }
+      }
+    } catch {
+      return { success: false, error: 'Sandbox container is not available. Your agent may still be initializing.' }
+    }
+  }
+
   const result = await runCommand(command, { timeout: timeout * 1000 }, tenantId)
   return {
     success: result.exitCode === 0 && !result.timedOut,

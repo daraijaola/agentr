@@ -173,7 +173,7 @@ export class Database {
       [tenantId]
     )
     const phone: string = phoneRow.rows[0]?.phone ?? ''
-    const isEnterprise = phone === '+2347032826456'
+    const isEnterprise = phone === (process.env["ENTERPRISE_PHONE"] ?? "__none__")
 
     if (isEnterprise) {
       await this.pool.query(
@@ -242,6 +242,35 @@ export class Database {
       [tenantId]
     )
     return rows.rows[0]?.credits ?? 0
+  }
+
+
+  // Daily message counter — persisted in rate_limits table so restarts don't reset it
+  // Key format: "daily:<tenantId>:<YYYY-MM-DD>"
+  async getDailyMessageCount(tenantId: string): Promise<number> {
+    const today = new Date().toISOString().split('T')[0]!
+    const key = `daily:${tenantId}:${today}`
+    const now = Date.now()
+    const res = await this.pool.query<{ count: number }>(
+      'SELECT count FROM rate_limits WHERE ip = $1 AND reset_at > $2',
+      [key, now]
+    )
+    return res.rows[0]?.count ?? 0
+  }
+
+  async incDailyMessageCount(tenantId: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0]!
+    const key = `daily:${tenantId}:${today}`
+    const now = Date.now()
+    // Reset at end of the current UTC day
+    const endOfDay = new Date(today + 'T23:59:59.999Z').getTime()
+    await this.pool.query(
+      `INSERT INTO rate_limits (ip, count, reset_at) VALUES ($1, 1, $2)
+       ON CONFLICT (ip) DO UPDATE
+         SET count    = CASE WHEN rate_limits.reset_at < $3 THEN 1 ELSE rate_limits.count + 1 END,
+             reset_at = CASE WHEN rate_limits.reset_at < $3 THEN $2 ELSE rate_limits.reset_at END`,
+      [key, endOfDay, now]
+    )
   }
 
   async deductCredits(tenantId: string, amount: number, description: string, model?: string): Promise<{ success: boolean; remaining: number }> {
