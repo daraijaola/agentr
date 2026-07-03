@@ -77,13 +77,20 @@ agentRoutes.get('/status/:tenantId', async (c) => {
   try {
     const db = agentFactory.getDb()
     const rows = await db.query<any>(
-      `SELECT ai.status, t.owner_name, t.owner_username, t.wallet_address,
+      `SELECT COALESCE(ai.status, 'stopped') AS status, t.owner_name, t.owner_username, t.wallet_address,
               t.phone, t.plan, t.credits, t.plan_expires_at, t.grace_until, t.preferred_model
-       FROM agent_instances ai JOIN tenants t ON t.id = ai.tenant_id
-       WHERE ai.tenant_id = $1 ORDER BY ai.created_at DESC LIMIT 1`,
+       FROM tenants t
+       LEFT JOIN LATERAL (
+         SELECT status, created_at
+         FROM agent_instances
+         WHERE tenant_id = t.id
+         ORDER BY created_at DESC
+         LIMIT 1
+       ) ai ON TRUE
+       WHERE t.id = $1`,
       [tenantId]
     )
-    if (!(rows as any[]).length) return c.json({ status: 'offline', tenantId })
+    if (!(rows as any[]).length) return c.json({ status: 'missing', tenantId, error: 'Tenant not found' }, 404)
     const row = (rows as any[])[0]
     const isOnline = row.status === 'running'
     const ENTERPRISE_PHONES_API = process.env["ENTERPRISE_PHONE"] ? [process.env["ENTERPRISE_PHONE"]!] : []

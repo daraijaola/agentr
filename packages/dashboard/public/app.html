@@ -1688,6 +1688,20 @@ function handleAuthError() {
   show('phone')
 }
 
+function handleMissingTenant() {
+  const oldPhone = STATE.phone || ''
+  localStorage.removeItem('agentr_tenant')
+  STATE = { phone: oldPhone, tenantId:'', phoneCodeHash:'', token:'', walletAddress:'', username:'', firstName:'', provider:'btl', devToken:'', dmPolicy:'contacts' }
+  const msg = document.getElementById('phone-error')
+  if (msg) {
+    msg.textContent = 'Your saved dashboard session expired. Sign in again to reload your real agent stats.'
+    msg.style.display = 'block'
+  }
+  const phoneInput = document.getElementById('phone-input')
+  if (phoneInput && oldPhone) phoneInput.value = oldPhone
+  show('phone')
+}
+
 // ─── SCREEN MANAGEMENT ───────────────────────────
 function show(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
@@ -1866,7 +1880,11 @@ async function goDashboard() {
 
   // Load live status from API
   try {
-    const status = await fetch(API + '/agent/status/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
+    const statusRes = await fetch(API + '/agent/status/' + STATE.tenantId, { headers: authGetHdr() })
+    if (statusRes.status === 401 || statusRes.status === 403) { handleAuthError(); return }
+    if (statusRes.status === 404) { handleMissingTenant(); return }
+    const status = await statusRes.json()
+    if (status.status === 'missing' || status.error === 'Tenant not found') { handleMissingTenant(); return }
     if (status.walletAddress) {
       STATE.walletAddress = status.walletAddress
       document.getElementById('wallet-addr').textContent = status.walletAddress
@@ -1881,7 +1899,7 @@ async function goDashboard() {
       const planPill = document.getElementById('ov-plan-pill')
       if (planPill) { planPill.textContent = status.planName || status.plan; planPill.className = 'dash-plan-pill plan-' + status.plan }
       const planMod = document.getElementById('ov-plan-model')
-      if (planMod) planMod.textContent = status.planModel || 'Haiku 4.5'
+      if (planMod) planMod.textContent = status.planModel || 'BTL-2'
       const modName = document.getElementById('ov-model-name')
       if (modName) modName.textContent = status.preferredModel ? (MODELS.find(function(m){return m.id===status.preferredModel})||{name:status.planModel||'BTL-2'}).name : (status.planModel || 'BTL-2')
       const modPlan = document.getElementById('ov-model-plan')
@@ -1897,7 +1915,7 @@ async function goDashboard() {
     const credPill = document.getElementById('cred-plan-pill')
     if (credPill && status.plan) { credPill.textContent = status.planName || status.plan; credPill.className = 'dash-plan-pill plan-' + status.plan }
     const credModel = document.getElementById('cred-model-name')
-    if (credModel) credModel.textContent = status.planModel || 'Haiku 4.5'
+    if (credModel) credModel.textContent = status.planModel || 'BTL-2'
     const credLimitLbl = document.getElementById('cred-limit-label')
     if (credLimitLbl) credLimitLbl.textContent = Number(status.planLimit || 1000).toLocaleString()
     window._planLimit = status.planLimit || 1000
