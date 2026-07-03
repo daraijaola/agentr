@@ -1471,7 +1471,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <div class="cr-chat-tab active">Chat</div>
               <div class="cr-chat-tab" style="opacity:.5">History</div>
               <div class="cr-spacer"></div>
-              <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--cr-txt3)" id="cr-model-label">AIR</span>
+              <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--cr-txt3)" id="cr-model-label">BTL</span>
               <button class="cr-icon-btn" onclick="crClearSession()" title="Clear session">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
@@ -1481,7 +1481,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <div class="cr-msg">
                 <div class="cr-msg-hdr">
                   <div class="cr-avatar ai">A</div>
-                  <span class="cr-msg-name">AIR</span>
+                  <span class="cr-msg-name">BTL</span>
                   <span class="cr-msg-time">just now</span>
                 </div>
                 <div class="cr-msg-body">
@@ -1516,7 +1516,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
                 <div class="cr-composer-footer">
                   <div class="cr-model-badge" onclick="crOpenModal()">
                     <div class="cr-model-dot" id="cr-dot"></div>
-                    <span id="cr-model-name">AIR</span>
+                    <span id="cr-model-name">BTL</span>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                   </div>
                   <div class="cr-spacer"></div>
@@ -1544,7 +1544,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
             TON Mainnet
           </div>
           <span class="cr-sep">|</span>
-          <div class="cr-si" id="cr-sb-model">AIR · CREDITS</div>
+          <div class="cr-si" id="cr-sb-model">BTL · CREDITS</div>
           <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
             <div class="cr-si" id="cr-sb-user" style="color:rgba(255,255,255,.9)">AGENTR</div>
           </div>
@@ -2438,7 +2438,7 @@ function initCoderTab() {
   const savedModel = localStorage.getItem('cr_model')
   if (savedModel) {
     const map = {
-      'air':['air','AIR','AIR · CREDITS'],
+      'air':['air','BTL','BTL · CREDITS'],
       'claude-sonnet':['claude-sonnet','Claude Sonnet','Sonnet · CREDITS'],
       'codex':['codex','o4-mini','o4-mini · CREDITS'],
     }
