@@ -127,6 +127,47 @@ function trimToFit(messages) {
     }
     return msgs;
 }
+/** Shrink the full request body (system prompt + messages + tool schemas) to stay
+ *  under the gateway's request-size limit. Applied in order:
+ *  1. Truncate long tool descriptions
+ *  2. Strip per-parameter descriptions from tool schemas
+ *  3. Drop oldest non-system messages (keeping the last user message) */
+function shrinkBodyToFit(body) {
+    const size = () => Buffer.byteLength(JSON.stringify(body), 'utf8');
+    if (size() <= MAX_INPUT_BYTES)
+        return;
+    if (Array.isArray(body.tools)) {
+        body.tools = body.tools.map((t) => ({
+            ...t,
+            function: { ...t.function, description: String(t.function?.description ?? '').slice(0, 160) },
+        }));
+    }
+    if (size() <= MAX_INPUT_BYTES)
+        return;
+    if (Array.isArray(body.tools)) {
+        const stripDesc = (node) => {
+            if (!node || typeof node !== 'object')
+                return node;
+            if (Array.isArray(node))
+                return node.map(stripDesc);
+            const out = {};
+            for (const [k, v] of Object.entries(node)) {
+                if (k === 'description')
+                    continue;
+                out[k] = stripDesc(v);
+            }
+            return out;
+        };
+        body.tools = body.tools.map((t) => ({
+            ...t,
+            function: { ...t.function, parameters: stripDesc(t.function?.parameters) },
+        }));
+    }
+    while (size() > MAX_INPUT_BYTES && Array.isArray(body.messages) && body.messages.length > 3) {
+        const dropStart = body.messages[0]?.role === 'system' ? 1 : 0;
+        body.messages.splice(dropStart, 1);
+    }
+}
 /** Convert OpenAI-style message history to AIR-compatible format.
  *  AIR routes to Claude which rejects role:"tool" — flatten tool results into role:"user".
  *  IMPORTANT: Tool results are marked as INTERNAL_TOOL_RESULT so the LLM knows NOT to echo
@@ -322,6 +363,7 @@ export class LLMClient {
             }));
             body.tool_choice = 'auto';
         }
+        shrinkBodyToFit(body);
         const res = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: {
