@@ -229,11 +229,13 @@ export class TelegramUserClient {
   onMessage(
     handler: (event: NewMessageEvent) => void | Promise<void>,
     filters?: { incoming?: boolean; outgoing?: boolean; pattern?: RegExp }
-  ): void {
-    this.client.addEventHandler(
-      async (event: NewMessageEvent) => { await handler(event) },
-      new NewMessage(filters ?? {})
-    )
+  ): () => void {
+    const wrapped = async (event: NewMessageEvent) => { await handler(event) }
+    const eventBuilder = new NewMessage(filters ?? {})
+    this.client.addEventHandler(wrapped, eventBuilder)
+    return () => {
+      try { this.client.removeEventHandler(wrapped, eventBuilder) } catch {}
+    }
   }
 
   //  Actions

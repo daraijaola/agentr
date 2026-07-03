@@ -298,6 +298,7 @@ export class AgentRuntime {
   private _incDailyCount?: (tenantId: string) => Promise<void>
   private getCredits?: (tenantId: string) => Promise<number>
   private saveConversation?: (tenantId: string, chatId: string, messages: unknown[]) => Promise<void>
+  private activeInboundChatId?: string
   private activeLoops = 0
   private readonly maxConcurrentLoops: number
   /** Optional override — when set, replaces the default system prompt builder */
@@ -319,7 +320,17 @@ export class AgentRuntime {
     this.tools = new ToolRegistry()
     // Wire session stability: rate limit + jitter + health scoring per tool call
     const _tenantId = config.tenantId
-    this.tools.setExecuteHook(async (name, execute) => {
+    this.tools.setExecuteHook(async (name, execute, params) => {
+      if (
+        name === 'telegram_send_message' &&
+        this.activeInboundChatId &&
+        String(params['chatId'] ?? '') === this.activeInboundChatId
+      ) {
+        return {
+          success: false,
+          error: 'Do not use telegram_send_message to reply to the current chat. Put the reply in your final assistant response instead.',
+        }
+      }
       return routedExecute(name, _tenantId, execute)
     })
     this.deductCredits = opts?.deductCredits
@@ -405,6 +416,7 @@ export class AgentRuntime {
     }
     // ──────────────────────────────────────────────────────────────────────────
     const { chatId, userMessage, userName } = opts
+    this.activeInboundChatId = chatId
     const envelope = userName ? `[${userName}] ${userMessage}` : userMessage
     const histMessages = stripReasoning(this.hist(chatId))
     const trimmedHist = histMessages.length > 30 ? histMessages.slice(-30) : histMessages

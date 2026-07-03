@@ -2,7 +2,11 @@ import type { ToolResult } from '../types/index.js'
 
 export type ToolFn = (params: Record<string, unknown>) => Promise<ToolResult>
 
-export type ExecuteHook = (name: string, execute: () => Promise<ToolResult>) => Promise<ToolResult>
+export type ExecuteHook = (
+  name: string,
+  execute: () => Promise<ToolResult>,
+  params: Record<string, unknown>
+) => Promise<ToolResult>
 
 export interface Tool {
   name: string
@@ -43,7 +47,7 @@ export class ToolRegistry {
       catch (err) { return { success: false, error: String(err) } }
     }
     try {
-      if (this.executeHook) return await this.executeHook(name, run)
+      if (this.executeHook) return await this.executeHook(name, run, params)
       return await run()
     } catch (err) {
       return { success: false, error: String(err) }

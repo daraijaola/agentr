@@ -7,6 +7,7 @@ import type { NewMessageEvent } from 'telegram/events/NewMessage.js'
 
 const TYPING_DELAY_MS = 500
 const processingMessages = new Set<string>()
+const listenerDisposers = new Map<string, () => void>()
 
 // Per-client contact-ID cache with a 5-minute TTL to avoid repeated API calls
 const contactCache = new Map<string, { ids: Set<string>; expiresAt: number }>()
@@ -94,6 +95,13 @@ export function attachMessageListener(
   client: TelegramUserClient,
   runtime: AgentRuntime
 ): void {
+  const previous = listenerDisposers.get(tenantId)
+  if (previous) {
+    previous()
+    listenerDisposers.delete(tenantId)
+    console.log('[Listener:' + tenantId + '] Detached previous handler')
+  }
+
   const me = client.getMe()
 
   // Message debouncer — batches rapid messages, sends typing indicator
@@ -187,7 +195,7 @@ export function attachMessageListener(
   })
 
 
-  client.onMessage(
+  const dispose = client.onMessage(
     async (event: NewMessageEvent) => {
       try {
         const msg = event.message
@@ -195,6 +203,14 @@ export function attachMessageListener(
 
         const senderId = msg.senderId?.toString() ?? ""
         if (senderId === me?.id?.toString()) return
+
+        const msgKey = tenantId + '-' + String(msg.chatId) + '-' + String(msg.id)
+        if (processingMessages.has(msgKey)) {
+          console.log('[Listener:' + tenantId + '] Skipped duplicate event: ' + msgKey)
+          return
+        }
+        processingMessages.add(msgKey)
+        setTimeout(() => processingMessages.delete(msgKey), 30000)
 
         // Ignore BotFather and all bots before any group/reply routing.
         // This prevents bot-to-bot loops when another bot replies to the agent.
@@ -208,11 +224,6 @@ export function attachMessageListener(
           console.log('[Listener:' + tenantId + '] Blocked bot entity: ' + senderId)
           return
         }
-
-        const msgKey = String(msg.chatId) + '-' + String(msg.id)
-        if (processingMessages.has(msgKey)) return
-        processingMessages.add(msgKey)
-        setTimeout(() => processingMessages.delete(msgKey), 30000)
 
         const isPrivate = Boolean(msg.peerId && 'userId' in msg.peerId)
         const isGroup = !isPrivate
@@ -294,6 +305,7 @@ export function attachMessageListener(
     },
     { incoming: true }
   )
+  listenerDisposers.set(tenantId, dispose)
 
   console.log('[Listener:' + tenantId + '] Attached')
 }
