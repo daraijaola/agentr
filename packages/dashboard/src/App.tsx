@@ -59,14 +59,14 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const [copied, setCopied] = useState(false)
   const [setupData, setSetupData] = useState({ agentName: '', ownerName: '', ownerUsername: '', dmPolicy: 'everyone' })
   const [liveTab, setLiveTab] = useState<LiveTab>('overview')
-  const [provider, setProvider] = useState('claude')
+  const [provider, setProvider] = useState('btl')
   const [switchingProvider, setSwitchingProvider] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [agentPlan, setAgentPlan] = useState<string>('free')
-  const [agentModel, setAgentModel] = useState<string>('Haiku 4.5')
-  const [planLimit, setPlanLimit] = useState<number>(500)
+  const [agentModel, setAgentModel] = useState<string>('BTL-2')
+  const [planLimit, setPlanLimit] = useState<number>(1000)
 
   const API = detectApiBase()
 
@@ -83,7 +83,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       try {
         const a = JSON.parse(saved)
         setAgent(a)
-        setProvider(a.provider ?? 'claude')
+        setProvider(a.provider ?? 'btl')
         setScreen('live')
         // Restore active tab from URL path on hard refresh
         const _path = typeof window !== 'undefined' ? window.location.pathname : '/'
@@ -95,7 +95,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
             setAgent(updated)
             localStorage.setItem('agentr_tenant', JSON.stringify(updated))
           }
-          if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'Haiku 4.5'); setPlanLimit(d.planLimit ?? 500) }
+          if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'BTL-2'); setPlanLimit(d.planLimit ?? 1000) }
           if (typeof d.credits === 'number') setCredits(d.credits)
         }).catch(() => {})
       } catch {
@@ -120,7 +120,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       .catch(() => {})
     apiGet('/agent/status/' + agent.tenantId)
       .then((d) => {
-        if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'Haiku 4.5'); setPlanLimit(d.planLimit ?? 500) }
+        if (d.plan) { setAgentPlan(d.plan); setAgentModel(d.planModel ?? 'BTL-2'); setPlanLimit(d.planLimit ?? 1000) }
         if (typeof d.credits === 'number') setCredits(d.credits)
       }).catch(() => {})
   }, [screen, agent])
@@ -287,24 +287,21 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       try {
         const a = JSON.parse(saved)
         const d = await apiGet('/agent/status/' + a.tenantId)
-        if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'claude'); setScreen('live'); return }
+        if (d.status === 'online') { setAgent(a); setProvider(a.provider ?? 'btl'); setScreen('live'); return }
       } catch {}
     }
     setScreen('phone')
   }
 
   const PLANS = [
-    { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, cta: 'Start free', note: 'No credit card required.', features: ['24hr full access', 'AIR — 10+ models', 'TON wallet included', '129 tools'] },
-    { id: 'starter', name: 'Starter', price: '$9', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['1,200 credits/mo', 'All models', 'Bots & mini apps', 'TON payments', 'Cocoon hosting'] },
-    { id: 'pro', name: 'Pro', price: '$19', period: 'mo', highlight: true, cta: 'Subscribe', note: '', features: ['2,800 credits/mo', 'All models', 'Sub-agents (soon)', 'TON Sites & DNS', 'Marketplace'] },
-    { id: 'elite', name: 'Elite', price: '$35', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['6,000 credits/mo', 'All models priority', 'Swarm mode', 'Publish agents & earn 75%', 'Dedicated support'] },
+    { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, cta: 'Start free', note: 'No credit card required.', features: ['1,000 free credits', 'BTL-2 via BTL Runtime', 'Own Docker workspace', '129 tools'] },
+    { id: 'starter', name: 'Starter', price: '$15', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['12,000 credits/mo', 'DeepSeek V4 Flash', 'Bots & mini apps', 'TON payments', 'Cocoon hosting'] },
+    { id: 'pro', name: 'Pro', price: '$29', period: 'mo', highlight: true, cta: 'Subscribe', note: '', features: ['32,000 credits/mo', 'DeepSeek V4 Pro', 'Sub-agents (soon)', 'TON Sites & DNS', 'Marketplace'] },
+    { id: 'elite', name: 'Elite', price: '$49', period: 'mo', highlight: false, cta: 'Subscribe', note: '', features: ['80,000 credits/mo', 'BTL priority routing', 'Swarm mode', 'Publish agents & earn 75%', 'Dedicated support'] },
   ]
 
   const PROVIDERS = [
-    { id: 'air', name: 'AIR', sub: 'AGENTR\'s AI — 10+ models', img: null, available: true },
-    { id: 'claude', name: 'Claude', sub: 'Exceptional reasoning', img: '/claude.webp', available: true },
-    { id: 'openai', name: 'ChatGPT', sub: 'GPT-4o, full API', img: '/openai.webp', available: true },
-    { id: 'gemini', name: 'Gemini', sub: 'Multimodal intelligence', img: '/gemini.webp', available: true },
+    { id: 'btl', name: 'BTL Runtime', sub: 'BTL-2 + DeepSeek routes', img: null, available: true },
   ]
 
   return (
@@ -339,7 +336,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
           {/* ── HERO ── */}
           <div className="hero">
             <div className="hero-left">
-              <div className="hero-tag"><div className="tag-dot" />Now live on TON Mainnet</div>
+            <div className="hero-tag"><div className="tag-dot" />Powered by BTL Runtime on TON Mainnet</div>
               <h1 className="hero-h1">Your personal AI agent,<br />running <em>inside Telegram.</em></h1>
               <p className="hero-p">Connect your Telegram account and get a 24/7 AI agent that builds bots, deploys code, manages your TON wallet, and executes tasks — all through plain conversation. No terminal. No code.</p>
               <div className="hero-actions">
@@ -384,9 +381,9 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
 
           {/* ── AI PROVIDERS ── */}
           <div className="ai-section">
-            <div className="ai-label">Powered by leading AI models</div>
+            <div className="ai-label">Powered by BTL Runtime</div>
             <div className="ai-logos">
-              {[{ src: '/claude.webp', name: 'Claude' }, { src: '/openai.webp', name: 'OpenAI' }, { src: '/gemini.webp', name: 'Gemini' }, { src: '/kimi.webp', name: 'Kimi' }].map((ai) => (
+              {[{ src: '/openai.webp', name: 'BTL-2' }, { src: '/kimi.webp', name: 'DeepSeek V4 Flash' }, { src: '/openai.webp', name: 'DeepSeek V4 Pro' }].map((ai) => (
                 <div className="ai-logo-item" key={ai.name}>
                   <div className="ai-logo-box"><img src={ai.src} alt={ai.name} /></div>
                   <span className="ai-logo-name">{ai.name}</span>
@@ -430,10 +427,10 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
               </div>
               <div className="plans-grid">
                 {[
-                  { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['24hr full access', 'AIR · Claude · GPT-4o', 'TON wallet included', '129 tools available'] },
-                  { id: 'starter', name: 'Starter', price: '$9', period: '/mo', highlight: false, note: '', features: ['1,200 credits/mo', 'All AI models', 'Bot deployment', 'TON payments'] },
-                  { id: 'pro', name: 'Pro', price: '$19', period: '/mo', highlight: true, note: '', features: ['2,800 credits/mo', 'All AI models', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
-                  { id: 'elite', name: 'Elite', price: '$35', period: '/mo', highlight: false, note: '', features: ['6,000 credits/mo', 'Priority models', 'Publish agents & earn', 'Dedicated support'] },
+                  { id: 'free', name: 'Free Trial', price: 'Free', period: '1 day', highlight: false, note: 'No credit card required', features: ['1,000 free credits', 'BTL-2 via BTL Runtime', 'TON wallet included', '129 tools available'] },
+                  { id: 'starter', name: 'Starter', price: '$15', period: '/mo', highlight: false, note: '', features: ['12,000 credits/mo', 'DeepSeek V4 Flash', 'Bot deployment', 'TON payments'] },
+                  { id: 'pro', name: 'Pro', price: '$29', period: '/mo', highlight: true, note: '', features: ['32,000 credits/mo', 'DeepSeek V4 Pro', 'Swarm agents', 'TON Sites & DNS', 'Marketplace access'] },
+                  { id: 'elite', name: 'Elite', price: '$49', period: '/mo', highlight: false, note: '', features: ['80,000 credits/mo', 'BTL priority routing', 'Publish agents & earn', 'Dedicated support'] },
                 ].map((plan) => (
                   <div key={plan.id} className={`plan-card${plan.highlight ? ' highlight' : ''}`}>
                     {plan.highlight && <div className="plan-badge">Most popular</div>}
@@ -459,7 +456,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
           <div className="landing-footer">
             <div className="landing-footer-brand">
               <div className="logo" style={{ fontSize: 15 }}>AGENT<em>R</em></div>
-              <div style={{ fontSize: 12, color: 'var(--text3)' }}>AI Agent Factory on TON · © 2026</div>
+              <div style={{ fontSize: 12, color: 'var(--text3)' }}>AI Agent Factory on TON · Powered by BTL Runtime · © 2026</div>
             </div>
             <div className="landing-footer-links">
               <a href="https://github.com/daraijaola/agentr" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--text2)', textDecoration: 'none' }}>GitHub</a>

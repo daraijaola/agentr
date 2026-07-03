@@ -37,45 +37,30 @@ export interface ChatResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // BTL runtime LLM client — sole provider for AGENTR
-// 6 models served by the BTL runtime gateway, split across plans
+// BTL Runtime routes are split by plan so the dashboard and backend agree.
 const AIR_MODELS = {
-    // BTL Runtime Hackathon DeepSeek route
-    BTL2:       'btl-2',
-    // Free
-    HAIKU:      'claude-haiku-4-5',
-    GPT5_NANO:  'gpt-5-nano',
-    // Starter
-    GPT4O_MINI: 'gpt-4o-mini',
-    GPT5_MINI:  'gpt-5-mini',
-    // Pro
-    GPT54:      'gpt-5.4',
-    // Elite
-    OPUS_8:     'claude-opus-4-8',
+    BTL2:           'btl-2',
+    DEEPSEEK_FLASH: 'deepseek-v4-flash',
+    DEEPSEEK_PRO:   'deepseek-v4-pro',
+    DEEPSEEK_R1:    'deepseek-r1-0528',
 };
 // Plan model splits — each tier adds to the one below
 const PLAN_MODELS: Record<string, string[]> = {
-    free:       [AIR_MODELS.BTL2, AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT54, AIR_MODELS.OPUS_8],
-    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
-                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI],
-    pro:        [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
-                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.GPT54],
-    ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
-                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.GPT54],
-    elite:      [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
-                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.GPT54, AIR_MODELS.OPUS_8],
+    free:       [AIR_MODELS.BTL2],
+    starter:    [AIR_MODELS.BTL2, AIR_MODELS.DEEPSEEK_FLASH],
+    pro:        [AIR_MODELS.BTL2, AIR_MODELS.DEEPSEEK_FLASH, AIR_MODELS.DEEPSEEK_PRO],
+    ultra:      [AIR_MODELS.BTL2, AIR_MODELS.DEEPSEEK_FLASH, AIR_MODELS.DEEPSEEK_PRO],
+    elite:      [AIR_MODELS.BTL2, AIR_MODELS.DEEPSEEK_FLASH, AIR_MODELS.DEEPSEEK_PRO, AIR_MODELS.DEEPSEEK_R1],
     enterprise: Object.values(AIR_MODELS),
 };
 // Default model per plan
 const PLAN_DEFAULTS: Record<string, string> = {
     free:       AIR_MODELS.BTL2,
-    starter:    AIR_MODELS.GPT5_MINI,
-    pro:        AIR_MODELS.GPT54,
-    ultra:      AIR_MODELS.GPT54,
-    elite:      AIR_MODELS.OPUS_8,
-    enterprise: AIR_MODELS.OPUS_8,
+    starter:    AIR_MODELS.DEEPSEEK_FLASH,
+    pro:        AIR_MODELS.DEEPSEEK_PRO,
+    ultra:      AIR_MODELS.DEEPSEEK_PRO,
+    elite:      AIR_MODELS.DEEPSEEK_PRO,
+    enterprise: AIR_MODELS.DEEPSEEK_PRO,
 };
 function isReasoningModel(model: string): boolean {
     return /^(gpt-5|o\d)/.test(model);
@@ -360,7 +345,7 @@ export class LLMClient {
     getProvider() { return 'air'; }
     async chat(options) {
         const plan = this.config.plan ?? 'free';
-        const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.HAIKU;
+        const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.BTL2;
         checkPlanAccess(this.config, model);
         // Build message list (system + history), strip reasoning_content artifacts
         // trimToFit compresses or drops old messages to stay under the 100 KB AIR limit

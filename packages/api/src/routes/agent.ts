@@ -91,36 +91,36 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       ? 'enterprise'
       : (row.plan ?? 'free')
     const PLAN_MODEL: Record<string,string> = {
-      free: 'Claude Haiku 4.5', starter: 'GPT-5 mini', pro: 'GPT-5.4',
-      ultra: 'GPT-5.4', elite: 'Claude Opus 4.8', enterprise: 'Claude Opus 4.8',
+      free: 'BTL-2', starter: 'DeepSeek V4 Flash', pro: 'DeepSeek V4 Pro',
+      ultra: 'DeepSeek V4 Pro', elite: 'DeepSeek V4 Pro', enterprise: 'DeepSeek V4 Pro',
     }
     const MODEL_DISPLAY: Record<string,string> = {
-      'claude-haiku-4-5':   'Claude Haiku 4.5',
-      'gpt-5-nano':         'GPT-5 nano',
-      'gpt-4o-mini':        'GPT-4o mini',
-      'gpt-5-mini':         'GPT-5 mini',
-      'gpt-5.4':            'GPT-5.4',
-      'claude-opus-4-8':    'Claude Opus 4.8',
+      'btl-2':              'BTL-2',
+      'deepseek-v4-flash':  'DeepSeek V4 Flash',
+      'deepseek-v4-pro':    'DeepSeek V4 Pro',
+      'deepseek-r1-0528':   'DeepSeek R1 0528',
     }
     const PLAN_NAME: Record<string,string> = {
       free: 'Free', starter: 'Starter', pro: 'Pro',
       ultra: 'Ultra', elite: 'Elite', enterprise: 'Enterprise',
     }
     const PLAN_LIMIT: Record<string,number> = {
-      free: 1000, starter: 1200, pro: 2800, ultra: 4000, elite: 6000, enterprise: 50000,
+      free: 1000, starter: 12000, pro: 32000, ultra: 50000, elite: 80000, enterprise: 50000,
     }
     const preferredModelId: string | null = row.preferred_model ?? null
     const resolvedModelName = preferredModelId
       ? (MODEL_DISPLAY[preferredModelId] ?? preferredModelId)
-      : (PLAN_MODEL[planKey] ?? 'Claude Haiku 4.5')
+      : (PLAN_MODEL[planKey] ?? 'BTL-2')
     return c.json({
       status: isOnline ? 'online' : 'offline',
       tenantId,
       plan: planKey,
       planName: PLAN_NAME[planKey] ?? planKey,
       planModel: resolvedModelName,
-      planModelDefault: PLAN_MODEL[planKey] ?? 'Claude Haiku 4.5',
+      planModelDefault: PLAN_MODEL[planKey] ?? 'BTL-2',
       planLimit: PLAN_LIMIT[planKey] ?? 1000,
+      billingWallet: process.env['AGENTR_BILLING_WALLET'] ?? 'UQAKcLE05XnFDeVVDxRHnBNzxFHsYNojckqJCdCsL32qmy2M',
+      poweredBy: 'BTL Runtime',
       credits: row.credits ?? 0,
       planExpiresAt: row.plan_expires_at ?? null,
       graceUntil: row.grace_until ?? null,
@@ -205,12 +205,9 @@ agentRoutes.post(
     tenantId: z.string(),
     model: z.enum([
       'btl-2',
-      'claude-haiku-4-5',
-      'gpt-5-nano',
-      'gpt-4o-mini',
-      'gpt-5-mini',
-      'gpt-5.4',
-      'claude-opus-4-8',
+      'deepseek-v4-flash',
+      'deepseek-v4-pro',
+      'deepseek-r1-0528',
     ]).optional(),
     // legacy field — kept for backward compat, ignored
     provider: z.string().optional(),

@@ -44,11 +44,10 @@ const CREDIT_PACKS = [
 ]
 
 const MODEL_COSTS: { action: string; cost: string; note: string }[] = [
-  { action: 'Chat — Haiku 4.5',      cost: '~2 cr/1k tokens',  note: '$0.002/1k' },
-  { action: 'Chat — Flash-Lite',     cost: '~0.8 cr/1k tokens', note: '$0.0008/1k' },
-  { action: 'Chat — Sonnet 4.6',     cost: '~18 cr/1k tokens', note: '$0.018/1k' },
-  { action: 'Chat — Opus 4.6',       cost: '~30 cr/1k tokens', note: '$0.030/1k' },
-  { action: 'Chat — GPT-4o',         cost: '~12.5 cr/1k tokens', note: '$0.0125/1k' },
+  { action: 'Chat — BTL-2',              cost: '~1 cr/1k tokens', note: 'BTL Runtime blended route' },
+  { action: 'Chat — DeepSeek V4 Flash',  cost: '~1 cr/1k tokens', note: '$0.00009 in / $0.00018 out per 1k' },
+  { action: 'Chat — DeepSeek V4 Pro',    cost: '~2 cr/1k tokens', note: '$0.000435 in / $0.00087 out per 1k' },
+  { action: 'Chat — DeepSeek R1 0528',   cost: '~4 cr/1k tokens', note: '$0.0005 in / $0.00215 out per 1k' },
 ]
 
 export function CreditsTab({ tenantId, tonWallet, tonConnectUI }: Props) {
@@ -71,8 +70,8 @@ export function CreditsTab({ tenantId, tonWallet, tonConnectUI }: Props) {
 
   const plan = statusData?.plan ?? 'free'
   const planName = statusData?.planName ?? (plan.charAt(0).toUpperCase() + plan.slice(1))
-  const planModel = statusData?.planModel ?? 'Haiku 4.5'
-  const planLimit = statusData?.planLimit ?? 500
+  const planModel = statusData?.planModel ?? 'BTL-2'
+  const planLimit = statusData?.planLimit ?? 1000
   const credits = data.credits
   const pct = Math.min(100, Math.round((credits / planLimit) * 100))
   const planColor = PLAN_COLORS[plan] ?? PLAN_COLORS.free
@@ -196,6 +195,9 @@ export function CreditsTab({ tenantId, tonWallet, tonConnectUI }: Props) {
             Connect your TON wallet above to pay with TON.
           </div>
         )}
+        <div style={{ fontSize: 12, color: 'var(--text2)', padding: '10px 14px', background: 'var(--bg2)', borderRadius: 8, wordBreak: 'break-all' }}>
+          Payments go to AGENTR billing wallet: {statusData?.billingWallet ?? AGENTR_WALLET}
+        </div>
       </div>
 
       {/* ── Model cost reference ── */}

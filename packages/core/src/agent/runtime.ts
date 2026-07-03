@@ -8,14 +8,12 @@ import { buildSystemPrompt } from './prompts/system.js'
 import { sessionManager } from '../session/manager.js'
 import { routedExecute } from '../tools/telegram/router.js'
 
-// ─── Credit cost per 1 000 tokens by model (April 2026 pricing) ─────────────
+// ─── Credit cost per 1 000 tokens by BTL Runtime model ──────────────────────
 const MODEL_CREDITS_PER_1K: Record<string, number> = {
-  'claude-haiku-4-5':    2,
-  'gpt-5-nano':           1,
-  'gpt-4o-mini':          1,
-  'gpt-5-mini':           2,
-  'gpt-5.4':             20,
-  'claude-opus-4-8':     25,
+  'btl-2':               1,
+  'deepseek-v4-flash':   1,
+  'deepseek-v4-pro':     2,
+  'deepseek-r1-0528':    4,
 }
 function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_CREDITS_PER_1K[model] ?? 3
