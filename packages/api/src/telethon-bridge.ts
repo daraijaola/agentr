@@ -1,8 +1,11 @@
 import { spawn } from 'child_process'
+import path from 'path'
+
+const AUTH_HELPER_PATH = process.env['AUTH_HELPER_PATH'] ?? path.resolve(process.cwd(), 'auth_helper.py')
 
 function callPython(data: object): Promise<any> {
   return new Promise((resolve, reject) => {
-    const proc = spawn('python3', ['/root/agentr/auth_helper.py'], {
+    const proc = spawn('python3', [AUTH_HELPER_PATH], {
       env: process.env,
     })
     let out = ''
