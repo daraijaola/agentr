@@ -107,6 +107,10 @@ agentRoutes.get('/status/:tenantId', async (c) => {
       'gpt-5.2':            'GPT-5.2',
       'claude-opus-4-5':    'Claude Opus 4.5',
       'claude-opus-4-6':    'Claude Opus 4.6',
+      'gpt-5-nano':         'GPT-5 nano',
+      'gpt-5-mini':         'GPT-5 mini',
+      'gpt-5.4':            'GPT-5.4',
+      'claude-opus-4-8':    'Claude Opus 4.8',
     }
     const PLAN_NAME: Record<string,string> = {
       free: 'Free', starter: 'Starter', pro: 'Pro',
@@ -222,6 +226,10 @@ agentRoutes.post(
       'gpt-5.2',
       'claude-opus-4-5',
       'claude-opus-4-6',
+      'gpt-5-nano',
+      'gpt-5-mini',
+      'gpt-5.4',
+      'claude-opus-4-8',
     ]).optional(),
     // legacy field — kept for backward compat, ignored
     provider: z.string().optional(),

@@ -254,6 +254,8 @@ export function attachMessageListener(
               'gpt-4.1':'GPT-4.1','o4-mini':'GPT o4-mini',
               'gemini-2.5-pro':'Gemini 2.5 Pro','gpt-5.2':'GPT-5.2',
               'claude-opus-4-5':'Claude Opus 4.5','claude-opus-4-6':'Claude Opus 4.6',
+              'gpt-5-nano':'GPT-5 nano','gpt-5-mini':'GPT-5 mini',
+              'gpt-5.4':'GPT-5.4','claude-opus-4-8':'Claude Opus 4.8',
             }
             const _mname = _mnames[_mid] ?? _mid
             reply = `🤖 AGENTR Status\n\n✅ Agent: Online\n📱 Account: ${tenantId.slice(0,8)}...\n🧠 Model: ${_mname}\n📬 Runtime: PM2 managed`
