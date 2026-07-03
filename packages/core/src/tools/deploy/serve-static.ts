@@ -1,6 +1,5 @@
 import { Type } from "@sinclair/typebox"
-import { execSync } from "child_process"
-import { existsSync, mkdirSync, cpSync, copyFileSync } from "fs"
+import { existsSync, mkdirSync, cpSync } from "fs"
 import { join, basename } from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
 
@@ -38,7 +37,7 @@ export const serveStaticExecutor: ToolExecutor<{ path: string }> = async (params
 
     // Copy file or directory
     try {
-      execSync(`cp -r "${sourcePath}" "${destPath}"`, { stdio: "ignore" })
+      cpSync(sourcePath, destPath, { recursive: true })
     } catch {
       return { success: false, error: "Failed to copy files to public directory" }
     }
