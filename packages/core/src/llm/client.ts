@@ -57,20 +57,29 @@ const AIR_MODELS = {
     OPUS:       'claude-opus-4-5',
     // Enterprise
     OPUS_6:     'claude-opus-4-6',
+    // BTL runtime additions
+    GPT5_NANO:  'gpt-5-nano',
+    GPT5_MINI:  'gpt-5-mini',
+    GPT54:      'gpt-5.4',
+    OPUS_8:     'claude-opus-4-8',
 };
 // Plan model splits — each tier adds to the one below
 const PLAN_MODELS: Record<string, string[]> = {
-    free:       [AIR_MODELS.HAIKU],
-    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI],
+    free:       [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO],
+    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI],
     pro:        [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
                  AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41],
     ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
                  AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
                  AIR_MODELS.O4_MINI, AIR_MODELS.PRO],
     elite:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
+                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
                  AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
                  AIR_MODELS.O4_MINI, AIR_MODELS.PRO,
-                 AIR_MODELS.SONNET_6, AIR_MODELS.GPT5, AIR_MODELS.OPUS],
+                 AIR_MODELS.SONNET_6, AIR_MODELS.GPT5, AIR_MODELS.GPT54, AIR_MODELS.OPUS, AIR_MODELS.OPUS_8],
     enterprise: Object.values(AIR_MODELS),
 };
 // Default model per plan
@@ -82,6 +91,9 @@ const PLAN_DEFAULTS: Record<string, string> = {
     elite:      AIR_MODELS.OPUS,
     enterprise: AIR_MODELS.OPUS,
 };
+function isReasoningModel(model: string): boolean {
+    return /^(gpt-5|o\d)/.test(model);
+}
 const STARTER_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_INPUT_BYTES = 100 * 1024; // 100 KB
 function checkPlanAccess(config, model) {
@@ -302,16 +314,23 @@ export class LLMClient {
             return rest;
         });
         const airMessages = toAirMessages(cleanMessages);
-        const apiKey = process.env['OPENAI_API_KEY'] ?? this.config.apiKey;
-        const baseUrl = process.env['AIR_BASE_URL'];
+        const apiKey = process.env['LLM_API_KEY'] ?? process.env['OPENAI_API_KEY'] ?? this.config.apiKey;
+        const baseUrl = process.env['LLM_BASE_URL'] ?? process.env['AIR_BASE_URL'];
         if (!baseUrl)
-            throw new Error('AIR_BASE_URL environment variable is not set');
+            throw new Error('LLM_BASE_URL (or AIR_BASE_URL) environment variable is not set');
+        const maxTokens = this.config.maxTokens ?? 4096;
         const body: Record<string, any> = {
             model,
-            max_tokens: this.config.maxTokens ?? 4096,
-            temperature: this.config.temperature ?? 0.7,
             messages: airMessages,
         };
+        if (isReasoningModel(model)) {
+            // gpt-5.x / o-series reject max_tokens and non-default temperature
+            body.max_completion_tokens = maxTokens;
+        }
+        else {
+            body.max_tokens = maxTokens;
+            body.temperature = this.config.temperature ?? 0.7;
+        }
         if (options.tools?.length) {
             body.tools = options.tools.map(t => ({
                 type: 'function',

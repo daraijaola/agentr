@@ -200,7 +200,7 @@ async function runSubAgent(
         },
         body: JSON.stringify({
           model,
-          max_tokens: 4096,
+          ...(/^(gpt-5|o\d)/.test(model) ? { max_completion_tokens: 4096 } : { max_tokens: 4096 }),
           messages,
           tools,
           tool_choice: "auto",
@@ -289,11 +289,11 @@ export const swarmExecuteTool: Tool = {
 
 export const swarmExecuteExecutor: ToolExecutor<SwarmExecuteParams> = async (params, context): Promise<ToolResult> => {
   const { goal, tasks, parallel = true } = params
-  const airBaseUrl = process.env["AIR_BASE_URL"]
-  const apiKey = process.env["OPENAI_API_KEY"] ?? ""
-  if (!airBaseUrl) return { success: false, error: "AIR_BASE_URL not set — swarm requires the AIR gateway" }
-  if (!apiKey) return { success: false, error: "OPENAI_API_KEY (AIR key) not set" }
-  const subAgentModel = process.env["SWARM_MODEL"] ?? process.env["LLM_MODEL"] ?? "claude-haiku-4-5-20251001"
+  const airBaseUrl = process.env["LLM_BASE_URL"] ?? process.env["AIR_BASE_URL"]
+  const apiKey = process.env["LLM_API_KEY"] ?? process.env["OPENAI_API_KEY"] ?? ""
+  if (!airBaseUrl) return { success: false, error: "LLM_BASE_URL (or AIR_BASE_URL) not set — swarm requires an OpenAI-compatible gateway" }
+  if (!apiKey) return { success: false, error: "LLM_API_KEY (or OPENAI_API_KEY) not set" }
+  const subAgentModel = process.env["SWARM_MODEL"] ?? process.env["LLM_MODEL"] ?? "claude-haiku-4-5"
   const tenantId = (context as Record<string, unknown>)["tenantId"] as string ?? ""
   const startTime = Date.now()
   const results: SubAgentResult[] = []
