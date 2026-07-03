@@ -210,6 +210,15 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
 .topbar-logo { font-size:15px; font-weight:500; letter-spacing:.06em; color:var(--text-primary); }
 .topbar-logo em { font-style:normal; color:var(--accent); }
 .topbar-right { display:flex; align-items:center; gap:8px; }
+.btl-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  background:#0E0D0C; color:#FAFAF9; border-radius:999px;
+  padding:4px 10px 4px 5px; font-size:11px; font-weight:500;
+  text-decoration:none; transition:opacity .15s;
+}
+.btl-pill:hover { opacity:.85; }
+.btl-pill img { width:16px; height:16px; border-radius:4px; display:block; }
+@media (max-width:700px) { .btl-pill span { display:none; } .btl-pill { padding:4px 5px; } }
 .status-badge {
   display:inline-flex; align-items:center; gap:6px;
   background:var(--ok-bg); border:.5px solid var(--ok-bdr);
@@ -1042,6 +1051,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
       <span class="topbar-logo">AGENT<em>R</em></span>
     </div>
     <div class="topbar-right">
+      <a class="btl-pill" href="https://www.badtheorylabs.com/runtime" target="_blank" rel="noreferrer"><img src="/btl-logo.svg" alt="BTL" /><span>Powered by BTL Runtime</span></a>
       <div class="status-badge"><div class="status-dot"></div> Active</div>
       <div class="credits-pill" id="credits-pill">8,240 credits</div>
       <div id="ton-connect-btn"></div>
