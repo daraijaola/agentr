@@ -100,6 +100,16 @@ describe('AgentRuntime — concurrency guard', () => {
 })
 
 describe('AgentRuntime — looksLikeFinalReport (via processMessage)', () => {
+  it('accepts a short casual reply without extra LLM loops', async () => {
+    const runtime = new AgentRuntime(mockConfig, mockLLMConfig)
+    const mockChat = vi.fn().mockResolvedValue({ text: 'Hey :)', toolCalls: [], messages: [{ role: 'assistant', content: 'Hey :)' }] })
+    ;(runtime as any).llm = { chat: mockChat, getProvider: () => 'openai-codex' }
+
+    const result = await runtime.processMessage({ chatId: 'c1', userMessage: 'yo' })
+    expect(result.content).toBe('Hey :)')
+    expect(mockChat).toHaveBeenCalledTimes(1)
+  })
+
   it('accepts a sentence-terminated response as final', async () => {
     const runtime = new AgentRuntime(mockConfig, mockLLMConfig)
     const response = 'Your bot has been deployed successfully.'

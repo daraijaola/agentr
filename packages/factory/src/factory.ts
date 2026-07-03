@@ -197,6 +197,7 @@ export class AgentFactory {
     const plan = tenant.plan ?? 'free'
     const provisionedAt = tenant.created_at ? new Date(tenant.created_at).getTime() : Date.now()
     const preferredModel = tenant.preferred_model ?? undefined
+    await this.provisioner.spawn(tenant.id)
     const tgClient = await bridgeManager.resume(tenant.id, tenant.phone)
     const me = tgClient.getMe()
     const config: AgentConfig = {

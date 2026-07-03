@@ -3,12 +3,15 @@
 // Falls back gracefully when Docker is not available (dev / CI environments).
 
 import { execFileSync } from 'child_process'
+import { existsSync } from 'fs'
+import path from 'path'
 
 const SESSIONS_PATH = process.env['SESSIONS_PATH'] ?? '/root/agentr/sessions'
 const WORKSPACES_PATH = process.env['WORKSPACES_PATH'] ?? '/root/agentr/workspaces'
 const AGENT_IMAGE = process.env['AGENT_IMAGE'] ?? 'agentr-agent:latest'
 const MEMORY_LIMIT = process.env['AGENT_CONTAINER_MEMORY'] ?? '512m'
 const CPU_LIMIT = process.env['AGENT_CONTAINER_CPUS'] ?? '0.5'
+const NETWORK_MODE = process.env['AGENT_CONTAINER_NETWORK'] ?? 'bridge'
 
 export function containerName(tenantId: string): string {
   return `agentr-${tenantId}`
@@ -45,13 +48,33 @@ export class DockerProvisioner {
     }
   }
 
+  private ensureImage(): boolean {
+    if (this.imageExists()) return true
+    const dockerfile = process.env['AGENT_DOCKERFILE'] ?? path.join(process.cwd(), 'Dockerfile.agent')
+    if (!existsSync(dockerfile)) {
+      console.warn(`[DockerProvisioner] ${dockerfile} not found — cannot build ${AGENT_IMAGE}`)
+      return false
+    }
+    try {
+      console.log(`[DockerProvisioner] Building missing image ${AGENT_IMAGE} from ${dockerfile}`)
+      execFileSync('docker', ['build', '-f', dockerfile, '-t', AGENT_IMAGE, process.cwd()], {
+        stdio: 'inherit',
+        timeout: 5 * 60_000,
+      })
+      return this.imageExists()
+    } catch (err) {
+      console.warn(`[DockerProvisioner] Failed to build ${AGENT_IMAGE}:`, err)
+      return false
+    }
+  }
+
   async spawn(tenantId: string): Promise<void> {
     if (!this.docker) {
       console.log(`[DockerProvisioner] (no-docker) Registered tenant: ${tenantId}`)
       return
     }
-    if (!this.imageExists()) {
-      console.warn(`[DockerProvisioner] Image ${AGENT_IMAGE} not found — skipping container spawn for tenant: ${tenantId}`)
+    if (!this.ensureImage()) {
+      console.warn(`[DockerProvisioner] Image ${AGENT_IMAGE} not available — skipping container spawn for tenant: ${tenantId}`)
       return
     }
     const name = containerName(tenantId)
@@ -64,11 +87,10 @@ export class DockerProvisioner {
       '--name', name,
       `--memory=${MEMORY_LIMIT}`,
       `--cpus=${CPU_LIMIT}`,
-      '--network=none',                           // no outbound internet from sandbox
-      '--cap-drop=ALL',                           // drop all Linux capabilities
+      `--network=${NETWORK_MODE}`,
+      '--cap-drop=ALL',
       '--security-opt=no-new-privileges',
-      '--read-only',                              // read-only root FS
-      '--tmpfs=/tmp:size=64m',                    // writable /tmp only
+      '--tmpfs=/tmp:size=128m',
       '-v', `${SESSIONS_PATH}/${tenantId}:/workspace:rw`,
       '-v', `${WORKSPACES_PATH}/${tenantId}:/workspace/workspaces:rw`,
       AGENT_IMAGE,

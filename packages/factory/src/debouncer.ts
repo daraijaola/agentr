@@ -2,6 +2,7 @@ interface DebounceBuffer {
   messages: string[]
   replyToId: number | undefined
   userName: string | undefined
+  isGroup: boolean
   client: any
   timer: NodeJS.Timeout | null
   firstTime: number
@@ -14,23 +15,24 @@ export class MessageDebouncer {
 
   constructor(
     private debounceMs: number,
-    private onFlush: (chatId: string, messages: string[], replyToId: number | undefined, userName: string | undefined, client: any) => Promise<void>
+    private onFlush: (chatId: string, messages: string[], replyToId: number | undefined, userName: string | undefined, client: any, isGroup: boolean) => Promise<void>
   ) {
     this.maxDebounceMs = debounceMs * 3
   }
 
-  async enqueue(chatId: string, text: string, _senderId: string, replyToId?: number, userName?: string, client?: any): Promise<void> {
+  async enqueue(chatId: string, text: string, _senderId: string, replyToId?: number, userName?: string, client?: any, isGroup = false): Promise<void> {
     const existing = this.buffers.get(chatId)
     if (existing) {
       if (existing.messages.length >= this.maxBufferSize) {
         await this.flushKey(chatId)
       } else {
         existing.messages.push(text)
+        existing.isGroup = existing.isGroup || isGroup
         this.resetTimer(chatId, existing)
         return
       }
     }
-    const buf: DebounceBuffer = { messages: [text], replyToId, userName, client, timer: null, firstTime: Date.now() }
+    const buf: DebounceBuffer = { messages: [text], replyToId, userName, isGroup, client, timer: null, firstTime: Date.now() }
     this.buffers.set(chatId, buf)
     this.resetTimer(chatId, buf)
   }
@@ -49,7 +51,7 @@ export class MessageDebouncer {
     if (!buf || buf.messages.length === 0) return
     this.buffers.delete(chatId)
     if (buf.timer) clearTimeout(buf.timer)
-    await this.onFlush(chatId, buf.messages, buf.replyToId, buf.userName, buf.client)
+    await this.onFlush(chatId, buf.messages, buf.replyToId, buf.userName, buf.client, buf.isGroup)
   }
 
   async flushAll(): Promise<void> {

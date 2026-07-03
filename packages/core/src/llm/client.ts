@@ -39,6 +39,8 @@ export interface ChatResponse {
 // BTL runtime LLM client — sole provider for AGENTR
 // 6 models served by the BTL runtime gateway, split across plans
 const AIR_MODELS = {
+    // BTL Runtime Hackathon DeepSeek route
+    BTL2:       'btl-2',
     // Free
     HAIKU:      'claude-haiku-4-5',
     GPT5_NANO:  'gpt-5-nano',
@@ -52,7 +54,7 @@ const AIR_MODELS = {
 };
 // Plan model splits — each tier adds to the one below
 const PLAN_MODELS: Record<string, string[]> = {
-    free:       [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO],
+    free:       [AIR_MODELS.BTL2, AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT54, AIR_MODELS.OPUS_8],
     starter:    [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
                  AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI],
     pro:        [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
@@ -68,7 +70,7 @@ const PLAN_MODELS: Record<string, string[]> = {
 };
 // Default model per plan
 const PLAN_DEFAULTS: Record<string, string> = {
-    free:       AIR_MODELS.HAIKU,
+    free:       AIR_MODELS.BTL2,
     starter:    AIR_MODELS.GPT5_MINI,
     pro:        AIR_MODELS.GPT54,
     ultra:      AIR_MODELS.GPT54,
@@ -78,8 +80,11 @@ const PLAN_DEFAULTS: Record<string, string> = {
 function isReasoningModel(model: string): boolean {
     return /^(gpt-5|o\d)/.test(model);
 }
+
+// Models that reject the temperature parameter
+const SKIP_TEMPERATURE_MODELS = new Set(['claude-opus-4-8', 'claude-haiku-4-5', 'kimi-k2']);
 const STARTER_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const MAX_INPUT_BYTES = 100 * 1024; // 100 KB
+const MAX_INPUT_BYTES = 28 * 1024; // 28 KB — Replit gateway limit
 function checkPlanAccess(config, model) {
     const plan = config.plan ?? 'free';
     // Free trial only: 24h TTL. Starter and above are paid — no expiry.
@@ -213,6 +218,37 @@ function toAirMessages(msgs) {
         return acc;
     }, []);
 }
+
+function normalizeNarratedToolName(name) {
+    const aliases = {
+        get_wallet_balance: 'ton_balance',
+        wallet: 'ton_balance',
+        balance: 'ton_balance',
+        get_balance: 'ton_balance',
+        wallet_balance: 'ton_balance',
+        ton_get_balance: 'ton_balance',
+        get_ton_price: 'ton_price',
+        get_price: 'ton_price',
+        price: 'ton_price',
+        check_price: 'ton_price',
+        get_current_ton_price: 'ton_price',
+        current_ton_price: 'ton_price',
+        list_workspace_files: 'workspace_list',
+        workspace: 'workspace_list',
+        workspace_files: 'workspace_list',
+        list_files: 'workspace_list',
+        files: 'workspace_list',
+    };
+    return aliases[name] ?? name;
+}
+
+function pushNarratedToolCall(rawTC, name, args = '{}') {
+    rawTC.push({
+        id: 'tc_narrated_' + Math.random().toString(36).slice(2),
+        type: 'function',
+        function: { name: normalizeNarratedToolName(name), arguments: args },
+    });
+}
 /**
  * Recover as much as possible from a truncated JSON tool call.
  * For workspace_write: extracts `path` and salvages whatever `content` is available.
@@ -330,8 +366,7 @@ export class LLMClient {
         // trimToFit compresses or drops old messages to stay under the 100 KB AIR limit
         const trimmedMessages = trimToFit(options.messages);
         const msgs = [];
-        if (options.systemPrompt)
-            msgs.push({ role: 'system', content: options.systemPrompt });
+        if (options.systemPrompt) msgs.push({ role: 'system', content: options.systemPrompt });
         msgs.push(...trimmedMessages);
         const cleanMessages = msgs.map((m) => {
             const { reasoning_content, ...rest } = m;
@@ -357,14 +392,20 @@ export class LLMClient {
             // Only send temperature when explicitly configured — newer Claude
             // models (e.g. Opus 4.8) reject non-default temperature
             if (this.config.temperature !== undefined)
-                body.temperature = this.config.temperature;
+                if (!SKIP_TEMPERATURE_MODELS.has(model)) { body.temperature = this.config.temperature; }
         }
         if (options.tools?.length) {
             body.tools = options.tools.map(t => ({
-                type: 'function',
+                type: "function",
                 function: { name: t.name, description: t.description, parameters: t.inputSchema },
             }));
-            body.tool_choice = 'auto';
+            body.tool_choice = "auto";
+        }
+        if (Array.isArray(body.messages)) {
+            const sysmsg = body.messages.find((m: any) => m.role === 'system');
+            if (sysmsg && typeof sysmsg.content === 'string' && sysmsg.content.length > 6000) {
+                sysmsg.content = sysmsg.content.slice(0, 6000) + '\n[...truncated for size]';
+            }
         }
         shrinkBodyToFit(body);
         const res = await fetch(`${baseUrl}/chat/completions`, {
@@ -530,7 +571,7 @@ export class LLMClient {
                     rawTC.push({
                         id: 'tc_py_' + Math.random().toString(36).slice(2),
                         type: 'function',
-                        function: { name, arguments: argsRaw },
+                        function: { name: normalizeNarratedToolName(name), arguments: argsRaw },
                     });
                 }
                 catch { /* not valid JSON args, skip */ }
@@ -552,7 +593,7 @@ export class LLMClient {
                     rawTC.push({
                         id: 'tc_nar_' + Math.random().toString(36).slice(2),
                         type: 'function',
-                        function: { name, arguments: argsRaw },
+                        function: { name: normalizeNarratedToolName(name), arguments: argsRaw },
                     });
                 }
                 catch { /* invalid JSON */ }
@@ -560,6 +601,21 @@ export class LLMClient {
             if (rawTC.length > 0)
                 text = text.replace(/\[calling:[^\]]+\]/gi, '').trim();
         }
+
+        // Format 6: [Calling tool_name] / [Calling tool: tool_name]
+        // Some Claude/OpenAI-compatible gateways ignore the native tools array
+        // and make the model narrate the intended call instead.
+        if (rawTC.length === 0) {
+            const simpleCallPattern = /\[(?:Calling|calling|CALLING)\s+(?:tool\s*:?\s*)?([a-z][a-z0-9_]*)[^\]]*\]/gi;
+            let simpleMatch;
+            while ((simpleMatch = simpleCallPattern.exec(text)) !== null) {
+                const name = simpleMatch[1].trim();
+                pushNarratedToolCall(rawTC, name);
+            }
+            if (rawTC.length > 0)
+                text = text.replace(/\[(?:Calling|calling|CALLING)\s+(?:tool\s*:?\s*)?[a-z][a-z0-9_]*[^\]]*\]/gi, '').trim();
+        }
+
         const toolCalls = rawTC.map(tc => {
             let input = {};
             try {

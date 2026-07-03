@@ -234,6 +234,9 @@ export const processStopExecutor: ToolExecutor<ProcessStopParams> = async (
     } else {
       execFileSync('pm2', ['delete', pmName], { encoding: "utf8" })
     }
+    const registry = readRegistry(tenantId)
+    delete registry[safeName]
+    writeRegistry(tenantId, registry)
     return { success: true, data: { message: `Process "${params.name}" stopped and removed.` } }
   } catch (err) {
     return { success: false, error: `Could not stop process: ${String(err)}` }
@@ -259,8 +262,14 @@ export const processRestartExecutor: ToolExecutor<ProcessRestartParams> = async 
   let safeName: string
   try { safeName = sanitizeProcessName(params.name) } catch (err) { return { success: false, error: String(err) } }
   const pmName = tenantProcessName(tenantId, safeName)
+  const useDocker = containerIsRunning(tenantId)
+  const ctr = tenantContainerName(tenantId)
   try {
-    execFileSync('pm2', ['restart', pmName], { encoding: "utf8" })
+    if (useDocker) {
+      execFileSync('docker', ['exec', ctr, 'pm2', 'restart', pmName], { encoding: 'utf8' })
+    } else {
+      execFileSync('pm2', ['restart', pmName], { encoding: "utf8" })
+    }
     await new Promise(r => setTimeout(r, 1000))
     return { success: true, data: { message: `Process "${params.name}" restarted.` } }
   } catch (err) {
@@ -350,7 +359,7 @@ export const processListExecutor: ToolExecutor<Record<string, never>> = async (
     const all = JSON.parse(raw) as Array<{ name: string; pm2_env: { status: string }; pid: number }>
     // Docker: all processes belong to this tenant. Host: filter by prefix.
     const mine = useDocker
-      ? all.map(p => ({ name: p.name, status: p.pm2_env.status, pid: p.pid }))
+      ? all.map(p => ({ name: p.name.startsWith(prefix) ? p.name.replace(prefix, "") : p.name, status: p.pm2_env.status, pid: p.pid }))
       : all.filter(p => p.name.startsWith(prefix)).map(p => ({ name: p.name.replace(prefix, ""), status: p.pm2_env.status, pid: p.pid }))
     return { success: true, data: { processes: mine, count: mine.length, sandbox: useDocker ? 'docker' : 'host' } }
   } catch {

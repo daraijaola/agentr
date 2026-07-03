@@ -25,4 +25,15 @@ describe('MessageDebouncer', () => {
     await Promise.resolve()
     expect(flush).toHaveBeenCalledTimes(2)
   })
+
+  it('passes group context through to the flush handler', async () => {
+    const flush = vi.fn().mockResolvedValue(undefined)
+    const debouncer = new MessageDebouncer(500, flush)
+
+    await debouncer.enqueue('group-1', '@agent ping', 'sender-1', 7, 'Ada', {}, true)
+    vi.advanceTimersByTime(600)
+    await Promise.resolve()
+
+    expect(flush).toHaveBeenCalledWith('group-1', ['@agent ping'], 7, 'Ada', {}, true)
+  })
 })

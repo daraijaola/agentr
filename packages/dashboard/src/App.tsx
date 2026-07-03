@@ -57,7 +57,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
   const [twofa, setTwofa] = useState('')
   const [provStep, setProvStep] = useState(0)
   const [copied, setCopied] = useState(false)
-  const [setupData, setSetupData] = useState({ agentName: '', ownerName: '', ownerUsername: '', dmPolicy: 'contacts' })
+  const [setupData, setSetupData] = useState({ agentName: '', ownerName: '', ownerUsername: '', dmPolicy: 'everyone' })
   const [liveTab, setLiveTab] = useState<LiveTab>('overview')
   const [provider, setProvider] = useState('claude')
   const [switchingProvider, setSwitchingProvider] = useState(false)
@@ -224,7 +224,7 @@ function AppInner({ tonConnectUI, tonAddress, tonWallet }: { tonConnectUI: any; 
       const authHdr = getAuthHeader()
       const existingCheck = await fetch(API + '/agent/workspace/' + agent.tenantId + '/SOUL.md', { headers: authHdr }).then((r) => r.json()).catch(() => ({ content: '' }))
       const isFirstTime = !existingCheck.content || existingCheck.content.length < 100
-      if (isFirstTime && (setupData.agentName || setupData.ownerName || setupData.dmPolicy !== 'contacts')) {
+      if (isFirstTime && (setupData.agentName || setupData.ownerName || setupData.dmPolicy !== 'everyone')) {
         const userContent = `# User\n\nOwner name: ${setupData.ownerName || 'Not set'}\nAgent name: ${setupData.agentName || 'Not set'}\nDM policy: ${setupData.dmPolicy}\n\nThis file is updated automatically as the agent learns more about the owner.`
         await fetch(API + '/agent/workspace/' + agent.tenantId + '/USER.md', {
           method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr },

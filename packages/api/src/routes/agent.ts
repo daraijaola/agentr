@@ -204,6 +204,7 @@ agentRoutes.post(
   zValidator('json', z.object({
     tenantId: z.string(),
     model: z.enum([
+      'btl-2',
       'claude-haiku-4-5',
       'gpt-5-nano',
       'gpt-4o-mini',
@@ -875,7 +876,7 @@ agentRoutes.post('/setup',
       const db = agentFactory.getDb()
       await db.query(
         'UPDATE tenants SET agent_name = $1, owner_name = $2, dm_policy = $3, owner_username = $4 WHERE id = $5',
-        [agentName ?? '', ownerName ?? '', dmPolicy ?? 'contacts', ownerUsername ?? '', tenantId]
+        [agentName ?? '', ownerName ?? '', dmPolicy ?? 'everyone', ownerUsername ?? '', tenantId]
       )
 
       // Write IDENTITY.md and USER.md into the agent's workspace so the agent

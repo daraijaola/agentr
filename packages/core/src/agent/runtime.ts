@@ -62,12 +62,24 @@ function getCached(key: string): string | null {
   return entry.response
 }
 function setCache(key: string, response: string): void {
+  if (isBadUserFacingReply(response)) return
   // Evict old entries if cache gets large
   if (responseCache.size > 500) {
     const now = Date.now()
     for (const [k, v] of responseCache) { if (now > v.expiry) responseCache.delete(k) }
   }
   responseCache.set(key, { response, expiry: Date.now() + CACHE_TTL_MS })
+}
+
+function isBadUserFacingReply(text: string): boolean {
+  const t = text.trim()
+  if (!t) return true
+  if (/^Binary file\s+-\s+use encoding=/i.test(t)) return true
+  if (/^<!DOCTYPE|^<html|^<head|^<body|^<style|^<script/i.test(t)) return true
+  if (/^(?:margin|padding|display|position|height|width|color|background|font(?:-family|-size)?|align-items|justify-content|flex-direction)\s*:\s*[^;]+;?$/i.test(t)) return true
+  if (/^(?:body|html|\.?[a-z0-9_-]+|#[a-z0-9_-]+)\s*\{/i.test(t)) return true
+  if (/Run this app to see the results here|replit\.com|reload_timeout|<svg|<\/html>/i.test(t)) return true
+  return false
 }
 
 function sanitizeForAnthropic(messages: any[]): any[] {
@@ -108,12 +120,23 @@ function stripReasoning(msgs: ChatMessage[]): ChatMessage[] {
   return msgs.map(m => { const { reasoning_content, ...rest } = m as unknown as Record<string, unknown>; void reasoning_content; return rest as unknown as ChatMessage })
 }
 
+function runtimeInstruction(content: string): ChatMessage {
+  return { role: 'user', content: `AGENTR runtime instruction: ${content}` }
+}
+
 /**
  * Strip any code/HTML that slipped into the final user-facing response.
  * Non-technical users must never see raw source code in chat.
  */
 function sanitizeFinalResponse(text: string, toolsUsed: string[]): string {
   let t = text.trim()
+
+  if (isBadUserFacingReply(t)) {
+    if (/^Binary file\s+-\s+use encoding=/i.test(t)) {
+      return 'I opened a media/binary file instead of a text file. I skipped that raw file output.'
+    }
+    return 'I hit an LLM connection error and did not get a valid response. Try again now.'
+  }
 
   // Remove fenced code blocks entirely
   t = t.replace(/```[\s\S]*?```/g, '').trim()
@@ -184,6 +207,78 @@ function looksLikeFinalReport(text: string): boolean {
   const hasMarkdown = /#{1,3}\s+\w/.test(t) || /```/.test(t)
   const isLong = t.length > 200
   return hasPunctuation || hasList || hasMarkdown || isLong
+}
+
+function looksLikeToolNarrationWithoutResult(text: string): boolean {
+  const t = text.toLowerCase()
+  return (
+    /\[(?:calling|called)\s+(?:tool\s*:?\s*)?[a-z][a-z0-9_]*[^\]]*\]/i.test(text) ||
+    t.includes('tool result') ||
+    t.includes('tool output') ||
+    t.includes('tool call') ||
+    t.includes('tool fires') ||
+    t.includes('tool execution') ||
+    t.includes('awaiting tool') ||
+    t.includes('balance figure comes straight') ||
+    t.includes('i attempted to call') ||
+    t.includes("i don't see the actual tool") ||
+    t.includes("i don't have access to a tool") ||
+    t.includes("i don't have a live market-data tool") ||
+    t.includes('if the listing didn') ||
+    t.includes('want me to retry')
+  )
+}
+
+function userExplicitlyAskedForToolAction(text: string): boolean {
+  return /\b(use your tool|call (?:the )?tool|check|list|show|fetch|get|create|send|deploy|run|start|stop|restart|balance|price|workspace|files|wallet|ton)\b/i.test(text)
+}
+
+function directToolCallForUserMessage(text: string): { name: string; input: Record<string, unknown> } | null {
+  const t = text.toLowerCase()
+  if (/\b(wallet\s+address|ton\s+address|my\s+address|deposit\s+address)\b/.test(t)) {
+    return { name: 'ton_get_address', input: {} }
+  }
+  if (/\b(balance|wallet balance|ton balance)\b/.test(t)) {
+    return { name: 'ton_balance', input: {} }
+  }
+  if (/\b(price|ton price|current ton|ton\/usd)\b/.test(t)) {
+    return { name: 'ton_price', input: {} }
+  }
+  if (/\b(list|show|check|get)\b/.test(t) && /\b(files|workspace|directory|folders)\b/.test(t)) {
+    return { name: 'workspace_list', input: {} }
+  }
+  return null
+}
+
+function summarizeToolResult(name: string, result: { success: boolean; data?: unknown; error?: string }): string {
+  if (!result.success) {
+    const error = String(result.error ?? 'unknown error')
+    if (/^Binary file\s+-\s+use encoding=/i.test(error)) {
+      return 'I opened a media/binary file instead of a text file. I skipped that raw file output.'
+    }
+    return `Tool failed: ${error}`
+  }
+  const data = (result.data ?? {}) as Record<string, unknown>
+  if (name === 'ton_balance') {
+    const balance = data['balance'] ?? data['summary'] ?? 'unknown'
+    const address = data['address'] ? `\n${String(data['address'])}` : ''
+    return `Wallet balance: ${balance} TON${address}`
+  }
+  if (name === 'ton_price') {
+    const price = data['price']
+    const currency = data['currency'] ?? 'USD'
+    return typeof price === 'number'
+      ? `Current TON price: $${price.toFixed(4)} ${currency}`
+      : String(data['message'] ?? 'TON price fetched.')
+  }
+  if (name === 'workspace_list') {
+    const files = Array.isArray(data['files']) ? data['files'] as Array<Record<string, unknown>> : []
+    if (files.length === 0) return String(data['message'] ?? 'Your workspace is empty.')
+    const names = files.slice(0, 12).map(f => String(f['path'] ?? f['name'] ?? '')).filter(Boolean).join(', ')
+    const more = files.length > 12 ? `, +${files.length - 12} more` : ''
+    return `Workspace files (${files.length}): ${names}${more}`
+  }
+  return typeof data['message'] === 'string' ? data['message'] as string : 'Done! Task complete.'
 }
 
 export class AgentRuntime {
@@ -323,6 +418,8 @@ export class AgentRuntime {
     let iters = 0, finalResponse = ''
     const allTC: Array<{ name: string; input: Record<string, unknown> }> = []
     const toolUrls: string[] = []  // URLs returned by serve_static, dns_link, etc.
+    let lastToolSummary = ''
+    let directToolSynthesized = false
     const systemPrompt = await this.sys()
     let toolsRanThisTurn = false
     let consecutiveMalformedCount = 0   // empty/unparseable <tool_call> blocks in a row
@@ -349,7 +446,27 @@ export class AgentRuntime {
         const maskedMessages = maskOldToolResults(messages as any) as typeof messages
         console.log('[Runtime:' + this.config.tenantId + '] LLM call iter ' + iters)
         const res = await this.llm.chat({ systemPrompt, messages: maskedMessages, tools: tools.length > 0 ? tools : undefined })
+        if (!res) {
+          finalResponse = 'I was unable to complete this request. Please try again.'
+          break
+        }
         console.log('[Runtime:' + this.config.tenantId + '] LLM done iter ' + iters + ' text:' + res.text.slice(0, 50))
+        if (res.toolCalls.length === 0 && res.text.trim().length > 0 && res.messages.length === 0) {
+          finalResponse = res.text
+          break
+        }
+        if (res.toolCalls.length === 0 && !toolsRanThisTurn) {
+          const directTool = directToolCallForUserMessage(userMessage)
+          if (directTool && this.tools.has(directTool.name)) {
+            console.log('[Runtime:' + this.config.tenantId + '] Synthesized tool call: ' + directTool.name)
+            directToolSynthesized = true
+            res.toolCalls.push({
+              id: 'tc_direct_' + Math.random().toString(36).slice(2),
+              name: directTool.name,
+              input: directTool.input,
+            })
+          }
+        }
         // res.messages = [...full input history, newAssistantMsg]
         // Only append the NEW assistant message — do NOT re-append the input history or
         // the conversation doubles in size every iteration (exponential context explosion).
@@ -385,10 +502,24 @@ export class AgentRuntime {
               continue
             }
             consecutiveMalformedCount = 0  // reset on clean text response
+            if (looksLikeToolNarrationWithoutResult(res.text) && iters < MAX_ITER) {
+              messages = stripReasoning([
+                ...messages,
+                runtimeInstruction('Your last response narrated or apologized about a tool instead of executing it. That is invalid. Do not answer in prose. Call the exact required tool now using <tool_use> format. Common exact names: workspace_list for files, ton_price for TON price, ton_balance for wallet balance, ton_get_address for wallet address. If no arguments are needed, use {}.')
+              ])
+              continue
+            }
+            if (!toolsRanThisTurn && userExplicitlyAskedForToolAction(userMessage) && !looksLikeFinalReport(res.text) && iters < MAX_ITER) {
+              messages = stripReasoning([
+                ...messages,
+                runtimeInstruction('The user explicitly asked for an action/tool result, but you replied without a tool call. Do not greet or ask what to do. Execute now using <tool_use>. Exact mapping: workspace/files/list -> workspace_list, TON price -> ton_price, wallet balance -> ton_balance.')
+              ])
+              continue
+            }
             // If first iteration and no tools run yet and response is short,
             // the LLM is just acknowledging ("On it!", "Sure!", "Give me a moment...")
             // — nudge it to start executing immediately instead of treating it as done
-            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 50) {
+            if (iters === 1 && !toolsRanThisTurn && res.text.trim().length < 50 && userExplicitlyAskedForToolAction(userMessage)) {
               messages = stripReasoning([
                 ...messages,
                 {
@@ -451,6 +582,15 @@ export class AgentRuntime {
           let txt: string
           try {
             const result = await this.tools.execute(tc.name, cleanInput)
+            lastToolSummary = summarizeToolResult(tc.name, result)
+            if (!result.success && String(result.error ?? '').includes('Tool not found') && iters < MAX_ITER) {
+              messages = stripReasoning([
+                ...messages,
+                { role: 'tool', content: JSON.stringify({ success: false, error: `Unknown tool "${tc.name}". Retry immediately with an exact AGENTR tool name. Common exact names: workspace_list, ton_price, ton_balance, ton_get_address.` }), tool_call_id: tc.id, name: tc.name },
+                runtimeInstruction('The previous tool name was invalid. Retry immediately with the exact AGENTR tool name. Do not ask the user a question.')
+              ])
+              continue
+            }
             // Capture URLs returned by URL-producing tools so they survive sanitization
             if (result.success && result.data && typeof result.data === 'object') {
               const d = result.data as Record<string, unknown>
@@ -495,7 +635,7 @@ export class AgentRuntime {
           finalResponse = 'Rate limit hit. Please try again in a moment.'
         }
       } else {
-        finalResponse = `Sorry, I ran into an error: ${errStr}. Please try again.`
+        finalResponse = 'I hit an LLM connection error and did not get a valid response. Try again now.'
       }
     }
 
@@ -545,6 +685,8 @@ export class AgentRuntime {
       // Extract what happened from tool calls instead of empty error
       if (toolUrls.length > 0) {
         finalResponse = `Done! ${toolUrls[toolUrls.length - 1]}`
+      } else if (lastToolSummary) {
+        finalResponse = lastToolSummary
       } else if (allTC.length > 0) {
         finalResponse = `Done! Task complete.`
       } else {
@@ -553,12 +695,15 @@ export class AgentRuntime {
     }
 
     // Always sanitize — strip raw code/HTML that slipped into the reply
+    if (lastToolSummary && toolUrls.length === 0 && (directToolSynthesized || /^Done!?\s*(Task complete\.?)?$/i.test(finalResponse.trim()))) {
+      finalResponse = lastToolSummary
+    }
     finalResponse = sanitizeFinalResponse(finalResponse, allTC.map(tc => tc.name))
 
     // Cache tool-free responses for repeated queries
     // Never cache responses that contain URLs — they're task-specific and must never bleed into future chats
     const responseHasUrl = finalResponse.includes('https://') || finalResponse.includes('http://')
-    if (allTC.length === 0 && !hasPriorTools && !responseHasUrl && userMessage.length < 200 && finalResponse.length > 0) {
+    if (allTC.length === 0 && !hasPriorTools && !responseHasUrl && userMessage.length < 200 && finalResponse.length > 0 && !isBadUserFacingReply(finalResponse)) {
       const cacheKey = `${chatId}:${userMessage.toLowerCase().trim()}`
       setCache(cacheKey, finalResponse)
     }

@@ -147,9 +147,22 @@ import { spawnSync } from "child_process"
 const mockSpawnSync = vi.mocked(spawnSync)
 
 describe("code_execute", () => {
-  beforeEach(() => vi.clearAllMocks())
+  let tmpSessions: string
 
-  it("returns error when container not found (docker cp fails)", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.resetModules()
+    tmpSessions = join(tmpdir(), `agentr-code-exec-${Date.now()}`)
+    mkdirSync(join(tmpSessions, "t1"), { recursive: true })
+    process.env["SESSIONS_PATH"] = tmpSessions
+  })
+
+  afterEach(() => {
+    try { rmSync(tmpSessions, { recursive: true, force: true }) } catch {}
+    delete process.env["SESSIONS_PATH"]
+  })
+
+  it("returns error when container not found", async () => {
     mockSpawnSync.mockReturnValueOnce({ status: 1, stdout: "", stderr: "Error: No such container", error: undefined } as never)
 
     const { codeExecuteExecutor } = await import("../code-execute.js")
@@ -160,9 +173,8 @@ describe("code_execute", () => {
 
   it("returns stdout on successful execution", async () => {
     mockSpawnSync
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "", error: undefined } as never) // docker cp
+      .mockReturnValueOnce({ status: 0, stdout: "running\n", stderr: "", error: undefined } as never) // docker inspect
       .mockReturnValueOnce({ status: 0, stdout: "hello world", stderr: "", error: undefined } as never) // docker exec run
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" } as never) // docker exec rm
 
     const { codeExecuteExecutor } = await import("../code-execute.js")
     const result = await codeExecuteExecutor({ language: "javascript", code: "console.log('hello world')" }, { tenantId: "t1" } as never)
@@ -180,9 +192,8 @@ describe("code_execute", () => {
 
   it("passes timeout to docker exec command", async () => {
     mockSpawnSync
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" } as never)
+      .mockReturnValueOnce({ status: 0, stdout: "running\n", stderr: "" } as never)
       .mockReturnValueOnce({ status: 0, stdout: "done", stderr: "" } as never)
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" } as never)
 
     const { codeExecuteExecutor } = await import("../code-execute.js")
     await codeExecuteExecutor({ language: "bash", code: "echo done", timeout: 60 }, { tenantId: "t1" } as never)
@@ -193,9 +204,8 @@ describe("code_execute", () => {
 
   it("handles bash language", async () => {
     mockSpawnSync
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" } as never)
+      .mockReturnValueOnce({ status: 0, stdout: "running\n", stderr: "" } as never)
       .mockReturnValueOnce({ status: 0, stdout: "bash output", stderr: "" } as never)
-      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" } as never)
 
     const { codeExecuteExecutor } = await import("../code-execute.js")
     const result = await codeExecuteExecutor({ language: "bash", code: "echo bash output" }, { tenantId: "t1" } as never)

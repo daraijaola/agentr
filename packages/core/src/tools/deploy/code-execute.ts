@@ -3,6 +3,7 @@ import { spawnSync } from "child_process"
 import { writeFileSync, mkdirSync, rmSync } from "fs"
 import path from "path"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
+import { getWorkspaceRoot } from "../../workspace/index.js"
 
 const MAX_INPUT_BYTES = 100 * 1024 // 100 KB
 
@@ -42,26 +43,25 @@ export const codeExecuteExecutor: ToolExecutor<CodeExecuteParams> = async (
   const scriptName = language === "python" ? "script.py"
     : language === "javascript" ? "script.js"
     : "script.sh"
-  const containerScriptPath = `/tmp/agentr-exec-${Date.now()}-${scriptName}`
+  const execDirName = `.agentr-exec-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const hostExecDir = path.join(getWorkspaceRoot(tenantId), execDirName)
+  const hostScript = path.join(hostExecDir, scriptName)
+  const containerScriptPath = `/workspace/${execDirName}/${scriptName}`
 
-  // Write script to a host temp file so we can copy it in
-  const hostTmp = `/tmp/agentr-host-${tenantId}-${Date.now()}`
-  try {
-    mkdirSync(hostTmp, { recursive: true })
-    const hostScript = path.join(hostTmp, scriptName)
-    writeFileSync(hostScript, code, { encoding: "utf8" })
-
-    // Copy script into container
-    const cp = spawnSync("docker", ["cp", hostScript, `${containerName}:${containerScriptPath}`], {
-      timeout: 10_000,
-      encoding: "utf8",
-    })
-    if (cp.status !== 0) {
-      return {
-        success: false,
-        error: `Container '${containerName}' not found or not running. Code execution requires an active tenant container.`,
-      }
+  const inspect = spawnSync("docker", ["inspect", "--format={{.State.Status}}", containerName], {
+    timeout: 10_000,
+    encoding: "utf8",
+  })
+  if (inspect.status !== 0 || inspect.stdout.trim() !== "running") {
+    return {
+      success: false,
+      error: `Container '${containerName}' not found or not running. Code execution requires an active tenant container.`,
     }
+  }
+
+  try {
+    mkdirSync(hostExecDir, { recursive: true })
+    writeFileSync(hostScript, code, { encoding: "utf8" })
 
     // Determine interpreter
     const interpreter = language === "python" ? "python3"
@@ -78,14 +78,11 @@ export const codeExecuteExecutor: ToolExecutor<CodeExecuteParams> = async (
     const stdout = ((exec.stdout ?? "") + (exec.stderr ?? "")).slice(0, 8000)
     const exitCode = exec.status ?? 1
 
-    // Cleanup script inside container (best-effort)
-    spawnSync("docker", ["exec", containerName, "rm", "-f", containerScriptPath], { timeout: 5000 })
-
     return {
       success: exitCode === 0,
       data: { stdout, exitCode, language },
     }
   } finally {
-    try { rmSync(hostTmp, { recursive: true, force: true }) } catch {}
+    try { rmSync(hostExecDir, { recursive: true, force: true }) } catch {}
   }
 }

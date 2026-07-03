@@ -11,6 +11,52 @@ const processingMessages = new Set<string>()
 // Per-client contact-ID cache with a 5-minute TTL to avoid repeated API calls
 const contactCache = new Map<string, { ids: Set<string>; expiresAt: number }>()
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export function groupMessageAddressesAgent(
+  text: string,
+  me?: { username?: string; id?: { toString(): string } | bigint | number | string },
+  message?: { mentioned?: boolean },
+  isReplyToAgent = false
+): boolean {
+  if (message?.mentioned === true || isReplyToAgent) return true
+  const username = me?.username?.replace(/^@/, '').trim()
+  const aliases = [
+    username,
+    'agentr',
+    'agent r',
+    'the agent',
+    'zion',
+  ].filter((v): v is string => Boolean(v))
+  return aliases.some(alias => {
+    const atMention = new RegExp(`(^|[^a-zA-Z0-9_])@${escapeRegExp(alias.replace(/\s+/g, ''))}(?=$|[^a-zA-Z0-9_])`, 'i')
+    const naturalPrompt = new RegExp(`(^|[^a-zA-Z0-9_])${escapeRegExp(alias)}(?=\\s*(?:[,.:;!?]|\\b))`, 'i')
+    return atMention.test(text) || naturalPrompt.test(text)
+  })
+}
+
+function senderLooksLikeBot(sender: unknown): boolean {
+  if (!sender || typeof sender !== 'object') return false
+  const s = sender as { bot?: boolean; username?: string }
+  if (s.bot === true) return true
+  const username = s.username?.replace(/^@/, '').toLowerCase()
+  return Boolean(username && username.endsWith('bot'))
+}
+
+export function formatSenderIdentity(sender: unknown, senderId: string): string | undefined {
+  if (!sender || typeof sender !== 'object') return senderId || undefined
+  const s = sender as { firstName?: string; lastName?: string; username?: string }
+  const name = [s.firstName, s.lastName].filter(Boolean).join(' ').trim()
+  const username = s.username ? `@${s.username.replace(/^@/, '')}` : ''
+  const details = [username, senderId ? `Telegram ID: ${senderId}` : ''].filter(Boolean).join(', ')
+  if (name && details) return `${name} (${details})`
+  if (name) return name
+  if (details) return details
+  return senderId || undefined
+}
+
 async function isInContacts(client: TelegramUserClient, tenantId: string, senderId: string): Promise<boolean> {
   const now = Date.now()
   const cached = contactCache.get(tenantId)
@@ -26,6 +72,23 @@ async function isInContacts(client: TelegramUserClient, tenantId: string, sender
   }
 }
 
+async function isReplyToAgentMessage(
+  client: TelegramUserClient,
+  chatId: string,
+  replyToMsgId: number | undefined,
+  me?: { id?: { toString(): string } | bigint | number | string }
+): Promise<boolean> {
+  if (!replyToMsgId || !me?.id) return false
+  try {
+    const raw = (client as any).getClient?.()
+    const result = await raw?.getMessages(chatId as never, { ids: replyToMsgId })
+    const replied = Array.isArray(result) ? result[0] : result
+    return replied?.senderId?.toString?.() === me.id.toString()
+  } catch {
+    return false
+  }
+}
+
 export function attachMessageListener(
   tenantId: string,
   client: TelegramUserClient,
@@ -33,64 +96,18 @@ export function attachMessageListener(
 ): void {
   const me = client.getMe()
 
-  // Classify task complexity and return an ETA bucket
-  function classifyTask(msg: string): { label: string; etaSec: number } | null {
-    const m = msg.toLowerCase()
-    const len = msg.length
-    // Very complex — parallel builds, full apps, multi-step deployments
-    if (/landing page|full.?stack|web.?app|mini.?app|whatsapp|telegram.?app|complete.+site|swarm|parallel|multiple.+bot|dashboard|platform/i.test(m)) {
-      return { label: 'This one is fairly complex — should be done in about a minute. I\'ll keep you posted.', etaSec: 60 }
-    }
-    // Complex — website, bot deploy, scripts running
-    if ((len > 40 && /website|webpage|page|landing|deploy|hosting|bot|script|install|set.?up|create.+site|build.+app/i.test(m))) {
-      return { label: 'On it! Should take around 30 seconds — I\'ll let you know how it\'s going.', etaSec: 30 }
-    }
-    // Medium — code/file generation
-    if (len > 20 && /write|make|code|generate|create|design|develop/i.test(m)) {
-      return { label: 'On it! Give me about 15 seconds.', etaSec: 15 }
-    }
-    return null
-  }
-
-  // Progress messages sent every 25s for long-running tasks
-  const PROGRESS_UPDATES = [
-    'Still working on it — going well so far...',
-    'Almost there, wrapping up the last steps...',
-    'Taking a little longer than expected, but still on it...',
-  ]
-
   // Message debouncer — batches rapid messages, sends typing indicator
-  const debouncer = new MessageDebouncer(700, async (chatId, messages, replyToId, userName, tgClient) => {
+  const debouncer = new MessageDebouncer(700, async (chatId, messages, replyToId, userName, tgClient, isGroup) => {
     const combined = messages.join('\n')
     try { await tgClient.setTyping(chatId) } catch {}
     await new Promise(r => setTimeout(r, TYPING_DELAY_MS))
 
-    // Send ETA estimate immediately before blocking on the runtime
-    const taskInfo = classifyTask(combined)
-    if (taskInfo) {
-      try { await tgClient.sendMessage(chatId, taskInfo.label) } catch {}
-    }
-
-    // For tasks >= 30s, send periodic progress updates while runtime runs
-    let progressInterval: ReturnType<typeof setInterval> | null = null
-    let progressIdx = 0
-    if (taskInfo && taskInfo.etaSec >= 30) {
-      progressInterval = setInterval(async () => {
-        const msg = PROGRESS_UPDATES[progressIdx]
-        if (msg) {
-          try { await tgClient.sendMessage(chatId, msg) } catch {}
-          progressIdx++
-        }
-      }, 25_000)
-    }
-
-    let response: Awaited<ReturnType<typeof runtime.processMessage>>
-    try {
-      response = await runtime.processMessage({ chatId, userMessage: combined, userName, messageId: replyToId })
-    } finally {
-      if (progressInterval) clearInterval(progressInterval)
-    }
+    const response = await runtime.processMessage({ chatId, userMessage: combined, userName, isGroup, messageId: replyToId })
     if (!response.content) return
+    if (/still working on your previous request|please wait a moment/i.test(response.content)) {
+      console.log('[Listener:' + tenantId + '] Suppressed busy reply for chat ' + chatId)
+      return
+    }
 
     // Absolute last-resort guard — strip code/HTML/JSON before it reaches Telegram
     let text = response.content
@@ -179,12 +196,27 @@ export function attachMessageListener(
         const senderId = msg.senderId?.toString() ?? ""
         if (senderId === me?.id?.toString()) return
 
+        // Ignore BotFather and all bots before any group/reply routing.
+        // This prevents bot-to-bot loops when another bot replies to the agent.
+        const IGNORED_BOTS = ['93372553', '1087968824', '136817688']  // BotFather etc
+        if (IGNORED_BOTS.includes(senderId)) {
+          console.log('[Listener:' + tenantId + '] Blocked bot: ' + senderId)
+          return
+        }
+        const senderEntity = await msg.getSender()
+        if (senderLooksLikeBot(senderEntity)) {
+          console.log('[Listener:' + tenantId + '] Blocked bot entity: ' + senderId)
+          return
+        }
+
         const msgKey = String(msg.chatId) + '-' + String(msg.id)
         if (processingMessages.has(msgKey)) return
         processingMessages.add(msgKey)
         setTimeout(() => processingMessages.delete(msgKey), 30000)
 
-        const isPrivate = msg.peerId && 'userId' in msg.peerId
+        const isPrivate = Boolean(msg.peerId && 'userId' in msg.peerId)
+        const isGroup = !isPrivate
+        const chatId = msg.chatId?.toString() ?? tenantId
 
         // DM policy filter
         if (isPrivate) {
@@ -208,34 +240,20 @@ export function attachMessageListener(
             // policy === 'everyone' — allow all
           } catch { /* non-blocking, allow through */ }
         }
-        if (!isPrivate) return
-
-        // Ignore BotFather and all bots - HARD BLOCK
-        const IGNORED_BOTS = ['93372553', '1087968824', '136817688']  // BotFather etc
-        
-        if (IGNORED_BOTS.includes(senderId)) {
-          console.log('[Listener:' + tenantId + '] Blocked bot: ' + senderId)
-          return
-        }
-
-        const senderEntity = await msg.getSender()
-        if (senderEntity && 'bot' in senderEntity && (senderEntity as {bot?: boolean}).bot === true) {
-          console.log('[Listener:' + tenantId + '] Blocked bot entity: ' + senderId)
-          return
+        if (isGroup) {
+          const replyToMsgId = (msg.replyTo as { replyToMsgId?: number } | undefined)?.replyToMsgId
+          const isReplyToAgent = await isReplyToAgentMessage(client, chatId, replyToMsgId, me)
+          if (!groupMessageAddressesAgent(msg.message, me, msg as { mentioned?: boolean }, isReplyToAgent)) return
         }
 
         const chat = await msg.getChat()
-        const sender = await msg.getSender()
+        const sender = senderEntity
         const chatEntity = chat ?? sender
         if (!chatEntity) return
 
         let userName: string | undefined
-        if (sender && ('firstName' in sender || 'username' in sender)) {
-          const s = sender as { firstName?: string; username?: string }
-          userName = s.firstName ?? s.username ?? undefined
-        }
+        if (sender) userName = formatSenderIdentity(sender, senderId)
 
-        const chatId = msg.chatId?.toString() ?? tenantId
         console.log('[Listener:' + tenantId + '] From ' + (userName ?? senderId) + ': ' + msg.message.slice(0, 80))
 
         // Admin commands — owner only
@@ -268,7 +286,7 @@ export function attachMessageListener(
         }
 
         // Debounce — batch rapid messages before processing
-        await debouncer.enqueue(chatId, msg.message, senderId, msg.id, userName, client)
+        await debouncer.enqueue(chatId, msg.message, senderId, msg.id, userName, client, isGroup)
       } catch (err) {
         console.error('[Listener:' + tenantId + '] Error:', err)
       }
