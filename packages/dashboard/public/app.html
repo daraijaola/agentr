@@ -1855,7 +1855,7 @@ async function goDashboard() {
 
   // Load live status from API
   try {
-    const status = await fetch(API + '/agent/status/' + STATE.tenantId).then(r => r.json())
+    const status = await fetch(API + '/agent/status/' + STATE.tenantId, { headers: authGetHdr() }).then(r => r.json())
     if (status.walletAddress) {
       STATE.walletAddress = status.walletAddress
       document.getElementById('wallet-addr').textContent = status.walletAddress
