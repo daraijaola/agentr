@@ -397,7 +397,7 @@ textarea#cin::placeholder{color:var(--tx3)}
     </div>
     <div class="tb-model" onclick="openModal()">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      <span id="tb-m-label">AIR</span>
+      <span id="tb-m-label">BTL</span>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
     </div>
     <button class="tb-build" onclick="send()">
@@ -466,7 +466,7 @@ textarea#cin::placeholder{color:var(--tx3)}
         <div class="msg">
           <div class="msg-h">
             <div class="av ai">A</div>
-            <span class="m-name">AIR</span>
+            <span class="m-name">BTL</span>
             <span class="m-time">just now</span>
           </div>
           <div class="m-body">
@@ -498,7 +498,7 @@ textarea#cin::placeholder{color:var(--tx3)}
           <div class="comp-footer">
             <div class="comp-model" onclick="openModal()">
               <div class="cmd" id="cmd-dot"></div>
-              <span id="cmd-label">AIR</span>
+              <span id="cmd-label">BTL</span>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
             </div>
             <div class="cf-spacer"></div>
@@ -526,7 +526,7 @@ textarea#cin::placeholder{color:var(--tx3)}
       TON Mainnet
     </div>
     <div class="sdiv"></div>
-    <div class="si si-ac" id="sb-model">AIR · CREDITS</div>
+    <div class="si si-ac" id="sb-model">BTL · CREDITS</div>
     <div style="margin-left:auto">
       <div class="si" id="sb-user"></div>
     </div>
@@ -543,14 +543,14 @@ textarea#cin::placeholder{color:var(--tx3)}
 
         <div class="m-section">AGENTR Credits</div>
 
-        <!-- AIR -->
-        <div class="mopt sel" id="opt-air" onclick="selectModel('air','AIR','AIR · CREDITS')">
+        <!-- BTL Runtime -->
+        <div class="mopt sel" id="opt-air" onclick="selectModel('air','BTL','BTL · CREDITS')">
           <div class="mlogo logo-air">
-            <span class="air-ai">AI</span><span class="air-r">r</span>
+            <img src="/btl-logo.svg" alt="BTL" style="width:100%;height:100%;border-radius:inherit;display:block;" />
           </div>
           <div class="mopt-info">
-            <div class="mopt-name">AIR</div>
-            <div class="mopt-desc">AGENTR's model gateway — TON &amp; Telegram specialist · Recommended</div>
+            <div class="mopt-name">BTL</div>
+            <div class="mopt-desc">BTL Runtime — OpenAI-compatible gateway by Bad Theory Labs · Recommended</div>
           </div>
           <div class="mopt-r">
             <span class="tag tag-c">CREDITS</span>
@@ -645,14 +645,14 @@ if (!S.token || !S.tenantId) { location.href = '/app'; throw '' }
 const hdr = () => ({ Authorization: 'Bearer ' + S.token })
 
 // ─── STATE ───────────────────────────────────────────────
-const M = { model:'air', label:'AIR', sbLabel:'AIR · CREDITS', byok:{anthropic:'',openai:''}, byokActive:'' }
+const M = { model:'air', label:'BTL', sbLabel:'BTL · CREDITS', byok:{anthropic:'',openai:''}, byokActive:'' }
 
 // ─── INIT ────────────────────────────────────────────────
 ;(function init(){
   try { Object.assign(M.byok, JSON.parse(localStorage.getItem('cr_byok')||'{}')) } catch{}
   M.byokActive = localStorage.getItem('cr_byok_active') || ''
   const sm = localStorage.getItem('cr_model')
-  const MAP = { air:['air','AIR','AIR · CREDITS'], 'claude-sonnet':['claude-sonnet','Claude Sonnet','Claude · CREDITS'], codex:['codex','o4-mini','o4-mini · CREDITS'] }
+  const MAP = { air:['air','BTL','BTL · CREDITS'], 'claude-sonnet':['claude-sonnet','Claude Sonnet','Claude · CREDITS'], codex:['codex','o4-mini','o4-mini · CREDITS'] }
   if (MAP[sm]) _applyModel(...MAP[sm])
   document.getElementById('sb-user').textContent = '@' + (S.tenantId||'').slice(0,10)
   refreshByokUI()
@@ -674,12 +674,12 @@ function selectModel(val,label,sb){ _applyModel(val,label,sb); M.byokActive=''; 
 // ─── BYOK ────────────────────────────────────────────────
 function toggleByok(p){
   const inp = document.getElementById(p==='anthropic'?'key-cla':'key-oai')
-  if(M.byok[p]&&M.byok[p].length>8){ M.byok[p]=''; inp.value=''; if(M.byokActive===p){M.byokActive='';localStorage.removeItem('cr_byok_active');_applyModel('air','AIR','AIR · CREDITS')} localStorage.setItem('cr_byok',JSON.stringify(M.byok)); refreshByokUI() }
+  if(M.byok[p]&&M.byok[p].length>8){ M.byok[p]=''; inp.value=''; if(M.byokActive===p){M.byokActive='';localStorage.removeItem('cr_byok_active');_applyModel('air','BTL','BTL · CREDITS')} localStorage.setItem('cr_byok',JSON.stringify(M.byok)); refreshByokUI() }
   else { inp.style.display='block'; inp.focus() }
 }
 function saveByok(p){ M.byok[p]=document.getElementById(p==='anthropic'?'key-cla':'key-oai').value.trim(); localStorage.setItem('cr_byok',JSON.stringify(M.byok)); refreshByokUI() }
 function activateByok(p){
-  if(M.byokActive===p){ M.byokActive=''; localStorage.removeItem('cr_byok_active'); _applyModel('air','AIR','AIR · CREDITS') }
+  if(M.byokActive===p){ M.byokActive=''; localStorage.removeItem('cr_byok_active'); _applyModel('air','BTL','BTL · CREDITS') }
   else { M.byokActive=p; localStorage.setItem('cr_byok_active',p); p==='anthropic'?_applyModel('claude-sonnet','Claude (BYOK)','Anthropic · BYOK'):_applyModel('codex','GPT-4o (BYOK)','OpenAI · BYOK') }
   refreshByokUI(); closeModal()
 }
