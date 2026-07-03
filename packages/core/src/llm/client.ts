@@ -354,7 +354,10 @@ export class LLMClient {
         }
         else {
             body.max_tokens = maxTokens;
-            body.temperature = this.config.temperature ?? 0.7;
+            // Only send temperature when explicitly configured — newer Claude
+            // models (e.g. Opus 4.8) reject non-default temperature
+            if (this.config.temperature !== undefined)
+                body.temperature = this.config.temperature;
         }
         if (options.tools?.length) {
             body.tools = options.tools.map(t => ({
