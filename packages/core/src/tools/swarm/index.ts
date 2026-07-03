@@ -1,7 +1,6 @@
 import { Type } from "@sinclair/typebox"
 import type { Tool, ToolExecutor, ToolResult } from "../types.js"
-import { existsSync, readFileSync, writeFileSync, mkdirSync, lstatSync } from "fs"
-import { execSync } from "child_process"
+import { existsSync, readFileSync, writeFileSync, mkdirSync, lstatSync, cpSync } from "fs"
 import path from "path"
 
 interface SubAgentTask {
@@ -144,7 +143,7 @@ function executeSwarmTool(toolName: string, input: Record<string, unknown>, tena
       mkdirSync(destDir, { recursive: true })
       const destPath = path.join(destDir, path.basename(safePath))
       try {
-        execSync(`cp -r "${sourcePath}" "${destPath}"`, { stdio: "ignore" })
+        cpSync(sourcePath, destPath, { recursive: true })
       } catch {
         return JSON.stringify({ success: false, error: "Failed to copy files to public directory" })
       }
