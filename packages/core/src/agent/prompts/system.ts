@@ -161,7 +161,7 @@ export const TOOL_NAMES = [
 export const AGENTR_KNOWLEDGE = [
   `ABOUT AGENTR (your platform — know this well):`,
   `AGENTR is an AI Agent Factory for TON blockchain and Telegram. It gives every user a personal AI agent that lives inside their own Telegram account — not a bot, but their actual account. The agent can read/send messages, manage groups, run code, deploy websites, trade on TON, send/receive TON/jettons, manage NFTs, register .ton domains, create and manage Telegram bots, and much more.`,
-  `AGENTR plans: Free Trial (300 credits, Claude Haiku model), Starter ($9/mo, 1,200 credits), Pro ($19/mo, 2,800 credits), Elite ($35/mo, 6,000 credits). All paid plans include a dedicated TON wallet, 129 tools, Claude AI, and full Telegram account control.`,
+  `AGENTR plans: Free Trial (1,000 credits on BTL-2 for 24 hours), Starter ($15/mo, 12,000 credits with DeepSeek V4 Flash), Pro ($29/mo, 32,000 credits with DeepSeek V4 Pro), Elite ($49/mo, 80,000 credits with priority BTL Runtime routes). All plans include a dedicated TON wallet, 129 tools, Docker workspace isolation, and full Telegram account control.`,
   `Key selling points: (1) Your agent uses YOUR Telegram account — no separate bot needed. (2) Autonomous TON wallet for crypto operations. (3) 129 tools covering all of Telegram + TON DeFi (DeDust, STON.fi). (4) Can deploy and run code/servers in its workspace. (5) Publishes websites to agentr.online/sites/.`,
   `When users ask what you can do, give concrete examples from their actual context (e.g. "I can send messages to your contacts, manage your groups, trade TON, deploy websites, write and run code, register .ton domains..."). Keep it short and punchy.`,
   `If a user asks how AGENTR works or what it costs, explain clearly and mention agentr.online for sign-up.`,
@@ -210,15 +210,16 @@ export function buildSystemPrompt(
   modelId?: string,
 ): string {
   const MODEL_DISPLAY_NAMES: Record<string,string> = {
-    'claude-haiku-4-5': 'Claude Haiku 4.5', 'gpt-5-nano': 'GPT-5 nano',
-    'gpt-4o-mini': 'GPT-4o mini', 'gpt-5-mini': 'GPT-5 mini',
-    'gpt-5.4': 'GPT-5.4', 'claude-opus-4-8': 'Claude Opus 4.8',
+    'btl-2': 'BTL-2',
+    'deepseek-v4-flash': 'DeepSeek V4 Flash',
+    'deepseek-v4-pro': 'DeepSeek V4 Pro',
+    'deepseek-r1-0528': 'DeepSeek R1 0528',
   }
-  const activeModelName = modelId ? (MODEL_DISPLAY_NAMES[modelId] ?? modelId) : 'Claude Haiku 4.5'
+  const activeModelName = modelId ? (MODEL_DISPLAY_NAMES[modelId] ?? modelId) : 'BTL-2'
   const sections = [
     ...criticalOverrides(toolCount ?? 0),
     ...IDENTITY(phone, walletAddress, serverIp, agentName),
-    `You are currently running on the ${activeModelName} model (model ID: ${modelId ?? 'claude-haiku-4-5'}). If a user asks which AI model you use or checks your status, tell them: ${activeModelName}.`,
+    `You are currently running on the ${activeModelName} model through BTL Runtime (model ID: ${modelId ?? 'btl-2'}). If a user asks which AI model you use or checks your status, tell them: ${activeModelName} via BTL Runtime.`,
     ,
     ...PERSONALITY,
     '',

@@ -966,8 +966,8 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div class="plan-note">1,000 credits · 24-hour trial</div>
         <div class="plan-divider"></div>
         <div class="plan-feats">
-          <div class="plan-feat"><span class="plan-check">✓</span> 300 free credits</div>
-          <div class="plan-feat"><span class="plan-check">✓</span> Claude Haiku model</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> 1,000 free credits</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> BTL-2 model</div>
           <div class="plan-feat"><span class="plan-check">✓</span> TON wallet included</div>
         </div>
         <button class="plan-btn plan-btn-muted" onclick="goProvisioning('free',0,'0')">Start free</button>
@@ -979,8 +979,8 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div class="plan-period">/ month</div>
         <div class="plan-divider"></div>
         <div class="plan-feats">
-          <div class="plan-feat"><span class="plan-check">✓</span> 1,200 credits / mo</div>
-          <div class="plan-feat"><span class="plan-check">✓</span> All AI models</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> 12,000 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> DeepSeek V4 Flash</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Bots &amp; Mini Apps</div>
           <div class="plan-feat"><span class="plan-check">✓</span> TON payments</div>
         </div>
@@ -994,8 +994,8 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div class="plan-period">/ month</div>
         <div class="plan-divider"></div>
         <div class="plan-feats">
-          <div class="plan-feat"><span class="plan-check">✓</span> 2,800 credits / mo</div>
-          <div class="plan-feat"><span class="plan-check">✓</span> All AI models</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> 32,000 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> DeepSeek V4 Pro</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Sub-agents (soon)</div>
           <div class="plan-feat"><span class="plan-check">✓</span> TON Sites &amp; DNS</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Marketplace</div>
@@ -1009,7 +1009,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div class="plan-period">/ month</div>
         <div class="plan-divider"></div>
         <div class="plan-feats">
-          <div class="plan-feat"><span class="plan-check">✓</span> 6,000 credits / mo</div>
+          <div class="plan-feat"><span class="plan-check">✓</span> 80,000 credits / mo</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Priority model access</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Swarm mode</div>
           <div class="plan-feat"><span class="plan-check">✓</span> Publish &amp; earn 75%</div>
@@ -1171,7 +1171,7 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2C4.7 2 2 4.7 2 8s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z" stroke="#0098EA" stroke-width="1.5"/><path d="M5 8.5l2 2 4-4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
               <span class="dash-card-lbl">AI Model</span>
             </div>
-            <div class="dash-card-val" style="font-size:15px;font-weight:600" id="ov-model-name">Claude</div>
+            <div class="dash-card-val" style="font-size:15px;font-weight:600" id="ov-model-name">BTL-2</div>
             <div class="dash-card-sub" id="ov-model-plan">Default for your plan</div>
           </div>
 
@@ -1554,26 +1554,37 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
         <div id="cr-modal">
           <div class="cr-modal-box">
             <div class="cr-modal-title">Choose Model</div>
-            <div class="cr-modal-sub">All AGENTR Credits models are ready to use. Bring your own API key for unlimited usage.</div>
+            <div class="cr-modal-sub">AGENTR Credits route through BTL Runtime with token-based accounting.</div>
 
             <div class="cr-modal-section">AGENTR Credits</div>
             <div style="display:flex;flex-direction:column;gap:8px">
-              <div class="cr-model-opt sel" id="cr-opt-sonnet" onclick="crSelectModel('claude-sonnet','Claude Haiku 4.5','Haiku · BALANCED · CREDITS')">
-                <div class="cr-model-icon cla">C</div>
+              <div class="cr-model-opt sel" id="cr-opt-btl" onclick="crSelectModel('btl-2','BTL-2','BTL Runtime · FREE')">
+                <div class="cr-model-icon air">B</div>
                 <div class="cr-model-info">
-                  <div class="cr-model-name">Claude Haiku 4.5</div>
-                  <div class="cr-model-desc">Anthropic · Balanced reasoning &amp; code</div>
+                  <div class="cr-model-name">BTL-2</div>
+                  <div class="cr-model-desc">BTL Runtime · Free plan default</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
                   <span class="cr-model-tag credits">CREDITS</span>
                   <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
                 </div>
               </div>
-              <div class="cr-model-opt" id="cr-opt-codex" onclick="crSelectModel('codex','GPT-5 mini','GPT-5 mini · CODING · CREDITS')">
-                <div class="cr-model-icon oai">o</div>
+              <div class="cr-model-opt" id="cr-opt-flash" onclick="crSelectModel('deepseek-v4-flash','DeepSeek V4 Flash','Starter · CREDITS')">
+                <div class="cr-model-icon oai">D</div>
                 <div class="cr-model-info">
-                  <div class="cr-model-name">GPT-5 mini</div>
-                  <div class="cr-model-desc">OpenAI · Coding specialist · Smart contracts</div>
+                  <div class="cr-model-name">DeepSeek V4 Flash</div>
+                  <div class="cr-model-desc">Fast BTL route for Starter plans</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span class="cr-model-tag credits">CREDITS</span>
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--cr-green);"></div>
+                </div>
+              </div>
+              <div class="cr-model-opt" id="cr-opt-pro" onclick="crSelectModel('deepseek-v4-pro','DeepSeek V4 Pro','Pro · CREDITS')">
+                <div class="cr-model-icon oai">P</div>
+                <div class="cr-model-info">
+                  <div class="cr-model-name">DeepSeek V4 Pro</div>
+                  <div class="cr-model-desc">Higher capability BTL route for Pro plans</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
                   <span class="cr-model-tag credits">CREDITS</span>
@@ -1605,8 +1616,8 @@ html,body { height:100%; font-family:var(--font-sans); background:var(--bg-page)
               <div class="cr-model-opt" id="cr-opt-oai-byok">
                 <div class="cr-model-icon oai" onclick="crToggleByok('openai')" style="cursor:pointer">o</div>
                 <div class="cr-model-info" onclick="crToggleByok('openai')" style="cursor:pointer">
-                  <div class="cr-model-name">GPT-4o / Codex (OpenAI)</div>
-                  <div class="cr-model-desc">Your OpenAI API key — unlimited usage</div>
+                  <div class="cr-model-name">OpenAI BYOK</div>
+                  <div class="cr-model-desc">Optional external API key — separate from AGENTR Credits</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
                   <span class="cr-model-tag byok" id="cr-oai-tag">CONNECT</span>
@@ -1872,13 +1883,13 @@ async function goDashboard() {
       const planMod = document.getElementById('ov-plan-model')
       if (planMod) planMod.textContent = status.planModel || 'Haiku 4.5'
       const modName = document.getElementById('ov-model-name')
-      if (modName) modName.textContent = status.preferredModel ? (MODELS.find(function(m){return m.id===status.preferredModel})||{name:status.planModel||'Claude'}).name : (status.planModel || 'Claude')
+      if (modName) modName.textContent = status.preferredModel ? (MODELS.find(function(m){return m.id===status.preferredModel})||{name:status.planModel||'BTL-2'}).name : (status.planModel || 'BTL-2')
       const modPlan = document.getElementById('ov-model-plan')
       if (modPlan) modPlan.textContent = status.preferredModel ? 'Your selected model' : 'Default for ' + (status.planName || 'Free') + ' plan'
     }
     // Default active model: use saved preference, or fall back to plan's top model
-    var PLAN_DEFAULT_MODEL = { free:'claude-haiku-4-5', starter:'gpt-5-mini', pro:'gpt-5.4', ultra:'gpt-5.4', elite:'claude-opus-4-8', enterprise:'claude-opus-4-8' }
-    var activeModelId = status.preferredModel || PLAN_DEFAULT_MODEL[status.plan] || 'claude-haiku-4-5'
+    var PLAN_DEFAULT_MODEL = { free:'btl-2', starter:'deepseek-v4-flash', pro:'deepseek-v4-pro', ultra:'deepseek-v4-pro', elite:'deepseek-v4-pro', enterprise:'deepseek-v4-pro' }
+    var activeModelId = status.preferredModel || PLAN_DEFAULT_MODEL[status.plan] || 'btl-2'
     if (typeof renderModelChips === 'function') renderModelChips(activeModelId)
     STATE.preferredModel = activeModelId
 
@@ -1967,12 +1978,10 @@ function copyWallet() {
 
 // ── MODEL DEFINITIONS ──────────────────────────────────────────────
 const MODELS = [
-  { id:'claude-haiku-4-5',       name:'Claude Haiku 4.5',      sub:'Anthropic · Fast · Efficient',      img:'/claude.webp',  minPlan:0 },
-  { id:'gpt-5-nano',             name:'GPT-5 nano',            sub:'OpenAI · Lightweight',             img:'/openai.webp',  minPlan:0 },
-  { id:'gpt-4o-mini',            name:'GPT-4o mini',           sub:'OpenAI · Fast & Balanced',          img:'/openai.webp',  minPlan:1 },
-  { id:'gpt-5-mini',             name:'GPT-5 mini',            sub:'OpenAI · Smart & Efficient',        img:'/openai.webp',  minPlan:1 },
-  { id:'gpt-5.4',                name:'GPT-5.4',               sub:'OpenAI · Flagship',                img:'/openai.webp',  minPlan:2 },
-  { id:'claude-opus-4-8',        name:'Claude Opus 4.8',       sub:'Anthropic · Most powerful',         img:'/claude.webp',  minPlan:4 },
+  { id:'btl-2',                  name:'BTL-2',                 sub:'BTL Runtime · Free default',        img:'/btl-logo.svg', minPlan:0 },
+  { id:'deepseek-v4-flash',      name:'DeepSeek V4 Flash',     sub:'BTL Runtime · Fast route',          img:'/btl-logo.svg', minPlan:1 },
+  { id:'deepseek-v4-pro',        name:'DeepSeek V4 Pro',       sub:'BTL Runtime · Pro route',           img:'/btl-logo.svg', minPlan:2 },
+  { id:'deepseek-r1-0528',       name:'DeepSeek R1 0528',      sub:'BTL Runtime · Reasoning route',     img:'/btl-logo.svg', minPlan:4 },
 ]
 const PLAN_LEVEL = { free:0, starter:1, pro:2, ultra:3, elite:4, enterprise:5 }
 const PLAN_LABEL = { 1:'Starter+', 2:'Pro+', 3:'Ultra+', 4:'Elite+', 5:'Enterprise' }
@@ -1986,7 +1995,7 @@ function renderModelChips(activeModelId) {
   let lastTier = -1
   MODELS.forEach(function(m) {
     const locked = planLevel < m.minPlan
-    const active = m.id === (activeModelId || 'claude-haiku-4-5')
+    const active = m.id === (activeModelId || 'btl-2')
     if (m.minPlan !== lastTier) {
       lastTier = m.minPlan
       const hdr = document.createElement('div')
@@ -2409,9 +2418,9 @@ async function handleTopup(usd, credits, ton) {
 
 // ─── CODER TAB ────────────────────────────────────
 const CR = {
-  model: 'claude-sonnet',
-  modelLabel: 'Claude Sonnet',
-  statusLabel: 'Sonnet · CREDITS',
+  model: 'btl-2',
+  modelLabel: 'BTL-2',
+  statusLabel: 'BTL Runtime · CREDITS',
   inited: false,
   openFile: null,
   byok: { anthropic: '', openai: '' },
@@ -2429,8 +2438,9 @@ function initCoderTab() {
   if (savedModel) {
     const map = {
       'air':['air','BTL','BTL · CREDITS'],
-      'claude-sonnet':['claude-sonnet','Claude Haiku 4.5','Haiku · CREDITS'],
-      'codex':['codex','GPT-5 mini','GPT-5 mini · CREDITS'],
+      'btl-2':['btl-2','BTL-2','BTL Runtime · CREDITS'],
+      'deepseek-v4-flash':['deepseek-v4-flash','DeepSeek V4 Flash','Starter · CREDITS'],
+      'deepseek-v4-pro':['deepseek-v4-pro','DeepSeek V4 Pro','Pro · CREDITS'],
     }
     if (map[savedModel]) crApplyModel(...map[savedModel])
   }
@@ -2470,12 +2480,12 @@ function crActivateByok(provider) {
   if (CR.byokActive === provider) {
     CR.byokActive = ''
     localStorage.removeItem('cr_byok_active')
-    crApplyModel('claude-sonnet', 'Claude Sonnet', 'Sonnet · CREDITS')
+    crApplyModel('btl-2', 'BTL-2', 'BTL Runtime · CREDITS')
   } else {
     CR.byokActive = provider
     localStorage.setItem('cr_byok_active', provider)
-    if (provider === 'anthropic') crApplyModel('claude-sonnet', 'Claude (BYOK)', 'Anthropic · BYOK')
-    else crApplyModel('codex', 'GPT-4o (BYOK)', 'OpenAI · BYOK')
+    if (provider === 'anthropic') crApplyModel('btl-2', 'BTL-2', 'BTL Runtime · CREDITS')
+    else crApplyModel('btl-2', 'BTL-2', 'BTL Runtime · CREDITS')
   }
   crRefreshByokDots()
   crCloseModal()
@@ -2651,7 +2661,7 @@ function crAppendMsg(role, text) {
   const c = document.getElementById('cr-chat-msgs')
   const userInit = (STATE.tenantId || 'U').slice(0, 1).toUpperCase()
   const isAI = role === 'agent'
-  const name = isAI ? (CR.modelLabel || 'Claude Sonnet') : 'You'
+  const name = isAI ? (CR.modelLabel || 'BTL-2') : 'You'
   const now = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
   const bodyHtml = crFormatText(text)
   const el = document.createElement('div')
@@ -2717,7 +2727,7 @@ function crApplyModel(val, label, statusLabel) {
   document.getElementById('cr-model-label').textContent = label
   document.getElementById('cr-sb-model').textContent = statusLabel
   document.querySelectorAll('.cr-model-opt').forEach(o => o.classList.remove('sel'))
-  const optMap = { air: 'cr-opt-air', 'claude-sonnet': 'cr-opt-sonnet', codex: 'cr-opt-codex' }
+  const optMap = { air: 'cr-opt-air', 'btl-2': 'cr-opt-btl', 'deepseek-v4-flash': 'cr-opt-flash', 'deepseek-v4-pro': 'cr-opt-pro' }
   if (optMap[val]) document.getElementById(optMap[val])?.classList.add('sel')
 }
 
@@ -2748,7 +2758,7 @@ function crSaveByok(provider) {
   if (val.length <= 8 && CR.byokActive === provider) {
     CR.byokActive = ''
     localStorage.removeItem('cr_byok_active')
-    crApplyModel('claude-sonnet', 'Claude Sonnet', 'Sonnet · CREDITS')
+    crApplyModel('btl-2', 'BTL-2', 'BTL Runtime · CREDITS')
   }
   crRefreshByokDots()
 }

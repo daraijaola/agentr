@@ -266,9 +266,10 @@ export function attachMessageListener(
           } else if (cmd === '/status') {
             const _mid = runtime.getModel()
             const _mnames: Record<string,string> = {
-              'claude-haiku-4-5':'Claude Haiku 4.5','gpt-5-nano':'GPT-5 nano',
-              'gpt-4o-mini':'GPT-4o mini','gpt-5-mini':'GPT-5 mini',
-              'gpt-5.4':'GPT-5.4','claude-opus-4-8':'Claude Opus 4.8',
+              'btl-2':'BTL-2',
+              'deepseek-v4-flash':'DeepSeek V4 Flash',
+              'deepseek-v4-pro':'DeepSeek V4 Pro',
+              'deepseek-r1-0528':'DeepSeek R1 0528',
             }
             const _mname = _mnames[_mid] ?? _mid
             reply = `🤖 AGENTR Status\n\n✅ Agent: Online\n📱 Account: ${tenantId.slice(0,8)}...\n🧠 Model: ${_mname}\n📬 Runtime: PM2 managed`

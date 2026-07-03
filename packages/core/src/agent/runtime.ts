@@ -9,15 +9,25 @@ import { sessionManager } from '../session/manager.js'
 import { routedExecute } from '../tools/telegram/router.js'
 
 // ─── Credit cost per 1 000 tokens by BTL Runtime model ──────────────────────
-const MODEL_CREDITS_PER_1K: Record<string, number> = {
-  'btl-2':               1,
-  'deepseek-v4-flash':   1,
-  'deepseek-v4-pro':     2,
-  'deepseek-r1-0528':    4,
+// Rates are split by input/output so cheap short replies do not burn a whole
+// credit. Fractional usage is accumulated per tenant and deducted once it
+// reaches a full credit.
+const MODEL_CREDITS_PER_1K: Record<string, { input: number; output: number }> = {
+  'btl-2':               { input: 0.05, output: 0.25 },
+  'deepseek-v4-flash':   { input: 0.08, output: 0.18 },
+  'deepseek-v4-pro':     { input: 0.48, output: 0.96 },
+  'deepseek-r1-0528':    { input: 0.55, output: 2.60 },
 }
-function calcCredits(model: string, inputTokens: number, outputTokens: number): number {
-  const rate = MODEL_CREDITS_PER_1K[model] ?? 3
-  return Math.max(1, Math.round((inputTokens + outputTokens) * rate / 1000))
+const creditRemainders = new Map<string, number>()
+function calcCreditUsage(model: string, inputTokens: number, outputTokens: number): number {
+  const rate = MODEL_CREDITS_PER_1K[model] ?? MODEL_CREDITS_PER_1K['btl-2']!
+  return (inputTokens * rate.input + outputTokens * rate.output) / 1000
+}
+function wholeCreditsForTenant(tenantId: string, rawCost: number): number {
+  const total = (creditRemainders.get(tenantId) ?? 0) + rawCost
+  const whole = Math.floor(total)
+  creditRemainders.set(tenantId, total - whole)
+  return whole
 }
 
 // ─── Enterprise phones — always bypass credit checks ─────────────────────────
@@ -476,9 +486,14 @@ export class AgentRuntime {
         if (this.config.tenantId && this.deductCredits) {
           try {
             const creditCost = res.usage
-              ? calcCredits(res.usage.model, res.usage.inputTokens, res.usage.outputTokens)
-              : 3
-            await this.deductCredits(this.config.tenantId, creditCost, 'LLM call', res.usage?.model ?? 'air')
+              ? wholeCreditsForTenant(
+                  this.config.tenantId,
+                  calcCreditUsage(res.usage.model, res.usage.inputTokens, res.usage.outputTokens)
+                )
+              : 1
+            if (creditCost > 0) {
+              await this.deductCredits(this.config.tenantId, creditCost, 'LLM call', res.usage?.model ?? 'air')
+            }
           } catch { /* non-blocking */ }
         }
 
@@ -607,7 +622,7 @@ export class AgentRuntime {
     // ─── Restore model + low-credit warning ─────────────────────────────────
     if (limitedMode) if (this.llm.config) this.llm.config.model = _originalModel
     if (limitedMode && finalResponse) {
-      finalResponse += "\n\nI'm still here! 😊 Your credits ran out but your agent stays online. Top up with TON to unlock my full power — even 1,000 credits () goes a long way!"
+      finalResponse += "\n\nI'm still here. Your credits ran out, but your agent stays online. Top up with TON to unlock full tool access again."
     } else if (finalResponse && this.config.tenantId && this.getCredits) {
       try {
         const rem = await this.getCredits(this.config.tenantId)
