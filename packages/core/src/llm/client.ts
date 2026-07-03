@@ -36,60 +36,44 @@ export interface ChatResponse {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-// AIR LLM client — sole provider for AGENTR
-// 10 real models, split across plans
+// BTL runtime LLM client — sole provider for AGENTR
+// 6 models served by the BTL runtime gateway, split across plans
 const AIR_MODELS = {
     // Free
     HAIKU:      'claude-haiku-4-5',
-    // Starter
-    FLASH:      'gemini-2.5-flash',
-    GPT4O_MINI: 'gpt-4o-mini',
-    // Pro
-    SONNET:     'claude-sonnet-4-5',
-    GPT4O:      'gpt-4o',
-    GPT41:      'gpt-4.1',
-    // Ultra
-    O4_MINI:    'o4-mini',
-    PRO:        'gemini-2.5-pro',
-    // Elite
-    SONNET_6:   'claude-sonnet-4-6',
-    GPT5:       'gpt-5.2',
-    OPUS:       'claude-opus-4-5',
-    // Enterprise
-    OPUS_6:     'claude-opus-4-6',
-    // BTL runtime additions
     GPT5_NANO:  'gpt-5-nano',
+    // Starter
+    GPT4O_MINI: 'gpt-4o-mini',
     GPT5_MINI:  'gpt-5-mini',
+    // Pro
     GPT54:      'gpt-5.4',
+    // Elite
     OPUS_8:     'claude-opus-4-8',
 };
 // Plan model splits — each tier adds to the one below
 const PLAN_MODELS: Record<string, string[]> = {
     free:       [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO],
-    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
-                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI],
-    pro:        [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
-                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41],
-    ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
-                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
-                 AIR_MODELS.O4_MINI, AIR_MODELS.PRO],
-    elite:      [AIR_MODELS.HAIKU, AIR_MODELS.FLASH, AIR_MODELS.GPT4O_MINI,
-                 AIR_MODELS.GPT5_NANO, AIR_MODELS.GPT5_MINI,
-                 AIR_MODELS.SONNET, AIR_MODELS.GPT4O, AIR_MODELS.GPT41,
-                 AIR_MODELS.O4_MINI, AIR_MODELS.PRO,
-                 AIR_MODELS.SONNET_6, AIR_MODELS.GPT5, AIR_MODELS.GPT54, AIR_MODELS.OPUS, AIR_MODELS.OPUS_8],
+    starter:    [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
+                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI],
+    pro:        [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
+                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
+                 AIR_MODELS.GPT54],
+    ultra:      [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
+                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
+                 AIR_MODELS.GPT54],
+    elite:      [AIR_MODELS.HAIKU, AIR_MODELS.GPT5_NANO,
+                 AIR_MODELS.GPT4O_MINI, AIR_MODELS.GPT5_MINI,
+                 AIR_MODELS.GPT54, AIR_MODELS.OPUS_8],
     enterprise: Object.values(AIR_MODELS),
 };
 // Default model per plan
 const PLAN_DEFAULTS: Record<string, string> = {
     free:       AIR_MODELS.HAIKU,
-    starter:    AIR_MODELS.FLASH,
-    pro:        AIR_MODELS.SONNET,
-    ultra:      AIR_MODELS.PRO,
-    elite:      AIR_MODELS.OPUS,
-    enterprise: AIR_MODELS.OPUS,
+    starter:    AIR_MODELS.GPT5_MINI,
+    pro:        AIR_MODELS.GPT54,
+    ultra:      AIR_MODELS.GPT54,
+    elite:      AIR_MODELS.OPUS_8,
+    enterprise: AIR_MODELS.OPUS_8,
 };
 function isReasoningModel(model: string): boolean {
     return /^(gpt-5|o\d)/.test(model);
@@ -299,7 +283,7 @@ export class LLMClient {
     getProvider() { return 'air'; }
     async chat(options) {
         const plan = this.config.plan ?? 'free';
-        const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.SONNET;
+        const model = this.config.model ?? PLAN_DEFAULTS[plan] ?? AIR_MODELS.HAIKU;
         checkPlanAccess(this.config, model);
         // Build message list (system + history), strip reasoning_content artifacts
         // trimToFit compresses or drops old messages to stay under the 100 KB AIR limit

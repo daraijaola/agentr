@@ -18,11 +18,11 @@ interface ChatMessage {
 }
 
 const MODELS = [
-  { id: 'air', label: 'AIR (Default)', desc: 'AGENTR base model' },
-  { id: 'claude', label: 'Claude Opus', desc: 'Best for complex contracts' },
-  { id: 'claude-sonnet', label: 'Claude Sonnet', desc: 'Fast + smart' },
-  { id: 'codex', label: 'Codex (o4-mini)', desc: 'Code-first reasoning' },
-  { id: 'gpt4', label: 'GPT-4o', desc: 'General purpose' },
+  { id: 'air', label: 'BTL (Default)', desc: 'GPT-5.4 via BTL runtime' },
+  { id: 'claude', label: 'Claude Opus 4.8', desc: 'Best for complex contracts' },
+  { id: 'claude-sonnet', label: 'Claude Haiku 4.5', desc: 'Fast + smart' },
+  { id: 'codex', label: 'GPT-5 mini', desc: 'Code-first reasoning' },
+  { id: 'gpt4', label: 'GPT-4o mini', desc: 'General purpose' },
 ]
 
 const LANG_MAP: Record<string, string> = {

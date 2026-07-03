@@ -16,19 +16,19 @@ const DEV_SESSION_TTL_MS = 4 * 60 * 60 * 1000
 function buildLLMConfig(model: string, byokKey?: string, byokProvider?: string): import('@agentr/core').LLMConfig {
   const airKey = process.env['OPENAI_API_KEY'] ?? ''
   const modelMap: Record<string, string> = {
-    'claude':        'claude-opus-4-5',
-    'claude-sonnet': 'claude-sonnet-4-5',
-    'codex':         'o4-mini',
-    'gpt4':          'gpt-4o',
-    'air':           'claude-sonnet-4-5',
+    'claude':        'claude-opus-4-8',
+    'claude-sonnet': 'claude-haiku-4-5',
+    'codex':         'gpt-5-mini',
+    'gpt4':          'gpt-4o-mini',
+    'air':           'gpt-5.4',
   }
   if (byokKey && byokProvider === 'anthropic') {
-    return { provider: 'air', apiKey: byokKey, model: 'claude-sonnet-4-5' }
+    return { provider: 'air', apiKey: byokKey, model: 'claude-opus-4-8' }
   }
   if (byokKey && byokProvider === 'openai') {
-    return { provider: 'air', apiKey: byokKey, model: 'gpt-4o' }
+    return { provider: 'air', apiKey: byokKey, model: 'gpt-5.4' }
   }
-  return { provider: 'air', apiKey: airKey, model: modelMap[model] ?? 'claude-sonnet-4-5' }
+  return { provider: 'air', apiKey: airKey, model: modelMap[model] ?? 'gpt-5.4' }
 }
 
 async function getOrCreateDevSession(tenantId: string, model: string, walletAddress: string, byokKey?: string, byokProvider?: string): Promise<AgentRuntime> {

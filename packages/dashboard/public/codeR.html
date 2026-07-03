@@ -559,12 +559,12 @@ textarea#cin::placeholder{color:var(--tx3)}
         </div>
 
         <!-- Claude Sonnet -->
-        <div class="mopt" id="opt-sonnet" onclick="selectModel('claude-sonnet','Claude Sonnet','Claude · CREDITS')">
+        <div class="mopt" id="opt-sonnet" onclick="selectModel('claude-sonnet','Claude Haiku 4.5','Haiku · CREDITS')">
           <div class="mlogo logo-cla">
             <img src="/claude-logo.png" alt="Claude"/>
           </div>
           <div class="mopt-info">
-            <div class="mopt-name">Claude Sonnet</div>
+            <div class="mopt-name">Claude Haiku 4.5</div>
             <div class="mopt-desc">Anthropic · Deep reasoning &amp; superior code quality</div>
           </div>
           <div class="mopt-r">
@@ -573,13 +573,13 @@ textarea#cin::placeholder{color:var(--tx3)}
           </div>
         </div>
 
-        <!-- o4-mini -->
-        <div class="mopt" id="opt-codex" onclick="selectModel('codex','o4-mini','o4-mini · CREDITS')">
+        <!-- GPT-5 mini -->
+        <div class="mopt" id="opt-codex" onclick="selectModel('codex','GPT-5 mini','GPT-5 mini · CREDITS')">
           <div class="mlogo logo-oai">
             <img src="/openai-logo.png" alt="OpenAI"/>
           </div>
           <div class="mopt-info">
-            <div class="mopt-name">o4-mini</div>
+            <div class="mopt-name">GPT-5 mini</div>
             <div class="mopt-desc">OpenAI · Smart contract &amp; coding specialist</div>
           </div>
           <div class="mopt-r">
@@ -652,7 +652,7 @@ const M = { model:'air', label:'BTL', sbLabel:'BTL · CREDITS', byok:{anthropic:
   try { Object.assign(M.byok, JSON.parse(localStorage.getItem('cr_byok')||'{}')) } catch{}
   M.byokActive = localStorage.getItem('cr_byok_active') || ''
   const sm = localStorage.getItem('cr_model')
-  const MAP = { air:['air','BTL','BTL · CREDITS'], 'claude-sonnet':['claude-sonnet','Claude Sonnet','Claude · CREDITS'], codex:['codex','o4-mini','o4-mini · CREDITS'] }
+  const MAP = { air:['air','BTL','BTL · CREDITS'], 'claude-sonnet':['claude-sonnet','Claude Haiku 4.5','Haiku · CREDITS'], codex:['codex','GPT-5 mini','GPT-5 mini · CREDITS'] }
   if (MAP[sm]) _applyModel(...MAP[sm])
   document.getElementById('sb-user').textContent = '@' + (S.tenantId||'').slice(0,10)
   refreshByokUI()

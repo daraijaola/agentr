@@ -62,7 +62,7 @@
 Internal OpenAI-compatible proxy — fastest, lowest cost, purpose-built for this platform.
 ```env
 LLM_PROVIDER=air
-LLM_MODEL=claude-sonnet-4-6
+LLM_MODEL=claude-opus-4-8
 AIR_BASE_URL=https://air.agentr.online/api/v1
 OPENAI_API_KEY=air-your-key-here
 ```
@@ -71,7 +71,7 @@ OPENAI_API_KEY=air-your-key-here
 Best reasoning and tool use. Prompt caching saves ~80% on input tokens.
 ```env
 LLM_PROVIDER=anthropic
-LLM_MODEL=claude-sonnet-4-6
+LLM_MODEL=claude-opus-4-8
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
@@ -86,7 +86,7 @@ MOONSHOT_API_KEY=...
 ### OpenAI
 ```env
 LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o
+LLM_MODEL=gpt-5.4
 OPENAI_API_KEY=sk-...
 ```
 
