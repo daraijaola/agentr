@@ -481,6 +481,7 @@ export class AgentRuntime {
     // ─────────────────────────────────────────────────────────────────────────
     } catch (e) {
       const errStr = String(e)
+      console.error('[Runtime:' + this.config.tenantId + '] LLM loop error:', e)
       if (errStr.includes('429') || errStr.includes('rate_limit')) {
         // Wait 60s and retry once instead of giving up
         console.log('[Runtime:' + this.config.tenantId + '] Rate limited, waiting 60s...')
