@@ -1,0 +1,371 @@
+import pg from 'pg'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const { Pool } = pg
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+let pool: pg.Pool | null = null
+
+export function getPool(): pg.Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env['DATABASE_URL'],
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    })
+
+    pool.on('error', (err) => {
+      console.error('[Database] Unexpected pool error:', err)
+    })
+  }
+  return pool
+}
+
+export class Database {
+  private pool: pg.Pool
+
+  constructor() {
+    this.pool = getPool()
+  }
+
+  async init(): Promise<void> {
+    console.log('[Database] Connecting to PostgreSQL...')
+    const client = await this.pool.connect()
+    try {
+      const migrations = ['001_initial.sql', '002_conversation_state.sql', '003_agent_sessions.sql', '004_plan_expiry.sql', '005_preferred_model.sql', '006_btl_plan_defaults.sql']
+      for (const file of migrations) {
+        const sql = readFileSync(join(__dirname, 'migrations', file), 'utf-8')
+        await client.query(sql)
+      }
+      console.log('[Database] Migrations complete')
+    } finally {
+      client.release()
+    }
+  }
+
+  //  Users
+  async upsertUser(data: {
+    telegramId: bigint
+    username?: string
+    firstName?: string
+  }): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO users (telegram_id, username, first_name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (telegram_id) DO UPDATE
+       SET username = $2, first_name = $3, updated_at = NOW()
+       RETURNING id`,
+      [data.telegramId, data.username, data.firstName]
+    )
+    return result.rows[0].id as string
+  }
+
+  //  Tenants
+  async upsertTenant(data: { id: string; userId: string; phone: string; walletAddress: string; walletMnemonicEnc: string; plan?: string; telegramUserId?: bigint }): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO tenants (id, user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE
+       SET user_id = $2, phone = $3, wallet_address = $4, wallet_mnemonic_enc = $5, updated_at = NOW()`,
+      [data.id, data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'free']
+    )
+  }
+
+  async createTenant(data: {
+    userId: string
+    phone: string
+    walletAddress: string
+    walletMnemonicEnc: string
+    plan?: string
+  }): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO tenants (user_id, phone, wallet_address, wallet_mnemonic_enc, plan)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [data.userId, data.phone, data.walletAddress, data.walletMnemonicEnc, data.plan ?? 'free']
+    )
+    return result.rows[0].id as string
+  }
+
+  async getTenantByPhone(phone: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM tenants WHERE phone = $1`,
+      [phone]
+    )
+    return result.rows[0] ?? null
+  }
+
+  async getTenant(id: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM tenants WHERE id = $1`,
+      [id]
+    )
+    return result.rows[0] ?? null
+  }
+
+  async updateTenantStatus(
+    id: string,
+    status: 'pending' | 'active' | 'suspended' | 'cancelled',
+    containerId?: string
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE tenants SET status = $1, container_id = COALESCE($2, container_id), updated_at = NOW()
+       WHERE id = $3`,
+      [status, containerId ?? null, id]
+    )
+  }
+
+  //  Agent instances
+  async createAgentInstance(tenantId: string): Promise<string> {
+    const result = await this.pool.query(
+      `INSERT INTO agent_instances (tenant_id, status)
+       VALUES ($1, 'provisioning')
+       RETURNING id`,
+      [tenantId]
+    )
+    return result.rows[0].id as string
+  }
+
+  async updateAgentStatus(
+    tenantId: string,
+    status: 'provisioning' | 'running' | 'stopped' | 'error',
+    errorMessage?: string
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE agent_instances
+       SET status = $1, error_message = $2, last_active_at = NOW(), updated_at = NOW()
+       WHERE tenant_id = $3`,
+      [status, errorMessage ?? null, tenantId]
+    )
+  }
+
+  //  Billing
+  async recordBillingEvent(data: {
+    tenantId: string
+    eventType: string
+    amountTon?: number
+    txHash?: string
+    plan?: string
+    validUntil?: Date
+  }): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO billing_events (tenant_id, event_type, amount_ton, tx_hash, plan, valid_until)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (tx_hash) DO NOTHING`,
+      [
+        data.tenantId,
+        data.eventType,
+        data.amountTon ?? null,
+        data.txHash ?? null,
+        data.plan ?? null,
+        data.validUntil ?? null,
+      ]
+    )
+  }
+
+  async startFreeTrial(tenantId: string): Promise<void> {
+    const phoneRow = await this.pool.query(
+      `SELECT phone FROM tenants WHERE id = $1`,
+      [tenantId]
+    )
+    const phone: string = phoneRow.rows[0]?.phone ?? ''
+    const isEnterprise = phone === (process.env["ENTERPRISE_PHONE"] ?? "__none__")
+
+    if (isEnterprise) {
+      await this.pool.query(
+        `UPDATE tenants SET plan = 'enterprise', status = 'active', updated_at = NOW() WHERE id = $1`,
+        [tenantId]
+      )
+      await this.pool.query(
+        `UPDATE tenants SET credits = credits + 50000 WHERE id = $1`,
+        [tenantId]
+      )
+      await this.pool.query(
+        `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 50000, 'topup', 'Enterprise access')`,
+        [tenantId]
+      )
+      return
+    }
+
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await this.pool.query(
+      `UPDATE tenants SET trial_expires_at = $1, is_trial_used = true, plan = 'free', status = 'active' WHERE id = $2`,
+      [expires, tenantId]
+    )
+    // Give trial credits so the agent can actually respond
+    await this.pool.query(
+      `UPDATE tenants SET credits = credits + 1000 WHERE id = $1`,
+      [tenantId]
+    )
+    await this.pool.query(
+      `INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, 1000, 'topup', 'Free trial — 24hr access')`,
+      [tenantId]
+    )
+  }
+
+  async getTrialStatus(tenantId: string): Promise<{ expired: boolean; expiresAt: Date | null; phone: string }> {
+    const rows = await this.pool.query(
+      `SELECT trial_expires_at, is_trial_used, phone FROM tenants WHERE id = $1`,
+      [tenantId]
+    )
+    const row = rows.rows[0]
+    if (!row) return { expired: true, expiresAt: null, phone: '' }
+    const expired = row.trial_expires_at ? new Date(row.trial_expires_at) < new Date() : false
+    return { expired, expiresAt: row.trial_expires_at, phone: row.phone }
+  }
+
+  async blockPhone(phone: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE tenants SET status = 'suspended' WHERE phone = $1`,
+      [phone]
+    )
+  }
+
+  async isPhoneBlocked(phone: string): Promise<boolean> {
+    const rows = await this.pool.query(
+      `SELECT status, is_trial_used FROM tenants WHERE phone = $1 ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    )
+    const row = rows.rows[0]
+    if (!row) return false
+    return row.status === 'suspended' && row.is_trial_used === true
+  }
+
+
+  async getCredits(tenantId: string): Promise<number> {
+    const rows = await this.pool.query(
+      'SELECT credits FROM tenants WHERE id = $1',
+      [tenantId]
+    )
+    return rows.rows[0]?.credits ?? 0
+  }
+
+
+  // Daily message counter — persisted in rate_limits table so restarts don't reset it
+  // Key format: "daily:<tenantId>:<YYYY-MM-DD>"
+  async getDailyMessageCount(tenantId: string): Promise<number> {
+    const today = new Date().toISOString().split('T')[0]!
+    const key = `daily:${tenantId}:${today}`
+    const now = Date.now()
+    const res = await this.pool.query<{ count: number }>(
+      'SELECT count FROM rate_limits WHERE ip = $1 AND reset_at > $2',
+      [key, now]
+    )
+    return res.rows[0]?.count ?? 0
+  }
+
+  async incDailyMessageCount(tenantId: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0]!
+    const key = `daily:${tenantId}:${today}`
+    const now = Date.now()
+    // Reset at end of the current UTC day
+    const endOfDay = new Date(today + 'T23:59:59.999Z').getTime()
+    await this.pool.query(
+      `INSERT INTO rate_limits (ip, count, reset_at) VALUES ($1, 1, $2)
+       ON CONFLICT (ip) DO UPDATE
+         SET count    = CASE WHEN rate_limits.reset_at < $3 THEN 1 ELSE rate_limits.count + 1 END,
+             reset_at = CASE WHEN rate_limits.reset_at < $3 THEN $2 ELSE rate_limits.reset_at END`,
+      [key, endOfDay, now]
+    )
+  }
+
+  async deductCredits(tenantId: string, amount: number, description: string, model?: string): Promise<{ success: boolean; remaining: number }> {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      const res = await client.query(
+        'UPDATE tenants SET credits = credits - $1 WHERE id = $2 AND credits >= $1 RETURNING credits',
+        [amount, tenantId]
+      )
+      if (res.rows.length === 0) {
+        await client.query('ROLLBACK')
+        const cur = await client.query('SELECT credits FROM tenants WHERE id = $1', [tenantId])
+        return { success: false, remaining: cur.rows[0]?.credits ?? 0 }
+      }
+      await client.query(
+        'INSERT INTO credit_transactions (tenant_id, amount, type, description, model) VALUES ($1, $2, $3, $4, $5)',
+        [tenantId, -amount, 'usage', description, model ?? null]
+      )
+      await client.query('COMMIT')
+      return { success: true, remaining: res.rows[0].credits }
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
+    }
+  }
+
+  async addCredits(tenantId: string, amount: number, description: string): Promise<number> {
+    const res = await this.pool.query(
+      'UPDATE tenants SET credits = credits + $1 WHERE id = $2 RETURNING credits',
+      [amount, tenantId]
+    )
+    await this.pool.query(
+      'INSERT INTO credit_transactions (tenant_id, amount, type, description) VALUES ($1, $2, $3, $4)',
+      [tenantId, amount, 'topup', description]
+    )
+    return res.rows[0]?.credits ?? 0
+  }
+  // Conversation state persistence
+  async setPlanExpiry(tenantId: string, expiresAt: Date): Promise<void> {
+    const graceUntil = new Date(expiresAt.getTime() + 7 * 24 * 60 * 60 * 1000)
+    await this.pool.query(
+      'UPDATE tenants SET plan_expires_at = $1, grace_until = $2 WHERE id = $3',
+      [expiresAt, graceUntil, tenantId]
+    )
+  }
+
+  async checkAndSuspendExpired(): Promise<string[]> {
+    const res = await this.pool.query<any>(
+      `UPDATE tenants SET status = 'suspended'
+       WHERE status = 'active'
+         AND grace_until IS NOT NULL
+         AND grace_until < NOW()
+       RETURNING id, phone`
+    )
+    return (res.rows as any[]).map((r: any) => r.id as string)
+  }
+
+  async getPlanExpiry(tenantId: string): Promise<{ planExpiresAt: Date | null; graceUntil: Date | null; suspended: boolean }> {
+    const res = await this.pool.query<any>(
+      'SELECT plan_expires_at, grace_until, status FROM tenants WHERE id = $1',
+      [tenantId]
+    )
+    const row = res.rows[0]
+    if (!row) return { planExpiresAt: null, graceUntil: null, suspended: false }
+    return {
+      planExpiresAt: row.plan_expires_at ?? null,
+      graceUntil: row.grace_until ?? null,
+      suspended: row.status === 'suspended',
+    }
+  }
+
+  async saveConversationState(tenantId: string, chatId: string, messages: unknown[]): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO conversation_state (tenant_id, chat_id, messages, updated_at)
+       VALUES ($1, $2, $3::jsonb, NOW())
+       ON CONFLICT (tenant_id, chat_id) DO UPDATE
+         SET messages   = EXCLUDED.messages,
+             updated_at = NOW()`,
+      [tenantId, chatId, JSON.stringify(messages)]
+    )
+  }
+
+  async loadConversationState(tenantId: string, chatId: string): Promise<unknown[]> {
+    const res = await this.pool.query<{ messages: unknown[] }>(
+      `SELECT messages FROM conversation_state WHERE tenant_id = $1 AND chat_id = $2`,
+      [tenantId, chatId]
+    )
+    return res.rows[0]?.messages ?? []
+  }
+
+  async query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
+    const result = await this.pool.query(sql, params)
+    return result.rows as T[]
+  }
+}
